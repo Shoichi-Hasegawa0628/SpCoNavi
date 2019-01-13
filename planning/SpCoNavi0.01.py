@@ -2,36 +2,40 @@
 
 ##############################################
 # SpCoNavi Path Planning program (作成中)
-# Akira Taniguchi 2018/12/13-2018/12/17
+# Akira Taniguchi 2018/12/13-2019/1/11
 ##############################################
 
 ##########---遂行タスク---##########
 #文字コードをsjis -> sjisのままにした
 #ReadCostMap
 #PathPlanner
-#SavePath
-#SaveProbMap
-#WordDictionaryUpdate2
+#PathDistance
+#PostProbXt
+#ViterbiPath
 
 ##########---作業終了タスク---##########
 ###未確認
 #ReadParameters
 #ReadSpeech
 #SpeechRecognition
-
+#WordDictionaryUpdate2
+#SavePath
+#SaveProbMap
 
 ###確認済み
 
 ##########---保留---##########
 #SendPath
 #SendProbMap
-
+#PathDistance
 
 ##############################################
 import os
-#import re
+import sys
 import glob
+import time
 import random
+#import re
 #import csv
 #import collections
 import numpy as np
@@ -45,10 +49,14 @@ from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2,gamma,lgam
 #from multiprocessing import Pool
 #from multiprocessing import Process
 #import multiprocessing
+#import rospy
+#from std_msgs.msg import String
 from __init__ import *
+from JuliusNbest_dec import *
 from submodules import *
 
-#コストマップを読み込む⇒2次元配列に格納(?)
+
+#コストマップを読み込む⇒確率値に変換⇒2次元配列に格納(?)
 def ReadCostMap():
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.array([])
@@ -193,7 +201,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
 
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
 def PathPlanner(S_Nbest, X_init, THETA, costmap):
-    print "S_Nbest: ", S_Nbest
+    #print "S_Nbest: ", S_Nbest
 
     #THETAを展開
     W = THETA[0]
@@ -213,15 +221,29 @@ def PathPlanner(S_Nbest, X_init, THETA, costmap):
 
     #事前計算できるものはしておく
     LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*pi[c] for c in range(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|pi) の確率値
+    
+    #場所概念部分の重みマップの初期化
+    PostProbMap = np.zeros((map_length,map_width))
+    
+    #愚直な実装(for文の多用)
+    for length in range(map_length):
+      for width in range(map_width):
+        if (costmap[length][width] != 0):  #costmapから障害物(占有格子)であれば計算を省く
+          X_temp = [width, length]  #地図と縦横の座標系の軸が合っているか要確認
+          #for c in range(L):
+          #  for k in range(K):
+          sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Myu[k], cov=Sig[k]) * phi_l[c][k] for k in range(K)]) for c in range(L) ]
+          sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
+          PostProbMap[length][width] = sum_c_ProbCtsum_i
 
 
-    PathWeightMap = costmap 
+    PathWeightMap = costmap * PostProbMap
     #* [ [PostProbXt([i,j], THETA) for j in range(map_width)] for i in range(map_length) ]
     #np.frompyfunc(PostProbXt, [i,j], S_Nbest, THETA)(costmap)
     #[ [costmap[i][j] for j in range(map_width)] for i in range(map_length) ]
 
     #memo: np.vectorize or np.frompyfunc の方が処理は早い？
-
+    """
     #パスの推定の計算
     for t in range(T_horizon):
         print "time:", t
@@ -232,19 +254,22 @@ def PathPlanner(S_Nbest, X_init, THETA, costmap):
               PathWeightMap[i][j] = PathWeightMap[i][j] #* PostProbXt([i,j], S_Nbest, THETA)
 
         #elif (Dynamics == 0):
-        
+    """
 
     Path = ViterbiPath(PathWeightMap)
 
     return Path, PathWeightMap
 
+"""
 #あるXtにおける軌道の事後確率(重み)の計算 [状態遷移確率(動作モデル)以外]
-def PostProbXt(Xt, THETA):
+def PostProbXt(X, myu, sig):
     PostProb = 0.0
+    print X
     #事前計算できるものはしておく
-
+    PostProb = multivariate_normal.pdf(X, mean=myu, cov=sig)
 
     return PostProb
+"""
 
 #ViterbiPathを計算してPath(軌道)を返す
 def ViterbiPath(PathWeightMap):
@@ -257,14 +282,21 @@ def ViterbiPath(PathWeightMap):
 #def SendPath(Path):
 
 #パスをファイル保存する（形式未定）
-def SavePath(Path, Distance, outputname):
-    print Path
+def SavePath(X_init, Path, outputname):
+    print "PathSave"
+    # ロボット初期位置をファイル保存
+    f = open( outputname + "_X_init.csv" , "w")# , "sjis" )
+    f.write(X_init)
+    f.close()
+
     # 結果をファイル保存
     f = open( outputname + "_Path.csv" , "w")# , "sjis" )
     for i in range(len(Path)):
         f.write(Path[i] + ",")
         #f.write('\n')
     f.close()
+
+    
 
 #パス計算のために使用した確率値マップを（トピックかサービスで）送る
 #def SendProbMap(PathWeightMap):
@@ -406,34 +438,29 @@ def TimeMeasurement(start_iter_time, end_iter_time):
     fp.close()
 """
 
+"""
 #パスの移動距離を計算、ファイル保存
 def PathDistance(PathWeightMap):
     Distance = 0
 
     return Distance
-
+"""
 
 ########################################
-if __name__ == '__main__':
-    import sys
-    #import os.path
-    import time
-    import random
-    #import rospy
-    #from std_msgs.msg import String
-    from __init__ import *
-    from JuliusNbest_dec import *
-
-    #開始時刻を保持
-    start_time = time.time()
-    
+if __name__ == '__main__':    
     #学習済みパラメータフォルダ名を要求
     trialname = sys.argv[1]
     #print trialname
     #trialname = raw_input("trialname?(folder) >")
 
     #読み込むパーティクル番号を要求
-    #particle_num = sys.argv[2] #0
+    particle_num = sys.argv[2] #0
+
+    #ロボット初期位置の候補番号を要求
+    init_position_num = sys.argv[3] #0
+
+    #音声命令のファイル番号を要求   
+    speech_num = sys.argv[4] #0
 
     #重みファイルを読み込み
     for line in open(datafolder + trialname + '/'+ str(step) + '/weights.csv', 'r'):   ##読み込む
@@ -441,11 +468,8 @@ if __name__ == '__main__':
     #最大尤度のパーティクル番号を保存
     particle_num = MAX_Samp
 
-    #ロボット初期位置の候補番号を要求
-    init_position_num = sys.argv[3] #0
-
-    #音声命令のファイル番号を要求   
-    speech_num = sys.argv[4] #0
+    #開始時刻を保持
+    start_time = time.time()
 
     ##FullPath of folder
     filename = datafolder + trialname + "/" + str(step) +"/"
@@ -498,12 +522,12 @@ if __name__ == '__main__':
     fp.close()
 
     #パスの移動距離
-    Distance = PathDistance(Path)
+    #Distance = PathDistance(Path)
 
     #パスを送る
     #SendPath(Path)
     #パスを保存
-    SavePath(Path, Distance, outputname)
+    SavePath(X_candidates[init_position_num], Path, outputname)
 
 
     #確率値マップを送る

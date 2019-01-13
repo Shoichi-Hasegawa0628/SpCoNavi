@@ -33,10 +33,14 @@ X_candidates = []
 #近似手法の選択(Proposed:0, samplingCtit:1, xの次元削減とか...)
 Approx = 0
 
-#状態遷移のダイナミクス(動作モデル)の仮定(確率的:1, 決定的:0)
+#状態遷移のダイナミクス(動作モデル)の仮定(確率的:1, 近似:2, 決定的:0)
 Dynamics = 1
 
-step = 50
+step = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
+
+#地図のサイズの縦横(length and width)があらかじめ分かる場合はこちらに記載しても良いかも
+#map_length = 0
+#map_width  = 0
 
 #Julius parameters
 ##Please see "syllable.jconf" in Julius folder
@@ -71,6 +75,7 @@ class Particle:
     self.pid = pid
     #self.Ct = -1
     #self.it = -1
+
 
 ####################Option setting (NOT USE)####################
 wic = 1         #1:wic重みつき(理論的にはこちらがより正しい)、0:wic重みなし(Orignal paper of SpCoSLAM)
