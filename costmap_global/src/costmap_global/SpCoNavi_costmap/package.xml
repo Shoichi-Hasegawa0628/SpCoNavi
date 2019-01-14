@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>SpCoNavi_costmap</name>
+  <version>0.1.0</version>
+  <description>Package to get global costmap in SpCoNavi (Original: The chapter9 package)</description>
+
+  <maintainer email="a.taniguchim@em.ci.ritsumei.ac.jp">Akira Taniguchi</maintainer>
+  <!-- <maintainer email="p595201m@mail.kyutech.jp">Masaru Morita</maintainer> -->
+  <author email="p595201m@mail.kyutech.jp">Masaru Morita</author>
+  <author email="a.taniguchim@em.ci.ritsumei.ac.jp">Akira Taniguchi</author>
+
+  <license>TODO</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>fourth_robot_2dnav</exec_depend>
+
+  <export>
+	<metapackage />
+  </export>
+</package>
