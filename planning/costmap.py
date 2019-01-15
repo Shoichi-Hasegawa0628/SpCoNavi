@@ -1,39 +1,57 @@
 #coding:utf-8
-#Akira Taniguchi 2018/12/13-
+#Akira Taniguchi 2018/12/13-2019/01/15
 #コストマップを読み込む⇒ファイル書き込み
 #ROS対応：コストマップのトピックを受け取り、ファイル書き込み
+#参考：spco_mapping-master/src/learning.py 
+# made by       Yuki Katsumata   2018.1.15
+# edited by     Ryo Ozaki        2018.2.7
 
 import sys
+import numpy as np
 import rospy
 from std_msgs.msg import String
 from nav_msgs.msg import OccupancyGrid
 from __init__ import *
 from submodules import *
 
-#コストマップを取得⇒2次元配列の形でファイル保存
-def GetCostMap(outputfile):
-    #outputfolder + trialname + navigation_folder + contmap.csv
-    costmap = []
-    #return costmap
-    
+class CostMap(object):
 
+    def do_mkdir(self):
+        #学習済みパラメータフォルダ名を要求
+        self.trialname = sys.argv[1]
+        #print trialname
+        #trialname = raw_input("trialname?(folder) >")
+    
+        self.outputfile = outputfolder + self.trialname + navigation_folder
+        Makedir( self.outputfile )
+        print "make dir:", self.outputfile
+
+    def costmap_callback(self, hoge):
+
+        self.map = hoge
+
+        self.CostmapData = np.array([self.map.data[i:i+self.map.info.width] for i in range(0, len(self.map.data), self.map.info.width)])
+        print "get costmap data."
+        
+        # ファイル保存
+        np.savetxt(self.outputfile + "costmap.csv", self.CostmapData, delimiter=",")
+        print "save costmap."
+        print self.outputfile + "costmap.csv"
+    
+    
+    def __init__(self):
+
+        self.do_mkdir()
+        rospy.Subscriber(COSTMAP_TOPIC, OccupancyGrid, self.costmap_callback, queue_size=1)
+        print "costmap ok"
 
 
 ########################################
 if __name__ == '__main__':
-    #rospy.init_node('GetCostMap', anonymous=True)
     
-    #rospy.spin()
+    rospy.init_node('CostMap', anonymous=True)
+    hoge = CostMap()
+    rospy.spin()
 
-    #学習済みパラメータフォルダ名を要求
-    trialname = sys.argv[1]
-    #print trialname
-    #trialname = raw_input("trialname?(folder) >")
-    
-
-    outputfile = outputfolder + trialname + navigation_folder
-    Makedir( outputfile )
-
-    GetCostMap(outputfile)
-    print "Get costmap"
+    print "\n [Done] Get costmap."
     

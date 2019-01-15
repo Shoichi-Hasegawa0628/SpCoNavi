@@ -103,5 +103,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Add by Akira
 rosbook_pkgs-master/
 devel/
+torioki/
+sankou/

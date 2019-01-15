@@ -21,6 +21,10 @@ navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder 
 #Cost map folder
 costmap_folder = navigation_folder
 
+#ROSのトピック名
+MAP_TOPIC = "/map"
+COSTMAP_TOPIC = "/move_base/global_costmap/costmap"
+
 #################### Parameters ####################
 T_horizon = 50     #計画区間（予測ホライズン）
 N_best    = 10     #N of N-best (N<=10)
@@ -37,6 +41,10 @@ Approx = 0
 Dynamics = 1
 
 step = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
+
+#地図のyamlファイルと同じ値にする
+resolution = 0.050000
+origin =  np.array([-30.000000, -20.000000]) #, 0.000000]
 
 #地図のサイズの縦横(length and width)があらかじめ分かる場合はこちらに記載しても良いかも
 #map_length = 0

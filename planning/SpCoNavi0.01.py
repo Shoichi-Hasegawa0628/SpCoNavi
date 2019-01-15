@@ -6,14 +6,11 @@
 ##############################################
 
 ##########---遂行タスク---##########
-#文字コードをsjis -> sjisのままにした
-#ReadCostMap
 #PathPlanner
-#PathDistance
-#PostProbXt
 #ViterbiPath
 
 ##########---作業終了タスク---##########
+#文字コードをsjis -> sjisのままにした
 ###未確認
 #ReadParameters
 #ReadSpeech
@@ -21,6 +18,7 @@
 #WordDictionaryUpdate2
 #SavePath
 #SaveProbMap
+#ReadCostMap
 
 ###確認済み
 
@@ -28,6 +26,7 @@
 #SendPath
 #SendProbMap
 #PathDistance
+#PostProbXt
 
 ##############################################
 import os
@@ -57,10 +56,25 @@ from submodules import *
 
 
 #コストマップを読み込む⇒確率値に変換⇒2次元配列に格納(?)
-def ReadCostMap():
+def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
-    costmap = np.array([])
+    costmap = np.loadtxt(outputfile + "contmap.csv")
+    print "Read costmap: " + outputfile + "contmap.csv"
     return costmap
+
+#ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
+def Map_coordinates_To_Array_index(X):
+    Index = np.array( (X - origin) / resolution ).astype(int)
+    #Index = np.array([0,0])
+    #Index[0] = ( (X[0] - origin[0]) / resolution ).astype(int)
+    #Index[1] = ( (X[1] - origin[1]) / resolution ).astype(int)
+    return Index
+
+#Python内の2次元配列のインデックス番号からROSの地図座標系への変換
+def Array_index_To_Map_coordinates(Index):
+    X = np.array( (Index * resolution) + origin )
+    return X
+
 
 #場所概念の学習済みパラメータを読み込む
 def ReadParameters(particle_num, filename):
@@ -303,14 +317,19 @@ def SavePath(X_init, Path, outputname):
 
 #パス計算のために使用した確率値マップをファイル保存する
 def SaveProbMap(PathWeightMap, outputname):
-    print PathWeightMap
+    #print PathWeightMap
     # 結果をファイル保存
+    np.savetxt(outputname + "_PathWeightMap.csv", PathWeightMap, delimiter=",")
+    print "Save PathWeightMap: " + outputname + "_PathWeightMap.csv"
+
+    """
     f = open( outputname + "_PathWeightMap.csv" , "w")# , "sjis" )
     for i in range(len(PathWeightMap)):
       for j in range(len(PathWeightMap[i])):
         f.write(PathWeightMap[i][j] + ",")
       f.write('\n')
     f.close()
+    """
 
 
 ##単語辞書読み込み書き込み追加
@@ -474,10 +493,11 @@ if __name__ == '__main__':
     ##FullPath of folder
     filename = datafolder + trialname + "/" + str(step) +"/"
     print filename, particle_num
-    outputname = outputfolder + trialname + navigation_folder + "T"+T_horizon+"N"+N_best+"A"+Approx+"S"+init_position_num+"G"+speech_num
+    outputfile = outputfolder + trialname + navigation_folder
+    outputname = outputfile + "T"+T_horizon+"N"+N_best+"A"+Approx+"S"+init_position_num+"G"+speech_num
 
-    Makedir( outputfolder + trialname )
-    Makedir( outputfolder + trialname + navigation_folder )
+    #Makedir( outputfolder + trialname )
+    Makedir( outputfile )
     #Makedir( outputname )
 
     #学習済みパラメータの読み込み
@@ -489,7 +509,7 @@ if __name__ == '__main__':
     WordDictionaryUpdate2(step, filename, W_index)     
 
     ##コストマップの読み込み
-    costmap = ReadCostMap()
+    costmap = ReadCostMap(outputfile, delimiter=",")
 
     #音声認識開始時刻(初期化読み込み処理終了時刻)を保持
     start_recog_time = time.time()
