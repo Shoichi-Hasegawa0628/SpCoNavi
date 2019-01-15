@@ -46,5 +46,5 @@
     <remap from="odom" to="/diff_drive_controller/odom"/>
   </node>
 
-  <node name="rviz" pkg="rviz" type="rviz" required="true" args="-d $(find fourth_robot_2dnav)/rviz/saveSpCoMAP_online.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" required="true" args="-d $(find fourth_robot_2dnav)/rviz/SpCoNavi_costmap.rviz" />
 </launch>
