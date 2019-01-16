@@ -54,8 +54,14 @@ from __init__ import *
 from JuliusNbest_dec import *
 from submodules import *
 
+#マップを読み込む⇒確率値に変換⇒2次元配列に格納
+def ReadMap(outputfile):
+    #outputfolder + trialname + navigation_folder + map.csv
+    gridmap = np.loadtxt(outputfile + "map.csv")
+    print "Read map: " + outputfile + "map.csv"
+    return gridmap
 
-#コストマップを読み込む⇒確率値に変換⇒2次元配列に格納(?)
+#コストマップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.loadtxt(outputfile + "contmap.csv")
@@ -213,8 +219,43 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
 
     return Otb_B #S_Nbest
 
+def pi_2_pi(angle):
+    return (angle + math.pi) % (2 * math.pi) - math.pi
+
+def Prob_Triangular_distribution_pdf(a,b):
+    prob = max( 0, ( 1 / (sqrt(6)*b) ) - ( abs(a) / (6*(b^2)) ) )
+    return prob
+
+#オドメトリ動作モデル(確率ロボティクスp.122)
+def Motion_Model_Odometry(xt,ut,xt_1):
+    #ut = (xt_1_bar, xt_bar), xt_1_bar = (x_bar, y_bar, theta_bar), xt_bar = (x_dash_bar, y_dash_bar, theta_dash_bar)
+    x_dash, y_dash, theta_dash = xt
+    x, y, theta = xt_1
+    xt_1_bar, xt_bar = ut
+    x_dash_bar, y_dash_bar, theta_dash_bar = xt_bar
+    x_bar, y_bar, theta_bar = xt_1_bar
+
+    delta_rot1  = atan2(y_dash_bar - y_bar, x_dash_bar - x_bar) - theta_bar
+    delta_trans = sqrt( (x_dash_bar - x_bar)^2 + (y_dash_bar - y_bar)^2 )
+    delta_rot2  = theta_dash_bar - theta_bar - delta_rot1
+
+    delta_rot1_hat  = atan2(y_dash - y, x_dash - x) - theta
+    delta_trans_hat = sqrt( (x_dash - x)^2 + (y_dash - y)^2 )
+    delta_rot2_hat  = theta_dash - theta - delta_rot1_hat
+
+    if (MotionModelDist == "Gauss"):
+      p1 = multivariate_normal.pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat^2) + odom_alpha2*(delta_trans_hat^2))
+      p2 = multivariate_normal.pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat^2) + odom_alpha4*(delta_rot1_hat^2+delta_rot2_hat^2))
+      p3 = multivariate_normal.pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat^2) + odom_alpha2*(delta_trans_hat^2))
+    elif (MotionModelDist == "Triangular"):
+      p1 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat^2) + odom_alpha2*(delta_trans_hat^2))
+      p2 = Prob_Triangular_distribution_pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat^2) + odom_alpha4*(delta_rot1_hat^2+delta_rot2_hat^2))
+      p3 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat^2) + odom_alpha2*(delta_trans_hat^2))
+    
+    return p1*p2*p3
+
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
-def PathPlanner(S_Nbest, X_init, THETA, costmap):
+def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     #print "S_Nbest: ", S_Nbest
 
     #THETAを展開
@@ -227,7 +268,6 @@ def PathPlanner(S_Nbest, X_init, THETA, costmap):
     K = THETA[6]
     L = THETA[7]
 
-    Xt = X_init #自己位置の初期化
 
     #MAPの縦横(length and width)のセルの長さを計る
     map_length = len(costmap)
@@ -236,27 +276,35 @@ def PathPlanner(S_Nbest, X_init, THETA, costmap):
     #事前計算できるものはしておく
     LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*pi[c] for c in range(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|pi) の確率値
     
+    #コストマップを確率の形にする
+    CostmapProb = (100.0 - costmap) /100.0
+
     #場所概念部分の重みマップの初期化
     PostProbMap = np.zeros((map_length,map_width))
-    
+
+
     #愚直な実装(for文の多用)
     for length in range(map_length):
       for width in range(map_width):
-        if (costmap[length][width] != 0):  #costmapから障害物(占有格子)であれば計算を省く
+        if (gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
           X_temp = [width, length]  #地図と縦横の座標系の軸が合っているか要確認
-          #for c in range(L):
-          #  for k in range(K):
           sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Myu[k], cov=Sig[k]) * phi_l[c][k] for k in range(K)]) for c in range(L) ]
           sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = sum_c_ProbCtsum_i
+    #memo: np.vectorize or np.frompyfunc の方が処理は早い？
 
-
-    PathWeightMap = costmap * PostProbMap
+    PathWeightMap = CostmapProb * PostProbMap
     #* [ [PostProbXt([i,j], THETA) for j in range(map_width)] for i in range(map_length) ]
     #np.frompyfunc(PostProbXt, [i,j], S_Nbest, THETA)(costmap)
     #[ [costmap[i][j] for j in range(map_width)] for i in range(map_length) ]
 
-    #memo: np.vectorize or np.frompyfunc の方が処理は早い？
+    #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
+    PathWeight = np.ravel(PathWeightMap)
+    PathWeight_NOzero = PathWeight[PathWeight!=0.0]
+   
+    #状態遷移確率(動作モデル)の計算
+    Transition = []
+
     """
     #パスの推定の計算
     for t in range(T_horizon):
@@ -270,7 +318,7 @@ def PathPlanner(S_Nbest, X_init, THETA, costmap):
         #elif (Dynamics == 0):
     """
 
-    Path = ViterbiPath(PathWeightMap)
+    Path = ViterbiPath(X_init, PathWeight_NOzero, Transition)
 
     return Path, PathWeightMap
 
@@ -285,12 +333,39 @@ def PostProbXt(X, myu, sig):
     return PostProb
 """
 
+#Viterbi Path計算用関数(参考：https://qiita.com/kkdd/items/6cbd949d03bc56e33e8e)
+def update(cost, trans, emiss):
+    arr = [c[COST]+t for c, t in zip(cost, trans)]
+    min_arr = min(arr)
+    return min_arr + emiss, arr.index(min_arr)
+
 #ViterbiPathを計算してPath(軌道)を返す
-def ViterbiPath(PathWeightMap):
-    Path = [[0,0] for t in range(T_horizon)]  #各tにおけるセル番号[x,y]
+def ViterbiPath(X_init, PathWeigh, Transition):
+    #Path = [[0,0] for t in range(T_horizon)]  #各tにおけるセル番号[x,y]
+    Xt = X_init #自己位置の初期化
 
+    COST, INDEX = range(2)  #0,1
+    INITIAL = (0, 0)  # (cost, index)
 
-    return Path
+    nstates = [1,2,4,4,2,1]
+    cost = [INITIAL for i in range(nstates[0])]
+    trellis = []
+    for i in range(1,len(nstates)):
+        e = emission(nstates[i])
+        m = transition(nstates[i-1], nstates[i])
+        cost = [update(cost, t, f) for t, f in zip(m, e)]
+        trellis.append(cost)
+        #print(f'{i}.', [c[INDEX] for c in cost])
+        print (i, [c[INDEX] for c in cost])
+
+    path = [0]
+    for x in reversed(trellis):
+        path = [x[path[0]][INDEX]] + path
+
+    #print(f'minimum_cost_path = {path}')
+    print('minimum_cost_path = ',path)
+
+    return path
 
 #推定されたパスを（トピックかサービスで）送る
 #def SendPath(Path):
@@ -299,12 +374,12 @@ def ViterbiPath(PathWeightMap):
 def SavePath(X_init, Path, outputname):
     print "PathSave"
     # ロボット初期位置をファイル保存
-    f = open( outputname + "_X_init.csv" , "w")# , "sjis" )
+    f = open( outputname + "_X_init.csv" , "w")
     f.write(X_init)
     f.close()
 
     # 結果をファイル保存
-    f = open( outputname + "_Path.csv" , "w")# , "sjis" )
+    f = open( outputname + "_Path.csv" , "w")
     for i in range(len(Path)):
         f.write(Path[i] + ",")
         #f.write('\n')
@@ -508,6 +583,8 @@ if __name__ == '__main__':
     ##単語辞書登録
     WordDictionaryUpdate2(step, filename, W_index)     
 
+    ##マップの読み込み
+    gridmap = ReadMap(outputfile, delimiter=",")
     ##コストマップの読み込み
     costmap = ReadCostMap(outputfile, delimiter=",")
 
@@ -532,7 +609,7 @@ if __name__ == '__main__':
     fp.close()
 
     #パスプランニング
-    Path, PathWeightMap = PathPlanner(S_Nbest, X_candidates[init_position_num], THETA, costmap)
+    Path, PathWeightMap = PathPlanner(S_Nbest, X_candidates[init_position_num], THETA, gridmap, costmap)
 
     #PP終了時刻を保持
     end_pp_time = time.time()

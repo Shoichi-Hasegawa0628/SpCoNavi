@@ -1,10 +1,10 @@
 #coding:utf-8
-#Akira Taniguchi 2018/12/13-2019/01/15
+#Akira Taniguchi 2018/12/13-2019/01/16
 #コストマップを読み込む⇒ファイル書き込み
-#ROS対応：コストマップのトピックを受け取り、ファイル書き込み
+#ROS対応：マップとコストマップのトピックを受け取り、ファイル書き込み
 #参考：spco_mapping-master/src/learning.py 
-# made by       Yuki Katsumata   2018.1.15
-# edited by     Ryo Ozaki        2018.2.7
+#      made by       Yuki Katsumata   2018.1.15
+#      edited by     Ryo Ozaki        2018.2.7
 
 import sys
 import numpy as np
@@ -26,11 +26,23 @@ class CostMap(object):
         Makedir( self.outputfile )
         print "make dir:", self.outputfile
 
-    def costmap_callback(self, hoge):
+    def map_callback(self, hoge):
 
         self.map = hoge
 
-        self.CostmapData = np.array([self.map.data[i:i+self.map.info.width] for i in range(0, len(self.map.data), self.map.info.width)])
+        self.MapData = np.array([self.map.data[i:i+self.map.info.width] for i in range(0, len(self.map.data), self.map.info.width)])
+        print "get map data."
+        
+        # ファイル保存
+        np.savetxt(self.outputfile + "map.csv", self.MapData, delimiter=",")
+        print "save map."
+        print self.outputfile + "map.csv"
+
+    def costmap_callback(self, hoge):
+
+        self.costmap = hoge
+
+        self.CostmapData = np.array([self.costmap.data[i:i+self.costmap.info.width] for i in range(0, len(self.costmap.data), self.costmap.info.width)])
         print "get costmap data."
         
         # ファイル保存
@@ -42,6 +54,8 @@ class CostMap(object):
     def __init__(self):
 
         self.do_mkdir()
+        rospy.Subscriber(MAP_TOPIC, OccupancyGrid, self.map_callback, queue_size=1)
+        print "map ok"
         rospy.Subscriber(COSTMAP_TOPIC, OccupancyGrid, self.costmap_callback, queue_size=1)
         print "costmap ok"
 
@@ -53,5 +67,5 @@ if __name__ == '__main__':
     hoge = CostMap()
     rospy.spin()
 
-    print "\n [Done] Get costmap."
+    print "\n [Done] Get map and costmap."
     
