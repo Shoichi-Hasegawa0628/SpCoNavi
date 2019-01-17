@@ -70,6 +70,7 @@ def ReadCostMap(outputfile):
 
 #ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
+    X = np.array(X)
     Index = np.array( (X - origin) / resolution ).astype(int)
     #Index = np.array([0,0])
     #Index[0] = ( (X[0] - origin[0]) / resolution ).astype(int)
@@ -78,6 +79,7 @@ def Map_coordinates_To_Array_index(X):
 
 #Python内の2次元配列のインデックス番号からROSの地図座標系への変換
 def Array_index_To_Map_coordinates(Index):
+    Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
     return X
 
@@ -219,6 +221,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
 
     return Otb_B #S_Nbest
 
+#角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
 def pi_2_pi(angle):
     return (angle + math.pi) % (2 * math.pi) - math.pi
 
@@ -277,7 +280,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*pi[c] for c in range(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|pi) の確率値
     
     #コストマップを確率の形にする
-    CostmapProb = (100.0 - costmap) /100.0
+    CostMapProb = (100.0 - costmap) /100.0
 
     #場所概念部分の重みマップの初期化
     PostProbMap = np.zeros((map_length,map_width))
@@ -287,38 +290,47 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     for length in range(map_length):
       for width in range(map_width):
         if (gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
-          X_temp = [width, length]  #地図と縦横の座標系の軸が合っているか要確認
+          X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
           sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Myu[k], cov=Sig[k]) * phi_l[c][k] for k in range(K)]) for c in range(L) ]
           sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = sum_c_ProbCtsum_i
     #memo: np.vectorize or np.frompyfunc の方が処理は早い？
 
-    PathWeightMap = CostmapProb * PostProbMap
+    PathWeightMap = CostMapProb * PostProbMap
     #* [ [PostProbXt([i,j], THETA) for j in range(map_width)] for i in range(map_length) ]
     #np.frompyfunc(PostProbXt, [i,j], S_Nbest, THETA)(costmap)
     #[ [costmap[i][j] for j in range(map_width)] for i in range(map_length) ]
 
+
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
-    PathWeight = np.ravel(PathWeightMap)
-    PathWeight_NOzero = PathWeight[PathWeight!=0.0]
+    #PathWeight = np.ravel(PathWeightMap)
+    PathWeight_NOzero = PathWeight[PathWeightMap!=0.0]
+
+    #地図の2次元配列インデックスと一次元配列の対応を保持する
+    Map_index = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
+    #Map_index_one = np.ravel(Map_index)
+    Map_index_one_NOzero = Map_index[PathWeightMap!=0.0]
    
     #状態遷移確率(動作モデル)の計算
-    Transition = []
+    Transition = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
+    if (Dynamics == 1):
+      Transition = []
+    elif (Dynamics == 0):
+      Transition = []
 
-    """
-    #パスの推定の計算
-    for t in range(T_horizon):
-        print "time:", t
-        #if (Dynamics == 1):
-        for i in range(map_length):
-          for j in range(map_width):
-            if (costmap[i][j] != 0):
-              PathWeightMap[i][j] = PathWeightMap[i][j] #* PostProbXt([i,j], S_Nbest, THETA)
+    #Transition_one = np.ravel(Transition)
+    Transition_one_NOzero = Transition[PathWeightMap!=0.0]
 
-        #elif (Dynamics == 0):
-    """
 
-    Path = ViterbiPath(X_init, PathWeight_NOzero, Transition)
+    X_init_index = Map_coordinates_To_Array_index(X_init)
+    Path_one = ViterbiPath(X_init_index, np.log(PathWeight_NOzero), np.log(TransTransition_one_NOzeroition))
+
+    #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
+    Path_index = [ Map_index_one_NOzero[Path_one[i]] for i in range(len(Path_one)) ]
+    Path_ROS = Array_index_To_Map_coordinates(Path_index)
+
+    Path = Path_ROS #必要な方をPathとして返す
+    #ROSのパスの形式にできればなおよい
 
     return Path, PathWeightMap
 
@@ -330,14 +342,35 @@ def PostProbXt(X, myu, sig):
     #事前計算できるものはしておく
     PostProb = multivariate_normal.pdf(X, mean=myu, cov=sig)
 
+    #パスの推定の計算
+    for t in range(T_horizon):
+        print "time:", t
+        #if (Dynamics == 1):
+        for i in range(map_length):
+          for j in range(map_width):
+            if (costmap[i][j] != 0):
+              PathWeightMap[i][j] = PathWeightMap[i][j] #* PostProbXt([i,j], S_Nbest, THETA)
+        #elif (Dynamics == 0):
+
     return PostProb
 """
 
 #Viterbi Path計算用関数(参考：https://qiita.com/kkdd/items/6cbd949d03bc56e33e8e)
 def update(cost, trans, emiss):
     arr = [c[COST]+t for c, t in zip(cost, trans)]
-    min_arr = min(arr)
-    return min_arr + emiss, arr.index(min_arr)
+    #min_arr = min(arr)
+    #return min_arr + emiss, arr.index(min_arr)
+    max_arr = max(arr)
+    return max_arr + emiss, arr.index(max_arr)
+
+#とある状態xtにおける遷移確率0の配列要素は除く?
+def transition(PathWeigh):
+    
+    return PathWeigh #[[random.random() for i in range(m)] for j in range(n)]
+
+def emission(Transition):
+    
+    return Transition #[random.random() for j in range(n)]
 
 #ViterbiPathを計算してPath(軌道)を返す
 def ViterbiPath(X_init, PathWeigh, Transition):
@@ -345,20 +378,20 @@ def ViterbiPath(X_init, PathWeigh, Transition):
     Xt = X_init #自己位置の初期化
 
     COST, INDEX = range(2)  #0,1
-    INITIAL = (0, 0)  # (cost, index)
+    INITIAL = (0, 0)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
 
-    nstates = [1,2,4,4,2,1]
-    cost = [INITIAL for i in range(nstates[0])]
+    #nstates = [1] + [len(PathWeigh) for i in range(T_horizon)] #[1,2,4,4,2,1] #ステップごとの状態数
+    cost = [INITIAL] # for i in range(nstates[0])]
     trellis = []
-    for i in range(1,len(nstates)):
-        e = emission(nstates[i])
-        m = transition(nstates[i-1], nstates[i])
+    for i in range(1, T_horizon+1):  #len(nstates)):
+        e = emission(PathWeigh) #PathWeigh #emission(nstates[i])
+        m = transition(Transition) #Transition #transition(nstates[i-1], nstates[i])
         cost = [update(cost, t, f) for t, f in zip(m, e)]
         trellis.append(cost)
         #print(f'{i}.', [c[INDEX] for c in cost])
         print (i, [c[INDEX] for c in cost])
 
-    path = [0]
+    path = [0] #初期インデックスにすればよい？
     for x in reversed(trellis):
         path = [x[path[0]][INDEX]] + path
 
