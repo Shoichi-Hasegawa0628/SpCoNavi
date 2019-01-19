@@ -1,13 +1,14 @@
 #coding:utf-8
 
 ##############################################
-# SpCoNavi Path Planning program (作成中)
-# Akira Taniguchi 2018/12/13-2019/1/11
+# SpCoNavi: Path Planning Program (作成中)
+# Akira Taniguchi 2018/12/13-2019/1/18
 ##############################################
 
 ##########---遂行タスク---##########
 #PathPlanner
 #ViterbiPath
+##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
 
 ##########---作業終了タスク---##########
 #文字コードをsjis -> sjisのままにした
@@ -18,7 +19,12 @@
 #WordDictionaryUpdate2
 #SavePath
 #SaveProbMap
+#ReadMap
 #ReadCostMap
+#pi_2_pi
+#Prob_Triangular_distribution_pdf
+#Motion_Model_Odometry
+#Motion_Model_Odometry_No_theta
 
 ###確認済み
 
@@ -41,9 +47,9 @@ import numpy as np
 import scipy as sp
 #from numpy.random import multinomial #,uniform #,dirichlet
 from scipy.stats import multivariate_normal,multinomial #,t,invwishart,rv_discrete
-from numpy.linalg import inv, cholesky
+#from numpy.linalg import inv, cholesky
 from math import pi as PI
-from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2,gamma,lgamma
+from math import cos,sin,sqrt,exp,log,degrees,radians,atan2 #,gamma,lgamma,fabs,fsum
 #from sklearn.cluster import KMeans
 #from multiprocessing import Pool
 #from multiprocessing import Process
@@ -68,25 +74,9 @@ def ReadCostMap(outputfile):
     print "Read costmap: " + outputfile + "contmap.csv"
     return costmap
 
-#ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
-def Map_coordinates_To_Array_index(X):
-    X = np.array(X)
-    Index = np.array( (X - origin) / resolution ).astype(int)
-    #Index = np.array([0,0])
-    #Index[0] = ( (X[0] - origin[0]) / resolution ).astype(int)
-    #Index[1] = ( (X[1] - origin[1]) / resolution ).astype(int)
-    return Index
-
-#Python内の2次元配列のインデックス番号からROSの地図座標系への変換
-def Array_index_To_Map_coordinates(Index):
-    Index = np.array(Index)
-    X = np.array( (Index * resolution) + origin )
-    return X
-
-
 #場所概念の学習済みパラメータを読み込む
 def ReadParameters(particle_num, filename):
-    #THETA = [W,W_index,Myu,Sig,pi,phi_l,K,L]
+    #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     r = particle_num
     i = 0
     for line in open(filename + 'index' + str(r) + '.csv', 'r'):   ##読み込む
@@ -111,18 +101,18 @@ def ReadParameters(particle_num, filename):
         i = i + 1
     
     #####パラメータW、μ、Σ、φ、πを入力する#####
-    Myu   = [ np.array([[ 0.0 ],[ 0.0 ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
+    Mu   = [ np.array([[ 0.0 ],[ 0.0 ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
     Sig   = [ np.array([ [0.0, 0.0],[0.0, 0.0] ]) for i in xrange(K) ]      #位置分布の共分散(2×2次元)[K]
     W     = [ [0.0 for j in xrange(len(W_index))] for c in xrange(L) ]  #場所の名前(多項分布：W_index次元)[L]
     #theta = [ [0.0 for j in xrange(DimImg)] for c in xrange(L) ] 
-    pi    = [ 0.0 for c in xrange(L)]     #場所概念のindexの多項分布(L次元)
-    phi_l = [ [0.0 for i in xrange(K)] for c in xrange(L) ]  #位置分布のindexの多項分布(K次元)[L]
+    Pi    = [ 0.0 for c in xrange(L)]     #場所概念のindexの多項分布(L次元)
+    Phi_l = [ [0.0 for i in xrange(K)] for c in xrange(L) ]  #位置分布のindexの多項分布(K次元)[L]
       
     i = 0
-    ##Myuの読み込み
+    ##Muの読み込み
     for line in open(filename + 'mu' + str(r) + '.csv', 'r'):
         itemList = line[:-1].split(',')
-        Myu[i] = np.array([[ float(itemList[0]) ],[ float(itemList[1]) ]])
+        Mu[i] = np.array([[ float(itemList[0]) ],[ float(itemList[1]) ]])
         i = i + 1
       
     i = 0
@@ -139,15 +129,15 @@ def ReadParameters(particle_num, filename):
         itemList = line[:-1].split(',')
         for i in xrange(len(itemList)):
             if itemList[i] != "":
-              phi_l[c][i] = float(itemList[i])
+              Phi_l[c][i] = float(itemList[i])
         c = c + 1
         
-    ##piの読み込み
+    ##Piの読み込み
     for line in open(filename + 'pi' + str(r) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in xrange(len(itemList)):
           if itemList[i] != '':
-            pi[i] = float(itemList[i])
+            Pi[i] = float(itemList[i])
       
     ##Wの読み込み
     c = 0
@@ -173,7 +163,7 @@ def ReadParameters(particle_num, filename):
         c = c + 1
     """
 
-    THETA = [W,W_index,Myu,Sig,pi,phi_l,K,L]
+    THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     return THETA
 
 #音声ファイルを読み込み
@@ -204,32 +194,38 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
           #print n,j,len(Otb_Samp[r][n])
           for i in xrange(len(W_index)):
             #print W_index[i].decode('sjis'),Otb[j]
-            if (W_index[i].decode('sjis') == Otb[j2] ):
-            #####if (W_index[i].decode('utf8') == Otb[j] ):
+            if (W_index[i].decode('sjis') == Otb[j2] ):  #'utf8'
               Otb_B[i] = Otb_B[i] + 1
               #print W_index[i].decode('sjis'),Otb[j]
     print Otb_B
-    #S_Nbest = Otb_B
 
     # 認識結果をファイル保存
-    f = open( outputname + "_St.csv" , "w")# , "sjis" )
+    f = open( outputname + "_St.csv" , "w") # , "sjis" )
     for i in range(len(St)):
-        #f.write(wordDic[i].encode('sjis'))
         f.write(St[i].encode('sjis'))
         f.write('\n')
     f.close()
 
-    return Otb_B #S_Nbest
+    return Otb_B
 
 #角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
 def pi_2_pi(angle):
-    return (angle + math.pi) % (2 * math.pi) - math.pi
+    return (angle + PI) % (2 * PI) - PI
 
+#三角分布の確率密度関数
 def Prob_Triangular_distribution_pdf(a,b):
-    prob = max( 0, ( 1 / (sqrt(6)*b) ) - ( abs(a) / (6*(b^2)) ) )
+    prob = max( 0, ( 1 / (sqrt(6)*b) ) - ( abs(a) / (6*(b**2)) ) )
     return prob
 
-#オドメトリ動作モデル(確率ロボティクスp.122)
+#確率分布の選択
+def Motion_Model_Prob(a,b):
+    if (MotionModelDist == "Gauss"):
+      p = multivariate_normal.pdf(a, 0, b)
+    elif (MotionModelDist == "Triangular"):
+      p = Prob_Triangular_distribution_pdf(a, b)
+    return p
+
+#オドメトリ動作モデル(確率ロボティクスp.122) #現状、不使用
 def Motion_Model_Odometry(xt,ut,xt_1):
     #ut = (xt_1_bar, xt_bar), xt_1_bar = (x_bar, y_bar, theta_bar), xt_bar = (x_dash_bar, y_dash_bar, theta_dash_bar)
     x_dash, y_dash, theta_dash = xt
@@ -239,45 +235,75 @@ def Motion_Model_Odometry(xt,ut,xt_1):
     x_bar, y_bar, theta_bar = xt_1_bar
 
     delta_rot1  = atan2(y_dash_bar - y_bar, x_dash_bar - x_bar) - theta_bar
-    delta_trans = sqrt( (x_dash_bar - x_bar)^2 + (y_dash_bar - y_bar)^2 )
+    delta_trans = sqrt( (x_dash_bar - x_bar)**2 + (y_dash_bar - y_bar)**2 )
     delta_rot2  = theta_dash_bar - theta_bar - delta_rot1
 
     delta_rot1_hat  = atan2(y_dash - y, x_dash - x) - theta
-    delta_trans_hat = sqrt( (x_dash - x)^2 + (y_dash - y)^2 )
+    delta_trans_hat = sqrt( (x_dash - x)**2 + (y_dash - y)**2 )
     delta_rot2_hat  = theta_dash - theta - delta_rot1_hat
 
-    if (MotionModelDist == "Gauss"):
-      p1 = multivariate_normal.pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat^2) + odom_alpha2*(delta_trans_hat^2))
-      p2 = multivariate_normal.pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat^2) + odom_alpha4*(delta_rot1_hat^2+delta_rot2_hat^2))
-      p3 = multivariate_normal.pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat^2) + odom_alpha2*(delta_trans_hat^2))
-    elif (MotionModelDist == "Triangular"):
-      p1 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat^2) + odom_alpha2*(delta_trans_hat^2))
-      p2 = Prob_Triangular_distribution_pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat^2) + odom_alpha4*(delta_rot1_hat^2+delta_rot2_hat^2))
-      p3 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat^2) + odom_alpha2*(delta_trans_hat^2))
-    
+    p1 = Motion_Model_Prob(pi_2_pi(delta_rot1 - delta_rot1_hat), odom_alpha1*(delta_rot1_hat**2) + odom_alpha2*(delta_trans_hat**2))
+    p2 = Motion_Model_Prob(delta_trans - delta_trans_hat, odom_alpha3*(delta_trans_hat**2) + odom_alpha4*(delta_rot1_hat**2+delta_rot2_hat**2))
+    p3 = Motion_Model_Prob(pi_2_pi(delta_rot2 - delta_rot2_hat), odom_alpha1*(delta_rot2_hat**2) + odom_alpha2*(delta_trans_hat**2))
+
     return p1*p2*p3
+
+#オドメトリ動作モデル(確率ロボティクスp.122) #角度は考慮せず、移動量に応じて確率が決まる(ドーナツ型分布)
+def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
+    #ut = (xt_1_bar, xt_bar), xt_1_bar = (x_bar, y_bar), xt_bar = (x_dash_bar, y_dash_bar)
+    #utは相対的な位置関係で良い
+    x_dash, y_dash = xt
+    x, y = xt_1
+    #xt_1_bar, xt_bar = ut
+    #x_dash_bar, y_dash_bar = xt_bar
+    #x_bar, y_bar = xt_1_bar
+
+    delta_rot1  = 0 #atan2(y_dash_bar - y_bar, x_dash_bar - x_bar) - theta_bar
+    delta_trans = cmd_vel #sqrt( (x_dash_bar - x_bar)**2 + (y_dash_bar - y_bar)**2 )
+    delta_rot2  = 0 #theta_dash_bar - theta_bar - delta_rot1
+
+    delta_rot1_hat  = 0 #atan2(y_dash - y, x_dash - x) - theta
+    delta_trans_hat = sqrt( (x_dash - x)**2 + (y_dash - y)**2 )
+    delta_rot2_hat  = 0 #theta_dash - theta - delta_rot1_hat
+
+    if (MotionModelDist == "Gauss"):
+      #p1 = multivariate_normal.pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat**2) + odom_alpha2*(delta_trans_hat**2))
+      p2 = multivariate_normal.pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat**2) + odom_alpha4*(delta_rot1_hat**2+delta_rot2_hat**2))
+      #p3 = multivariate_normal.pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat**2) + odom_alpha2*(delta_trans_hat**2))
+    elif (MotionModelDist == "Triangular"):
+      #p1 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat**2) + odom_alpha2*(delta_trans_hat**2))
+      p2 = Prob_Triangular_distribution_pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat**2) + odom_alpha4*(delta_rot1_hat**2+delta_rot2_hat**2))
+      #p3 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat**2) + odom_alpha2*(delta_trans_hat**2))
+    
+    return p2  #p1*p2*p3
+
+#ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
+def Map_coordinates_To_Array_index(X):
+    X = np.array(X)
+    Index = np.array( (X - origin) / resolution ).astype(int)
+    #Index = np.array([0,0])
+    #Index[0] = ( (X[0] - origin[0]) / resolution ).astype(int)
+    #Index[1] = ( (X[1] - origin[1]) / resolution ).astype(int)
+    return Index
+
+#Python内の2次元配列のインデックス番号からROSの地図座標系への変換
+def Array_index_To_Map_coordinates(Index):
+    Index = np.array(Index)
+    X = np.array( (Index * resolution) + origin )
+    return X
 
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
 def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
-    #print "S_Nbest: ", S_Nbest
-
+    print "run PathPlanner"
     #THETAを展開
-    W = THETA[0]
-    W_index = THETA[1]
-    Myu = THETA[2]
-    Sig = THETA[3]
-    pi = THETA[4]
-    phi_l = THETA[5]
-    K = THETA[6]
-    L = THETA[7]
-
+    W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA
 
     #MAPの縦横(length and width)のセルの長さを計る
     map_length = len(costmap)
     map_width  = len(costmap[0])
 
     #事前計算できるものはしておく
-    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*pi[c] for c in range(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|pi) の確率値
+    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in range(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
     
     #コストマップを確率の形にする
     CostMapProb = (100.0 - costmap) /100.0
@@ -285,48 +311,54 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     #場所概念部分の重みマップの初期化
     PostProbMap = np.zeros((map_length,map_width))
 
-
     #愚直な実装(for文の多用)
+    #memo: np.vectorize or np.frompyfunc の方が処理は早い？    
     for length in range(map_length):
       for width in range(map_width):
         if (gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
           X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
-          sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Myu[k], cov=Sig[k]) * phi_l[c][k] for k in range(K)]) for c in range(L) ]
+          sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in range(K)]) for c in range(L) ]
           sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = sum_c_ProbCtsum_i
-    #memo: np.vectorize or np.frompyfunc の方が処理は早い？
 
     PathWeightMap = CostMapProb * PostProbMap
-    #* [ [PostProbXt([i,j], THETA) for j in range(map_width)] for i in range(map_length) ]
-    #np.frompyfunc(PostProbXt, [i,j], S_Nbest, THETA)(costmap)
-    #[ [costmap[i][j] for j in range(map_width)] for i in range(map_length) ]
-
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
     PathWeight_NOzero = PathWeight[PathWeightMap!=0.0]
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
-    Map_index = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
-    #Map_index_one = np.ravel(Map_index)
-    Map_index_one_NOzero = Map_index[PathWeightMap!=0.0]
-   
+    IndexMap = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
+    #IndexMap_one = np.ravel(IndexMap)
+    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0]
+
+    #ROSの座標系の現在位置を2次元配列のインデックスにする
+    X_init_index = Map_coordinates_To_Array_index(X_init)
+
+    #移動先候補のインデックス座標のリスト
+    MoveIndex_list = np.round(MovePosition(X_init_index))
+
     #状態遷移確率(動作モデル)の計算
-    Transition = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
+    TransitionMap = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
     if (Dynamics == 1):
-      Transition = []
+      TransitionMap = []
     elif (Dynamics == 0):
-      Transition = []
+      TransitionMap = []
 
     #Transition_one = np.ravel(Transition)
-    Transition_one_NOzero = Transition[PathWeightMap!=0.0]
+    Transition_one_NOzero = TransitionMap[PathWeightMap!=0.0]
 
-
-    X_init_index = Map_coordinates_To_Array_index(X_init)
-    Path_one = ViterbiPath(X_init_index, np.log(PathWeight_NOzero), np.log(TransTransition_one_NOzeroition))
+    #1次元配列上の初期位置
+    try:
+      X_init_index_one = IndexMap_one_NOzero.tolist().index(X_init_index.tolist())  #np.arrayでは2次元配列のインデックスが取得できなかった
+    except IndexError:
+      print "The initial position is not a movable position on the map."
+      print X_init, X_init_index
+      X_init_index_one = 0
+    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_NOzero), np.log(TransTransition_one_NOzeroition))
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
-    Path_index = [ Map_index_one_NOzero[Path_one[i]] for i in range(len(Path_one)) ]
+    Path_index = [ IndexMap_one_NOzero[Path_one[i]] for i in range(len(Path_one)) ]
     Path_ROS = Array_index_To_Map_coordinates(Path_index)
 
     Path = Path_ROS #必要な方をPathとして返す
@@ -336,11 +368,11 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
 """
 #あるXtにおける軌道の事後確率(重み)の計算 [状態遷移確率(動作モデル)以外]
-def PostProbXt(X, myu, sig):
+def PostProbXt(X, Mu, sig):
     PostProb = 0.0
     print X
     #事前計算できるものはしておく
-    PostProb = multivariate_normal.pdf(X, mean=myu, cov=sig)
+    PostProb = multivariate_normal.pdf(X, mean=Mu, cov=sig)
 
     #パスの推定の計算
     for t in range(T_horizon):
@@ -354,6 +386,16 @@ def PostProbXt(X, myu, sig):
 
     return PostProb
 """
+
+#移動位置の候補を現在の位置(2次元配列のインデックス)とロボットの移動量から計算
+def MovePosition(Xt):
+    PostPosition_list = []
+    for i in range(1, 360):
+      theta = math.radians(i)
+      PostPosition = np.array(Xt) + [np.cos(theta)*cmd_vel, np.sin(theta)*cmd_vel]
+      PostPosition_list += [PostPosition]
+    return PostPosition_list
+
 
 #Viterbi Path計算用関数(参考：https://qiita.com/kkdd/items/6cbd949d03bc56e33e8e)
 def update(cost, trans, emiss):
@@ -375,29 +417,34 @@ def emission(Transition):
 #ViterbiPathを計算してPath(軌道)を返す
 def ViterbiPath(X_init, PathWeigh, Transition):
     #Path = [[0,0] for t in range(T_horizon)]  #各tにおけるセル番号[x,y]
+    print "Start Viterbi"
     Xt = X_init #自己位置の初期化
 
     COST, INDEX = range(2)  #0,1
     INITIAL = (0, 0)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
 
     #nstates = [1] + [len(PathWeigh) for i in range(T_horizon)] #[1,2,4,4,2,1] #ステップごとの状態数
+    nstates = [1] + [2,4,4,2,3] + [1] #初期位置は一意に与えられる #最後の遷移確率は一様にすればよいはず
     cost = [INITIAL] # for i in range(nstates[0])]
     trellis = []
+
+    #Forward
     for i in range(1, T_horizon+1):  #len(nstates)):
         e = emission(PathWeigh) #PathWeigh #emission(nstates[i])
-        m = transition(Transition) #Transition #transition(nstates[i-1], nstates[i])
+        m = transition(Transition) #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
+        #今、想定している位置から隣接する8セルのみの遷移を考えるようにすればよい
         cost = [update(cost, t, f) for t, f in zip(m, e)]
         trellis.append(cost)
         #print(f'{i}.', [c[INDEX] for c in cost])
-        print (i, [c[INDEX] for c in cost])
+        print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
 
-    path = [0] #初期インデックスにすればよい？
+    #Backward
+    path = [0]  #最終的にいらないが計算上必要
     for x in reversed(trellis):
         path = [x[path[0]][INDEX]] + path
+        print "x", len(x), x
 
-    #print(f'minimum_cost_path = {path}')
-    print('minimum_cost_path = ',path)
-
+    print 'maximum_cost_path = ', path[1:len(path)-1]
     return path
 
 #推定されたパスを（トピックかサービスで）送る
@@ -418,7 +465,6 @@ def SavePath(X_init, Path, outputname):
         #f.write('\n')
     f.close()
 
-    
 
 #パス計算のために使用した確率値マップを（トピックかサービスで）送る
 #def SendProbMap(PathWeightMap):
@@ -610,7 +656,7 @@ if __name__ == '__main__':
 
     #学習済みパラメータの読み込み
     THETA = ReadParameters(particle_num, filename)
-    #THETA = [W,W_index,Myu,Sig,pi,phi_l,K,L]
+    #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     W_index = THETA[1]
     
     ##単語辞書登録
