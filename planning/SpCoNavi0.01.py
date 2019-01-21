@@ -2,13 +2,16 @@
 
 ##############################################
 # SpCoNavi: Path Planning Program (作成中)
-# Akira Taniguchi 2018/12/13-2019/1/18
+# Akira Taniguchi 2018/12/13-2019/1/21
 ##############################################
 
 ##########---遂行タスク---##########
 #PathPlanner
 #ViterbiPath
+
 ##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
+##配列はlistかnumpy.arrayかを注意
+##地図が大きいとメモリを大量に消費する・処理が重くなる恐れがある
 
 ##########---作業終了タスク---##########
 #文字コードをsjis -> sjisのままにした
@@ -248,7 +251,7 @@ def Motion_Model_Odometry(xt,ut,xt_1):
 
     return p1*p2*p3
 
-#オドメトリ動作モデル(確率ロボティクスp.122) #角度は考慮せず、移動量に応じて確率が決まる(ドーナツ型分布)
+#オドメトリ動作モデル(簡略版) #角度は考慮せず、移動量に応じて確率が決まる(ドーナツ型分布)
 def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
     #ut = (xt_1_bar, xt_bar), xt_1_bar = (x_bar, y_bar), xt_bar = (x_dash_bar, y_dash_bar)
     #utは相対的な位置関係で良い
@@ -258,29 +261,35 @@ def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
     #x_dash_bar, y_dash_bar = xt_bar
     #x_bar, y_bar = xt_1_bar
 
-    delta_rot1  = 0 #atan2(y_dash_bar - y_bar, x_dash_bar - x_bar) - theta_bar
+    #delta_rot1  = 0 #atan2(y_dash_bar - y_bar, x_dash_bar - x_bar) - theta_bar
     delta_trans = cmd_vel #sqrt( (x_dash_bar - x_bar)**2 + (y_dash_bar - y_bar)**2 )
-    delta_rot2  = 0 #theta_dash_bar - theta_bar - delta_rot1
+    #delta_rot2  = 0 #theta_dash_bar - theta_bar - delta_rot1
 
-    delta_rot1_hat  = 0 #atan2(y_dash - y, x_dash - x) - theta
+    #delta_rot1_hat  = 0 #atan2(y_dash - y, x_dash - x) - theta
     delta_trans_hat = sqrt( (x_dash - x)**2 + (y_dash - y)**2 )
-    delta_rot2_hat  = 0 #theta_dash - theta - delta_rot1_hat
+    #delta_rot2_hat  = 0 #theta_dash - theta - delta_rot1_hat
 
-    if (MotionModelDist == "Gauss"):
-      #p1 = multivariate_normal.pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat**2) + odom_alpha2*(delta_trans_hat**2))
-      p2 = multivariate_normal.pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat**2) + odom_alpha4*(delta_rot1_hat**2+delta_rot2_hat**2))
-      #p3 = multivariate_normal.pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat**2) + odom_alpha2*(delta_trans_hat**2))
-    elif (MotionModelDist == "Triangular"):
-      #p1 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot1 - delta_rot1_hat), 0, odom_alpha1*(delta_rot1_hat**2) + odom_alpha2*(delta_trans_hat**2))
-      p2 = Prob_Triangular_distribution_pdf(delta_trans - delta_trans_hat, 0, odom_alpha3*(delta_trans_hat**2) + odom_alpha4*(delta_rot1_hat**2+delta_rot2_hat**2))
-      #p3 = Prob_Triangular_distribution_pdf(pi_2_pi(delta_rot2 - delta_rot2_hat), 0, odom_alpha1*(delta_rot2_hat**2) + odom_alpha2*(delta_trans_hat**2))
-    
+    #p1 = Motion_Model_Prob(pi_2_pi(delta_rot1 - delta_rot1_hat), odom_alpha1*(delta_rot1_hat**2) + odom_alpha2*(delta_trans_hat**2))
+    p2 = Motion_Model_Prob( delta_trans - delta_trans_hat, odom_alpha3*(delta_trans_hat**2) )# + odom_alpha4*(delta_rot1_hat**2+delta_rot2_hat**2))
+    #p3 = Motion_Model_Prob(pi_2_pi(delta_rot2 - delta_rot2_hat), odom_alpha1*(delta_rot2_hat**2) + odom_alpha2*(delta_trans_hat**2))
+
     return p2  #p1*p2*p3
+
+#動作モデル(独自) #角度は考慮せず、移動先位置に応じて確率が決まる(ガウス分布)
+def Motion_Model_Original(xt,ut,xt_1):
+    xt = np.array(xt)
+    ut = np.array(ut)
+    xt_1 = np.array(xt_1)
+    dist = np.sum((xt-xt_1)**2)
+    #p = Motion_Model_Prob( xt - (xt_1+ut), np.diag([odom_alpha3*dist for i in range(len(xt))]) )
+    px = Motion_Model_Prob( xt[0] - (xt_1[0]+ut[0]), odom_alpha3*dist )
+    py = Motion_Model_Prob( xt[1] - (xt_1[1]+ut[1]), odom_alpha3*dist )
+    return px*py
 
 #ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
-    Index = np.array( (X - origin) / resolution ).astype(int)
+    Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     #Index = np.array([0,0])
     #Index[0] = ( (X[0] - origin[0]) / resolution ).astype(int)
     #Index[1] = ( (X[1] - origin[1]) / resolution ).astype(int)
@@ -325,7 +334,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
-    PathWeight_NOzero = PathWeight[PathWeightMap!=0.0]
+    PathWeight_one_NOzero = PathWeight[PathWeightMap!=0.0]
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
     IndexMap = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
@@ -333,20 +342,33 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0]
 
     #ROSの座標系の現在位置を2次元配列のインデックスにする
-    X_init_index = Map_coordinates_To_Array_index(X_init)
+    X_init_index = X_init ###TEST  #Map_coordinates_To_Array_index(X_init)
 
-    #移動先候補のインデックス座標のリスト
-    MoveIndex_list = np.round(MovePosition(X_init_index))
+    #移動先候補のインデックス座標のリスト(相対座標)
+    MoveIndex_list = MovePosition_2D([0,0]) #.tolist()
+    #MoveIndex_list = np.round(MovePosition(X_init_index)).astype(int)
 
     #状態遷移確率(動作モデル)の計算
-    TransitionMap = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
-    if (Dynamics == 1):
-      TransitionMap = []
-    elif (Dynamics == 0):
-      TransitionMap = []
+    #TransitionMap = np.array([[0.0 for j in range(map_width)] for i in range(map_length)])
+    Transition = np.array([[0.0 for m in range(len(PathWeight_one_NOzero))] for n in range(len(PathWeight_one_NOzero))]) 
+    #後の処理のためにnumpyにしない(?)
+
+    for n in range(len(Transition)):
+      Index_2D = IndexMap_one_NOzero[n] #.tolist()
+      MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
+      for c in MoveIndex_list_n.tolist():
+        try:
+          m = IndexMap_one_NOzero.tolist().index(c)  #cは移動可能な状態(セル)とは限らない
+          Transition[n][m] = 1.0
+        except IndexError:
+          m = 0
+        #if (Index_2D.tolist() == m):
+
+    #IndexMap_one_NOzero内の2次元配列上のインデックスと一致した要素のみ確率1を持つようにする
+    #Transition = MovePosition_2D([i,j])
 
     #Transition_one = np.ravel(Transition)
-    Transition_one_NOzero = TransitionMap[PathWeightMap!=0.0]
+    Transition_one_NOzero = Transition #[PathWeightMap!=0.0]
 
     #1次元配列上の初期位置
     try:
@@ -355,7 +377,8 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
       print "The initial position is not a movable position on the map."
       print X_init, X_init_index
       X_init_index_one = 0
-    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_NOzero), np.log(TransTransition_one_NOzeroition))
+
+    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), np.log(Transition_one_NOzero))
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_index = [ IndexMap_one_NOzero[Path_one[i]] for i in range(len(Path_one)) ]
@@ -364,6 +387,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     Path = Path_ROS #必要な方をPathとして返す
     #ROSのパスの形式にできればなおよい
 
+    print "Path:", Path
     return Path, PathWeightMap
 
 """
@@ -387,6 +411,7 @@ def PostProbXt(X, Mu, sig):
     return PostProb
 """
 
+"""
 #移動位置の候補を現在の位置(2次元配列のインデックス)とロボットの移動量から計算
 def MovePosition(Xt):
     PostPosition_list = []
@@ -394,6 +419,12 @@ def MovePosition(Xt):
       theta = math.radians(i)
       PostPosition = np.array(Xt) + [np.cos(theta)*cmd_vel, np.sin(theta)*cmd_vel]
       PostPosition_list += [PostPosition]
+    return PostPosition_list
+"""
+
+#移動位置の候補：現在の位置(2次元配列のインデックス)の近傍8セル+現在位置1セル
+def MovePosition_2D(Xt): 
+    PostPosition_list = np.array([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,0], [0,1], [1,-1],[1,0],[1,1] ]) + np.array(Xt)
     return PostPosition_list
 
 
@@ -406,36 +437,33 @@ def update(cost, trans, emiss):
     return max_arr + emiss, arr.index(max_arr)
 
 #とある状態xtにおける遷移確率0の配列要素は除く?
-def transition(PathWeigh):
-    
-    return PathWeigh #[[random.random() for i in range(m)] for j in range(n)]
+def transition(m, n):
+    return [[1.0 for i in range(m)] for j in range(n)]
 
-def emission(Transition):
-    
-    return Transition #[random.random() for j in range(n)]
+def emission(n):
+    return [random.random() for j in range(n)]
 
 #ViterbiPathを計算してPath(軌道)を返す
 def ViterbiPath(X_init, PathWeigh, Transition):
     #Path = [[0,0] for t in range(T_horizon)]  #各tにおけるセル番号[x,y]
     print "Start Viterbi"
-    Xt = X_init #自己位置の初期化
+    #Xt = X_init #自己位置の初期化
 
     COST, INDEX = range(2)  #0,1
-    INITIAL = (0, 0)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
+    INITIAL = (0, X_init)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
 
-    #nstates = [1] + [len(PathWeigh) for i in range(T_horizon)] #[1,2,4,4,2,1] #ステップごとの状態数
-    nstates = [1] + [2,4,4,2,3] + [1] #初期位置は一意に与えられる #最後の遷移確率は一様にすればよいはず
+    #nstates = [1] + [len(Transition[i]) for i in range(T_horizon)] + [1] #[1,2,4,4,2,1] #ステップごとの状態数
+    #nstates = [1] + [2,4,4,2,3] + [1] #初期位置は一意に与えられる #最後の遷移確率は一様にすればよいはず
     cost = [INITIAL] # for i in range(nstates[0])]
-    trellis = []
+    trellis = [INITIAL]
 
     #Forward
-    for i in range(1, T_horizon+1):  #len(nstates)):
-        e = emission(PathWeigh) #PathWeigh #emission(nstates[i])
-        m = transition(Transition) #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
-        #今、想定している位置から隣接する8セルのみの遷移を考えるようにすればよい
+    for i in range(1, T_horizon+1+1):  #len(nstates)): #計画区間まで1セルずつ移動していく
+        e = PathWeigh #emission(PathWeigh)  #emission(nstates[i])
+        m = Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
+        #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
         cost = [update(cost, t, f) for t, f in zip(m, e)]
         trellis.append(cost)
-        #print(f'{i}.', [c[INDEX] for c in cost])
         print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
 
     #Backward
@@ -444,7 +472,7 @@ def ViterbiPath(X_init, PathWeigh, Transition):
         path = [x[path[0]][INDEX]] + path
         print "x", len(x), x
 
-    print 'maximum_cost_path = ', path[1:len(path)-1]
+    print 'maximum_cost_path = ', path #[1:len(path)-1]
     return path
 
 #推定されたパスを（トピックかサービスで）送る

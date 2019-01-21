@@ -1,6 +1,6 @@
 #coding:utf-8
-#This file for setting parameters
-#Akira Taniguchi 2018/12/13-
+#The file for setting parameters
+#Akira Taniguchi 2018/12/13-2019/01/21
 import numpy as np
 
 #################### Folder PATH ####################
@@ -22,23 +22,22 @@ navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder 
 costmap_folder = navigation_folder
 
 
-
 #################### Parameters ####################
-T_horizon = 50     #計画区間(予測ホライズン)
+T_horizon = 100     #計画区間(予測ホライズン)
 N_best    = 10     #N of N-best (N<=10)
-NbestNum = N_best      #N of N-best (N<=10)
-N_best_number = N_best #N of N-best (N<=10) for PRR
+#NbestNum = N_best      #N of N-best (N<=10)
+#N_best_number = N_best #N of N-best (N<=10) for PRR
 
 step = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
 
 #自己位置の初期値(候補：目的地以外の理想的な位置分布のデータ平均)
-X_candidates = []
+X_candidates = [590, 340] ###TEST #340,590 (VR340)
 
-#近似手法の選択(Proposed:0, samplingCtit:1, xの次元削減とか...)
+#近似手法の選択(Proposed:0, samplingCtit:1(未実装), xの次元削減とか...(未実装))
 Approx = 0
 
-#状態遷移のダイナミクス(動作モデル)の仮定(確率的:1, 近似:2, 決定的:0)
-Dynamics = 1
+#状態遷移のダイナミクス(動作モデル)の仮定(決定的:0, 確率的:1, 近似:2(未実装))
+Dynamics = 0
 
 cmd_vel = 1  #ロボットの移動量(ROSではcmd_vel [m/s], [rad/s])
 MotionModelDist = "Gauss"  #"Gauss"：ガウス分布、"Triangular":三角分布
@@ -56,6 +55,7 @@ odom_alpha4 = 0.2  #(ダブル、デフォルト：0.2) ロボットの動きの
 #ROSのトピック名
 MAP_TOPIC     = "/map"
 COSTMAP_TOPIC = "/move_base/global_costmap/costmap"
+#PATH_TOPIC = "/spconavi/path"
 
 #地図のyamlファイルと同じ値にする
 resolution = 0.050000
@@ -81,7 +81,8 @@ else:
 if (HMMtype == "DNN"):
   lang_init = 'syllableDNN.htkdic' 
 else:
-  lang_init = 'syllableGMM.htkdic' # 'trueword_syllable.htkdic' #'phonemes.htkdic' # 初期の単語辞書(./lang_mフォルダ内)
+  lang_init = 'syllableGMM.htkdic' 
+  # 'trueword_syllable.htkdic' #'phonemes.htkdic' # 初期の単語辞書(./lang_mフォルダ内)
 
 dimx = 2           #The number of dimensions of xt (x,y)
 margin = 10*0.05   #地図のグリッドと位置の値の関係が不明のため(0.05m/grid)*margin(grid)=0.05*margin(m)
