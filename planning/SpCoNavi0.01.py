@@ -1,20 +1,20 @@
 #coding:utf-8
 
-##############################################
-# SpCoNavi: Path Planning Program (作成中)
+###########################################################
+# SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
 # Akira Taniguchi 2018/12/13-2019/1/21
-##############################################
+###########################################################
 
 ##########---遂行タスク---##########
-#PathPlanner
-#ViterbiPath
+#テスト実行・デバッグ
 
+##########---作業終了タスク---##########
+##文字コードをsjis -> sjisのままにした
 ##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
 ##配列はlistかnumpy.arrayかを注意
 ##地図が大きいとメモリを大量に消費する・処理が重くなる恐れがある
+##状態遷移確率(動作モデル)は確定モデルで近似計算する
 
-##########---作業終了タスク---##########
-#文字コードをsjis -> sjisのままにした
 ###未確認
 #ReadParameters
 #ReadSpeech
@@ -28,10 +28,14 @@
 #Prob_Triangular_distribution_pdf
 #Motion_Model_Odometry
 #Motion_Model_Odometry_No_theta
+#PathPlanner
+#ViterbiPath
 
 ###確認済み
 
 ##########---保留---##########
+#状態数削減のための近似手法の実装
+#状態遷移確率(動作モデル)を確率モデルで計算する実装
 #SendPath
 #SendProbMap
 #PathDistance
@@ -331,6 +335,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
           PostProbMap[length][width] = sum_c_ProbCtsum_i
 
     PathWeightMap = CostMapProb * PostProbMap
+    print "[Done] PathWeightMap."
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
@@ -353,6 +358,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     Transition = np.array([[0.0 for m in range(len(PathWeight_one_NOzero))] for n in range(len(PathWeight_one_NOzero))]) 
     #後の処理のためにnumpyにしない(?)
 
+    #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
     for n in range(len(Transition)):
       Index_2D = IndexMap_one_NOzero[n] #.tolist()
       MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
@@ -369,6 +375,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
     #Transition_one = np.ravel(Transition)
     Transition_one_NOzero = Transition #[PathWeightMap!=0.0]
+    print "[Done] Transition distribution."
 
     #1次元配列上の初期位置
     try:
@@ -437,42 +444,48 @@ def update(cost, trans, emiss):
     return max_arr + emiss, arr.index(max_arr)
 
 #とある状態xtにおける遷移確率0の配列要素は除く?
-def transition(m, n):
-    return [[1.0 for i in range(m)] for j in range(n)]
+#def transition(m, n):
+#    return [[1.0 for i in range(m)] for j in range(n)]
 
-def emission(n):
-    return [random.random() for j in range(n)]
+#def emission(n):
+#    return [random.random() for j in range(n)]
 
 #ViterbiPathを計算してPath(軌道)を返す
-def ViterbiPath(X_init, PathWeigh, Transition):
+def ViterbiPath(X_init, PathWeight, Transition):
     #Path = [[0,0] for t in range(T_horizon)]  #各tにおけるセル番号[x,y]
-    print "Start Viterbi"
+    print "Start Viterbi Algorithm"
     #Xt = X_init #自己位置の初期化
 
     COST, INDEX = range(2)  #0,1
     INITIAL = (0, X_init)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
+    print "Initial:",X_init
 
     #nstates = [1] + [len(Transition[i]) for i in range(T_horizon)] + [1] #[1,2,4,4,2,1] #ステップごとの状態数
     #nstates = [1] + [2,4,4,2,3] + [1] #初期位置は一意に与えられる #最後の遷移確率は一様にすればよいはず
-    cost = [INITIAL] # for i in range(nstates[0])]
-    trellis = [INITIAL]
+    cost = [INITIAL for i in range(len(PathWeight))] # for i in range(nstates[0])]
+    trellis = []
 
     #Forward
-    for i in range(1, T_horizon+1+1):  #len(nstates)): #計画区間まで1セルずつ移動していく
+    print "Forward"
+    for i in range(1, T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
         e = PathWeigh #emission(PathWeigh)  #emission(nstates[i])
         m = Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
-        #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
+        
         cost = [update(cost, t, f) for t, f in zip(m, e)]
         trellis.append(cost)
-        print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
+        #print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
 
     #Backward
-    path = [0]  #最終的にいらないが計算上必要
+    print "Backward"
+    last = [trellis[-1][i][0] for i in range(len(trellis[-1]))]
+    path = [last.index(max(last))] #[0]  #最終的にいらないが計算上必要⇒最後のノードの最大値インデックスを保持
+    #print "last",last,"max",path
+
     for x in reversed(trellis):
         path = [x[path[0]][INDEX]] + path
-        print "x", len(x), x
+        #print "x", len(x), x
 
-    print 'maximum_cost_path = ', path #[1:len(path)-1]
+    print 'Maximum cost path:', path #[1:len(path)-1]
     return path
 
 #推定されたパスを（トピックかサービスで）送る
@@ -648,7 +661,8 @@ def PathDistance(PathWeightMap):
 """
 
 ########################################
-if __name__ == '__main__':    
+if __name__ == '__main__': 
+    print "[START] SpCoNavi."
     #学習済みパラメータフォルダ名を要求
     trialname = sys.argv[1]
     #print trialname
@@ -738,6 +752,7 @@ if __name__ == '__main__':
     #SendProbMap(PathWeightMap)
     #確率値マップを保存
     SaveProbMap(PathWeightMap, outputname)
+    print "[END] SpCoNavi."
 
 
 ########################################

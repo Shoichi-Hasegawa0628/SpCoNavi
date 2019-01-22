@@ -1,8 +1,9 @@
-�yFolder�z
-/sankou/: ���������ŎQ�l�ɂ�������܂ł̃v���O����
-/torioki/: ��肩���E���g�p�E�o�b�N�A�b�v�̃t�@�C���t�H���_
+【Folder】
+/lang_m/: Juliusの単語辞書(日本語音節辞書)用フォルダ
+/sankou/: 実装する上で参考にしたこれまでのプログラム
+/torioki/: 作りかけ・未使用・バックアップのファイルフォルダ
 
 
-�yFiles�z
-Google�h�L�������g�Q��
+【Files】
+Googleドキュメント参照
 

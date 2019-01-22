@@ -3,8 +3,6 @@
 #コストマップを読み込む⇒ファイル書き込み
 #ROS対応：マップとコストマップのトピックを受け取り、ファイル書き込み
 #参考：spco_mapping-master/src/learning.py 
-#      made by       Yuki Katsumata   2018.1.15
-#      edited by     Ryo Ozaki        2018.2.7
 
 import sys
 import numpy as np
