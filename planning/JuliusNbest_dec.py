@@ -49,7 +49,7 @@ def RecogNbest( wavfile, step, trialname ):
         JuliusCMD = Juliusfolder + binfolder + " -C " + Juliusfolder + "syllable.jconf -C " + Juliusfolder + "am-gmm.jconf -v " + datafolder + trialname + "/" + str(step) + "/WDnavi.htkdic -demo -filelist "+ datafolder + trialname + "/tmp/" + trialname + "/list.txt -output " + str(N_best+1)
 
     p = os.popen( JuliusCMD )
-    print "Julius", JuliusVer, HMMtype, "Read dic: " + str(step), "N: " + N_best
+    print "Julius", JuliusVer, HMMtype, "Read dic: " + str(step), "N: " + str(N_best)
 
     startWordGraphData = False
     wordGraphData = []
@@ -73,7 +73,7 @@ def RecogNbest( wavfile, step, trialname ):
 
                 #wordData = wordData.decode("sjis")
                 wordData = wordData.decode("sjis")
-                print n,wordData
+                #####print n,wordData
                 
                 if ( (n == 1) and (len(wordGraphData) == 0) ):
                   wordGraphData.append(wordData)

@@ -34,7 +34,7 @@ step = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示�
 X_candidates = [590, 340] ###TEST #(VR340)
 
 #近似手法の選択(Proposed:0, samplingCtit:1(未実装), xの次元削減とか...(未実装))
-#Approx = 0
+Approx = 0
 
 #状態遷移のダイナミクス(動作モデル)の仮定(確定的:0, 確率的:1, 近似:2(未実装))
 #Dynamics = 0

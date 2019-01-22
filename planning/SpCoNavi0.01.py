@@ -7,7 +7,7 @@
 
 ##########---遂行タスク---##########
 #テスト実行・デバッグ
-
+#range() -> xrange()
 ##########---作業終了タスク---##########
 ##文字コードをsjis -> sjisのままにした
 ##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
@@ -70,14 +70,14 @@ from submodules import *
 #マップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
-    gridmap = np.loadtxt(outputfile + "map.csv")
+    gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print "Read map: " + outputfile + "map.csv"
     return gridmap
 
 #コストマップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
-    costmap = np.loadtxt(outputfile + "contmap.csv")
+    costmap = np.loadtxt(outputfile + "costmap.csv", delimiter=",")
     print "Read costmap: " + outputfile + "contmap.csv"
     return costmap
 
@@ -102,13 +102,13 @@ def ReadParameters(particle_num, filename):
     for line in open(filename + 'W_list' + str(r) + '.csv', 'r'): 
         itemList = line[:-1].split(',')
         if(i == 0):
-            for j in range(len(itemList)):
+            for j in xrange(len(itemList)):
               if (itemList[j] != ""):
                 W_index = W_index + [itemList[j]]
         i = i + 1
     
     #####パラメータW、μ、Σ、φ、πを入力する#####
-    Mu   = [ np.array([[ 0.0 ],[ 0.0 ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
+    Mu   = [ np.array([ 0.0, 0.0 ]) for i in xrange(K) ]  #[ np.array([[ 0.0 ],[ 0.0 ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
     Sig   = [ np.array([ [0.0, 0.0],[0.0, 0.0] ]) for i in xrange(K) ]      #位置分布の共分散(2×2次元)[K]
     W     = [ [0.0 for j in xrange(len(W_index))] for c in xrange(L) ]  #場所の名前(多項分布：W_index次元)[L]
     #theta = [ [0.0 for j in xrange(DimImg)] for c in xrange(L) ] 
@@ -119,7 +119,8 @@ def ReadParameters(particle_num, filename):
     ##Muの読み込み
     for line in open(filename + 'mu' + str(r) + '.csv', 'r'):
         itemList = line[:-1].split(',')
-        Mu[i] = np.array([[ float(itemList[0]) ],[ float(itemList[1]) ]])
+        Mu[i] = np.array([ float(itemList[0]) , float(itemList[1]) ])
+        #Mu[i] = np.array([[ float(itemList[0]) ],[ float(itemList[1]) ]])
         i = i + 1
       
     i = 0
@@ -186,9 +187,11 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
     ##学習した単語辞書を用いて音声認識し、BoWを得る
     St = RecogNbest( speech_file, step, trialname )
     #print St
-    Otb_B = [0 for i in xrange(len(W_index))] #[[] for j in range(len(St))]
-    for j in range(len(St)):
-      for i in range(5):
+    Otb_B = [0 for i in xrange(len(W_index))] #[[] for j in xrange(len(St))]
+    for j in xrange(len(St)):
+      for i in xrange(5):
+              St[j] = St[j].replace("<s>", "")
+              St[j] = St[j].replace("</s>", "")
               St[j] = St[j].replace(" <s> ", "")
               St[j] = St[j].replace("<sp>", "")
               St[j] = St[j].replace(" </s>", "")
@@ -208,7 +211,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
 
     # 認識結果をファイル保存
     f = open( outputname + "_St.csv" , "w") # , "sjis" )
-    for i in range(len(St)):
+    for i in xrange(len(St)):
         f.write(St[i].encode('sjis'))
         f.write('\n')
     f.close()
@@ -285,7 +288,7 @@ def Motion_Model_Original(xt,ut,xt_1):
     ut = np.array(ut)
     xt_1 = np.array(xt_1)
     dist = np.sum((xt-xt_1)**2)
-    #p = Motion_Model_Prob( xt - (xt_1+ut), np.diag([odom_alpha3*dist for i in range(len(xt))]) )
+    #p = Motion_Model_Prob( xt - (xt_1+ut), np.diag([odom_alpha3*dist for i in xrange(len(xt))]) )
     px = Motion_Model_Prob( xt[0] - (xt_1[0]+ut[0]), odom_alpha3*dist )
     py = Motion_Model_Prob( xt[1] - (xt_1[1]+ut[1]), odom_alpha3*dist )
     return px*py
@@ -316,7 +319,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     map_width  = len(costmap[0])
 
     #事前計算できるものはしておく
-    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in range(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
     
     #コストマップを確率の形にする
     CostMapProb = (100.0 - costmap) /100.0
@@ -326,11 +329,12 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
     #愚直な実装(for文の多用)
     #memo: np.vectorize or np.frompyfunc の方が処理は早い？    
-    for length in range(map_length):
-      for width in range(map_width):
+    for length in xrange(map_length):
+      for width in xrange(map_width):
         if (gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
           X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
-          sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in range(K)]) for c in range(L) ]
+          #print X_temp,Mu
+          sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
           sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = sum_c_ProbCtsum_i
 
@@ -339,10 +343,10 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
-    PathWeight_one_NOzero = PathWeight[PathWeightMap!=0.0]
+    PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=0.0]
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
-    IndexMap = np.array([[(i,j) for j in range(map_width)] for i in range(map_length)])
+    IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
     #IndexMap_one = np.ravel(IndexMap)
     IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0]
 
@@ -354,12 +358,12 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     #MoveIndex_list = np.round(MovePosition(X_init_index)).astype(int)
 
     #状態遷移確率(動作モデル)の計算
-    #TransitionMap = np.array([[0.0 for j in range(map_width)] for i in range(map_length)])
-    Transition = np.array([[0.0 for m in range(len(PathWeight_one_NOzero))] for n in range(len(PathWeight_one_NOzero))]) 
+    #TransitionMap = np.array([[0.0 for j in xrange(map_width)] for i in xrange(map_length)])
+    Transition = np.array([[0.0 for m in xrange(len(PathWeight_one_NOzero))] for n in xrange(len(PathWeight_one_NOzero))]) 
     #後の処理のためにnumpyにしない(?)
 
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
-    for n in range(len(Transition)):
+    for n in xrange(len(Transition)):
       Index_2D = IndexMap_one_NOzero[n] #.tolist()
       MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
       for c in MoveIndex_list_n.tolist():
@@ -388,7 +392,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), np.log(Transition_one_NOzero))
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
-    Path_index = [ IndexMap_one_NOzero[Path_one[i]] for i in range(len(Path_one)) ]
+    Path_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
     Path_ROS = Array_index_To_Map_coordinates(Path_index)
 
     Path = Path_ROS #必要な方をPathとして返す
@@ -406,11 +410,11 @@ def PostProbXt(X, Mu, sig):
     PostProb = multivariate_normal.pdf(X, mean=Mu, cov=sig)
 
     #パスの推定の計算
-    for t in range(T_horizon):
+    for t in xrange(T_horizon):
         print "time:", t
         #if (Dynamics == 1):
-        for i in range(map_length):
-          for j in range(map_width):
+        for i in xrange(map_length):
+          for j in xrange(map_width):
             if (costmap[i][j] != 0):
               PathWeightMap[i][j] = PathWeightMap[i][j] #* PostProbXt([i,j], S_Nbest, THETA)
         #elif (Dynamics == 0):
@@ -422,7 +426,7 @@ def PostProbXt(X, Mu, sig):
 #移動位置の候補を現在の位置(2次元配列のインデックス)とロボットの移動量から計算
 def MovePosition(Xt):
     PostPosition_list = []
-    for i in range(1, 360):
+    for i in xrange(1, 360):
       theta = math.radians(i)
       PostPosition = np.array(Xt) + [np.cos(theta)*cmd_vel, np.sin(theta)*cmd_vel]
       PostPosition_list += [PostPosition]
@@ -445,14 +449,14 @@ def update(cost, trans, emiss):
 
 #とある状態xtにおける遷移確率0の配列要素は除く?
 #def transition(m, n):
-#    return [[1.0 for i in range(m)] for j in range(n)]
+#    return [[1.0 for i in xrange(m)] for j in xrange(n)]
 
 #def emission(n):
-#    return [random.random() for j in range(n)]
+#    return [random.random() for j in xrange(n)]
 
 #ViterbiPathを計算してPath(軌道)を返す
 def ViterbiPath(X_init, PathWeight, Transition):
-    #Path = [[0,0] for t in range(T_horizon)]  #各tにおけるセル番号[x,y]
+    #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
     print "Start Viterbi Algorithm"
     #Xt = X_init #自己位置の初期化
 
@@ -460,14 +464,14 @@ def ViterbiPath(X_init, PathWeight, Transition):
     INITIAL = (0, X_init)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
     print "Initial:",X_init
 
-    #nstates = [1] + [len(Transition[i]) for i in range(T_horizon)] + [1] #[1,2,4,4,2,1] #ステップごとの状態数
+    #nstates = [1] + [len(Transition[i]) for i in xrange(T_horizon)] + [1] #[1,2,4,4,2,1] #ステップごとの状態数
     #nstates = [1] + [2,4,4,2,3] + [1] #初期位置は一意に与えられる #最後の遷移確率は一様にすればよいはず
-    cost = [INITIAL for i in range(len(PathWeight))] # for i in range(nstates[0])]
+    cost = [INITIAL for i in xrange(len(PathWeight))] # for i in xrange(nstates[0])]
     trellis = []
 
     #Forward
     print "Forward"
-    for i in range(1, T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
+    for i in xrange(1, T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
         e = PathWeigh #emission(PathWeigh)  #emission(nstates[i])
         m = Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
         
@@ -477,7 +481,7 @@ def ViterbiPath(X_init, PathWeight, Transition):
 
     #Backward
     print "Backward"
-    last = [trellis[-1][i][0] for i in range(len(trellis[-1]))]
+    last = [trellis[-1][i][0] for i in xrange(len(trellis[-1]))]
     path = [last.index(max(last))] #[0]  #最終的にいらないが計算上必要⇒最後のノードの最大値インデックスを保持
     #print "last",last,"max",path
 
@@ -501,7 +505,7 @@ def SavePath(X_init, Path, outputname):
 
     # 結果をファイル保存
     f = open( outputname + "_Path.csv" , "w")
-    for i in range(len(Path)):
+    for i in xrange(len(Path)):
         f.write(Path[i] + ",")
         #f.write('\n')
     f.close()
@@ -519,8 +523,8 @@ def SaveProbMap(PathWeightMap, outputname):
 
     """
     f = open( outputname + "_PathWeightMap.csv" , "w")# , "sjis" )
-    for i in range(len(PathWeightMap)):
-      for j in range(len(PathWeightMap[i])):
+    for i in xrange(len(PathWeightMap)):
+      for j in xrange(len(PathWeightMap[i])):
         f.write(PathWeightMap[i][j] + ",")
       f.write('\n')
     f.close()
@@ -588,18 +592,18 @@ def WordDictionaryUpdate2(step, filename, W_list):
                       flag_moji = 1
             print W_list_sj,hatsuon[c]
           else:
-            print W_list_sj,W_list[c] + " (one name)"
+            print W_list_sj, "(one name)" #W_list[c]
             
     print JuliusVer,HMMtype
     if (JuliusVer == "v4.4" and HMMtype == "DNN"):
       #hatsuonのすべての単語の音素表記を"*_I"にする
-      for i in range(len(hatsuon)):
+      for i in xrange(len(hatsuon)):
         hatsuon[i] = hatsuon[i].replace("_S","_I")
         hatsuon[i] = hatsuon[i].replace("_B","_I")
         hatsuon[i] = hatsuon[i].replace("_E","_I")
       
       #hatsuonの単語の先頭の音素を"*_B"にする
-      for i in range(len(hatsuon)):
+      for i in xrange(len(hatsuon)):
         #onsohyoki_index = onsohyoki.find(target)
         hatsuon[i] = hatsuon[i].replace("_I","_B", 1)
         
@@ -677,9 +681,12 @@ if __name__ == '__main__':
     #音声命令のファイル番号を要求   
     speech_num = sys.argv[4] #0
 
+    i = 0
     #重みファイルを読み込み
     for line in open(datafolder + trialname + '/'+ str(step) + '/weights.csv', 'r'):   ##読み込む
+        if (i == 0):
           MAX_Samp = int(line)
+          i += 1
     #最大尤度のパーティクル番号を保存
     particle_num = MAX_Samp
 
@@ -690,7 +697,7 @@ if __name__ == '__main__':
     filename = datafolder + trialname + "/" + str(step) +"/"
     print filename, particle_num
     outputfile = outputfolder + trialname + navigation_folder
-    outputname = outputfile + "T"+T_horizon+"N"+N_best+"A"+Approx+"S"+init_position_num+"G"+speech_num
+    outputname = outputfile + "T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
 
     #Makedir( outputfolder + trialname )
     Makedir( outputfile )
@@ -705,19 +712,19 @@ if __name__ == '__main__':
     WordDictionaryUpdate2(step, filename, W_index)     
 
     ##マップの読み込み
-    gridmap = ReadMap(outputfile, delimiter=",")
+    gridmap = ReadMap(outputfile)
     ##コストマップの読み込み
-    costmap = ReadCostMap(outputfile, delimiter=",")
+    costmap = ReadCostMap(outputfile)
 
     #音声認識開始時刻(初期化読み込み処理終了時刻)を保持
     start_recog_time = time.time()
     time_init = start_time - start_recog_time
-    fp = open( outputname + "time_init.txt", 'a')
-    fp.write(str(step)+","+str(time_init)+"\n")
+    fp = open( outputname + "time_init.txt", 'w')
+    fp.write(str(time_init)+"\n")
     fp.close()
 
     ##音声ファイルを読み込み
-    speech_file = ReadSpeech(speech_num)
+    speech_file = ReadSpeech(int(speech_num))
 
     #音声認識
     S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputname)
@@ -725,18 +732,18 @@ if __name__ == '__main__':
     #音声認識終了時刻（PP開始時刻）を保持
     end_recog_time = time.time()
     time_recog = start_recog_time - end_recog_time
-    fp = open( outputname + "time_recog.txt", 'a')
-    fp.write(str(step)+","+str(time_recog)+"\n")
+    fp = open( outputname + "time_recog.txt", 'w')
+    fp.write(str(time_recog)+"\n")
     fp.close()
 
     #パスプランニング
-    Path, PathWeightMap = PathPlanner(S_Nbest, X_candidates[init_position_num], THETA, gridmap, costmap)
+    Path, PathWeightMap = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, gridmap, costmap)
 
     #PP終了時刻を保持
     end_pp_time = time.time()
     time_pp = end_pp_time - end_recog_time
-    fp = open( outputname + "time_pp.txt", 'a')
-    fp.write(str(step)+","+str(time_pp)+"\n")
+    fp = open( outputname + "time_pp.txt", 'w')
+    fp.write(str(time_pp)+"\n")
     fp.close()
 
     #パスの移動距離
@@ -745,7 +752,7 @@ if __name__ == '__main__':
     #パスを送る
     #SendPath(Path)
     #パスを保存
-    SavePath(X_candidates[init_position_num], Path, outputname)
+    SavePath(X_candidates[int(init_position_num)], Path, outputname)
 
 
     #確率値マップを送る
