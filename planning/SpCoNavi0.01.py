@@ -2,7 +2,7 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
-# Akira Taniguchi 2018/12/13-2019/1/21
+# Akira Taniguchi 2018/12/13-2019/1/24
 ###########################################################
 
 ##########---遂行タスク---##########
@@ -318,7 +318,7 @@ def Array_index_To_Map_coordinates(Index):
     return X
 
 #@jit(nopython=True, parallel=True)
-@njit(parallel=True)
+@jit(parallel=True)
 def PostProbMap_jit(gridmap,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     PostProbMap = np.zeros((map_length,map_width))
     #愚直な実装(for文の多用)
@@ -352,9 +352,10 @@ def Transition_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
 
 #本来はlogにするが、計算上は遷移できるかできないかの２値なので0or1で表現
 #@jit(nopython=True, parallel=True)
-#@jit(parallel=True)
+@jit(parallel=True)
 def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
-    Transition = [[np.log(10**(-300)) for j in range(state_num)] for i in range(state_num)] #こちらではメモリエラーは起こらなかったnp.log(10**(-300))
+    Transition = np.zeros((state_num,state_num)) * np.log(10**(-300))
+    #Transition = [[np.log(10**(-300)) for j in range(state_num)] for i in range(state_num)] 
     #print IndexMap_one_NOzero
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
     for n in range(state_num):
@@ -441,7 +442,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     #PathWeight = np.ravel(PathWeightMap)
     PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=0.0]
     state_num = len(PathWeight_one_NOzero)
-    print "PathWeight_one_NOzero len:", state_num
+    print "PathWeight_one_NOzero state_num:", state_num
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
     IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
@@ -470,7 +471,8 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     #状態遷移確率(動作モデル)の計算
     #TransitionMap = np.array([[0.0 for j in xrange(map_width)] for i in xrange(map_length)])
     #####
-    Transition = [[0.0]*state_num]*state_num #こちらではメモリエラーは起こらなかった
+    #Transition = 
+    #[[0.0]*state_num]*state_num #こちらではメモリエラーは起こらなかった
     #np.array([[0.0 for m in xrange(len(PathWeight_one_NOzero))] for n in xrange(len(PathWeight_one_NOzero))])  ##メモリが大量に消費されてしまう！！！
     #後の処理のためにnumpyにしない(?)
     print "Please wait for Transition"
@@ -497,6 +499,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     SaveTransition(Transition, outputname)
     #"""
 
+    #####Transition = [[np.log(10**(-300)) for j in range(state_num)] for i in range(state_num)] 
     #####Transition = ReadTransition(Transition, outputname)
 
 

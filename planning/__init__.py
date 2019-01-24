@@ -23,7 +23,7 @@ costmap_folder = navigation_folder
 
 
 #################### Parameters ####################
-T_horizon = 10     #計画区間(予測ホライズン)
+T_horizon = 200     #計画区間(予測ホライズン)
 N_best    = 10     #N of N-best (N<=10)
 #NbestNum = N_best      #N of N-best (N<=10)
 #N_best_number = N_best #N of N-best (N<=10) for PRR
