@@ -427,7 +427,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
     #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２次元配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
     if (-T_horizon+X_init_index[0]>=0 and T_horizon+X_init_index[0]<=map_width and -T_horizon+X_init_index[1]>=0 and T_horizon+X_init_index[1]<=map_length):
-      PathWeightMap = PathWeightMap[-T_horizon+X_init_index[0]:T_horizon+X_init_index[0]+1, -T_horizon+X_init_index[1]:T_horizon+X_init_index[1]+1] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
+      PathWeightMap = PathWeightMap[-T_horizon+X_init_index[0]:T_horizon+X_init_index[0], -T_horizon+X_init_index[1]:T_horizon+X_init_index[1]] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
       X_init_index = [T_horizon, T_horizon]
       #再度、MAPの縦横(length and width)のセルの長さを計る
       map_length = len(PathWeightMap)

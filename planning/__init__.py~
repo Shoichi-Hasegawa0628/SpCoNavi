@@ -7,7 +7,7 @@ import numpy as np
 #Setting of PATH for a folder of learned spatial concept parameters
 datafolder    = "/home/akira/Dropbox/SpCoSLAM/data/"  #"/mnt/hgfs/D/Dropbox/SpCoSLAM/data/"
 #Setting of PATH for output folder
-outputfolder  = "/home/akira/Dropbox/SpCoSLAM/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder  = "/home/akira/Dropbox/SpCoNavi/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
 #音声ファイルフォルダ
 speech_folder    = "/home/akira/Dropbox/Julius/directory/SpCoSLAM/*.wav"    #音声の教示データフォルダ
