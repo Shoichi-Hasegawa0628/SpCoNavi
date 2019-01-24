@@ -22,6 +22,37 @@ TBA
 ## Execution procedure
 TBA  
 
+【コストマップ取得のためのコマンドリスト】  
+~~~
+(別ターミナル：起動しなくてもいい)
+roscore
+---
+(別ターミナル：環境設定は代替可能のはず)
+roslaunch turtlebot_gazebo turtlebot_world.launch
+---
+(別ターミナル)
+source ~/Dropbox/SpCoNavi/costmap_global/devel/setup.bash
+roslaunch fourth_robot_2dnav global_costmap.launch
+
+（mapファイル指定する場合）
+roslaunch fourth_robot_2dnav global_costmap.launch map_file:=my_map.yaml
+---
+(別ターミナル)
+cd ~/Dropbox/SpCoNavi/planning
+python costmap.py alg2wicWSLAG10lln008
+~~~
+
+【SpCoNaviのテスト実行コマンド】  
+~~~
+python ./SpCoNavi0.01.py alg2wicWSLAG10lln008 0 0 0
+~~~
+
+【準備コマンド】  
+~~~
+sudo pip install numba
+sudo pip install colorama
+~~~
+
 ## Notes
 TBA  
 
