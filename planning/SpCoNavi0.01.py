@@ -8,7 +8,7 @@
 ##########---遂行タスク---##########
 #テスト実行・デバッグ
 #事前計算できるものはできるだけpreprocess.pyで行ってファイル読み込みする形にする
-##(単語辞書生成、Transition、・・・)
+##(単語辞書生成、単語認識結果(N-best)、事前計算可能な確率値、Transition(T_horizonごとに保持)、・・・)
 #ViterbiPathの計算でlogを使うので最初からlogですべて計算しておく
 #Viterbiの計算処理をTransitionをそのまま使わないように変更する（ムダが多く、メモリ消費・処理時間がかかる要因）
 #状態数の削減
@@ -21,7 +21,8 @@
 ##地図が大きいとメモリを大量に消費する・処理が重くなる恐れがある
 ##状態遷移確率(動作モデル)は確定モデルで近似計算する
 ##range() -> xrange()
-##numbaのjitで高速化（？）
+##numbaのjitで高速化（？）and並列化（？）
+
 
 ###未確認
 #ReadParameters
@@ -318,7 +319,7 @@ def Array_index_To_Map_coordinates(Index):
     return X
 
 #@jit(nopython=True, parallel=True)
-@jit(parallel=True)
+@jit #(parallel=True)
 def PostProbMap_jit(gridmap,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     PostProbMap = np.zeros((map_length,map_width))
     #愚直な実装(for文の多用)
@@ -350,15 +351,17 @@ def Transition_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
     return Transition
 """
 
-#本来はlogにするが、計算上は遷移できるかできないかの２値なので0or1で表現
+
 #@jit(nopython=True, parallel=True)
-@jit(parallel=True)
+#@jit #(parallel=True) #なぜかエラーが出る
 def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
-    Transition = np.zeros((state_num,state_num)) * np.log(10**(-300))
-    #Transition = [[np.log(10**(-300)) for j in range(state_num)] for i in range(state_num)] 
+    #Transition = np.zeros((state_num,state_num)) * np.log(10**(-300))
+    approx_log_zero = np.log(10**(-300)) #ほぼlog(0)の微小値
+    Transition = [[approx_log_zero for j in range(state_num)] for i in range(state_num)] 
+    print "Memory OK"
     #print IndexMap_one_NOzero
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
-    for n in range(state_num):
+    for n in prange(state_num):
       Index_2D = IndexMap_one_NOzero[n] #.tolist()
       MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
       MoveIndex_list_n_list = MoveIndex_list_n.tolist()
@@ -369,7 +372,7 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
       ##    Transition[n][m] = 0.0 #1.0
       ##    #print Index_2D_m, MoveIndex_list_n_list
       ##    #print Index_2D_m in MoveIndex_list_n_list
-      for c in range(len(MoveIndex_list_n_list)):
+      for c in prange(len(MoveIndex_list_n_list)):
         #print c
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
@@ -413,18 +416,18 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
           sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
           sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = sum_c_ProbCtsum_i
+    """
 
+    #####"""
     PostProbMap = PostProbMap_jit(gridmap,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも
-    """
 
-    """
     PathWeightMap = CostMapProb * PostProbMap
     print "[Done] PathWeightMap."
 
     #[TEST]計算結果を先に保存
-    SaveProbMap(PathWeightMap, outputfile)
-    """
-    PathWeightMap = ReadProbMap(outputfile)
+    SaveProbMap(PathWeightMap, outputname)
+    #####"""
+    #####PathWeightMap = ReadProbMap(outputname)
 
     #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２次元配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
     if (-T_horizon+X_init_index[0]>=0 and T_horizon+X_init_index[0]<=map_width and -T_horizon+X_init_index[1]>=0 and T_horizon+X_init_index[1]<=map_length):
@@ -598,7 +601,7 @@ def ViterbiPath(X_init, PathWeight, Transition):
 
     #Forward
     print "Forward"
-    for i in xrange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
+    for i in prange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
         e = PathWeight #emission(PathWeigh)  #emission(nstates[i])
         m = Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
         
@@ -649,14 +652,14 @@ def SavePath(X_init, Path, outputname):
 #def SendProbMap(PathWeightMap):
 
 #パス計算のために使用した確率値マップをファイル保存する
-def SaveProbMap(PathWeightMap, outputfile):
+def SaveProbMap(PathWeightMap, outputname):
     #print PathWeightMap
     # 結果をファイル保存
-    np.savetxt(outputfile + "PathWeightMap.csv", PathWeightMap, delimiter=",")
-    print "Save PathWeightMap: " + outputfile + "PathWeightMap.csv"
+    np.savetxt(outputname + "PathWeightMap.csv", PathWeightMap, delimiter=",")
+    print "Save PathWeightMap: " + outputname + "PathWeightMap.csv"
 
     """
-    f = open( outputfile + "_PathWeightMap.csv" , "w")# , "sjis" )
+    f = open( outputname + "_PathWeightMap.csv" , "w")# , "sjis" )
     for i in xrange(len(PathWeightMap)):
       for j in xrange(len(PathWeightMap[i])):
         f.write(str(PathWeightMap[i][j]) + ",")
@@ -665,11 +668,11 @@ def SaveProbMap(PathWeightMap, outputfile):
     """
 
 #パス計算のために使用した確率値マップをファイル読み込みする
-def ReadProbMap(outputfile):
+def ReadProbMap(outputname):
     #print PathWeightMap
     # 結果をファイル読み込み
-    PathWeightMap = np.loadtxt(outputfile + "PathWeightMap.csv", delimiter=",")
-    print "Read PathWeightMap: " + outputfile + "PathWeightMap.csv"
+    PathWeightMap = np.loadtxt(outputname + "PathWeightMap.csv", delimiter=",")
+    print "Read PathWeightMap: " + outputname + "PathWeightMap.csv"
     return PathWeightMap
 
 def SaveTransition(Transition, outputname):
