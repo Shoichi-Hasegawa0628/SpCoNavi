@@ -1,18 +1,22 @@
 #coding:utf-8
 #The file for setting parameters
-#Akira Taniguchi 2018/12/13-2019/01/21
+#Akira Taniguchi 2018/12/13-2019/01/25
 import numpy as np
+
+##実行コマンド
+#python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num
+#python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
 
 #################### Folder PATH ####################
 #Setting of PATH for a folder of learned spatial concept parameters
-datafolder    = "/home/akira/Dropbox/SpCoSLAM/data/"  #"/mnt/hgfs/D/Dropbox/SpCoSLAM/data/"
+datafolder    = "/mnt/hgfs/D/Dropbox/SpCoSLAM/data/" #"/home/akira/Dropbox/SpCoSLAM/data/"  #
 #Setting of PATH for output folder
-outputfolder  = "/home/akira/Dropbox/SpCoSLAM/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder  = "/mnt/hgfs/D/Dropbox/SpCoSLAM/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
 #音声ファイルフォルダ
 speech_folder    = "/home/akira/Dropbox/Julius/directory/SpCoSLAM/*.wav"    #音声の教示データフォルダ
 speech_folder_go = "/home/akira/Dropbox/Julius/directory/SpCoSLAMgo/*.wav"  #評価用の音声データフォルダ
-lmfolder = "/home/akira/Dropbox/SpCoSLAM/learning/lang_m/"  #Language model (word dictionary)
+lmfolder = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language model (word dictionary)
 
 #Navigation folder (他の出力ファイルも同フォルダ)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
@@ -23,15 +27,14 @@ costmap_folder = navigation_folder
 
 
 #################### Parameters ####################
-T_horizon = 10     #計画区間(予測ホライズン)
-N_best    = 10     #N of N-best (N<=10)
-#NbestNum = N_best      #N of N-best (N<=10)
-#N_best_number = N_best #N of N-best (N<=10) for PRR
-
-step = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
+T_horizon  = 200     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量次第
+N_best     = 10     #N of N-best (N<=10)
+step       = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
+time_recog = 0      #計算時間を保存するかどうか(保存する:1、保存しない:0)
 
 #自己位置の初期値(候補：目的地以外の理想的な位置分布のデータ平均)
-X_candidates = [[340, 590]] ###TEST #(VR340)
+X_candidates = [[340, 590]] ###TEST #2次元配列のインデックス(VR340)
+##kyouyuseki,kyukeijyo,roboqtookiba,ikidomari,miithingusupeesu,kyouinkennkyushitsu,purintaabeya,daidokoro,siroitana
 
 #近似手法の選択(Proposed:0, samplingCtit:1(未実装), xの次元削減とか...(未実装))
 Approx = 0
@@ -86,6 +89,7 @@ else:
 
 dimx = 2           #The number of dimensions of xt (x,y)
 margin = 10*0.05   #地図のグリッドと位置の値の関係が不明のため(0.05m/grid)*margin(grid)=0.05*margin(m)
+approx_log_zero = np.log(10.0**(-300))   #ほぼlog(0)の微小値
 
 
 ####################Particle Class (structure)####################
@@ -100,11 +104,14 @@ class Particle:
     #self.Ct = -1
     #self.it = -1
 
-
+"""
 ####################Option setting (NOT USE)####################
 wic = 1         #1:wic重みつき(理論的にはこちらがより正しい)、0:wic重みなし(Orignal paper of SpCoSLAM)
 UseFT = 1       #画像特徴を使う場合(１)、使わない場合(０)
 UseLM = 1       #言語モデルを更新する場合(１)、しない場合(０)[Without update language modelのため無関係]
+
+#NbestNum = N_best      #N of N-best (N<=10)
+#N_best_number = N_best #N of N-best (N<=10) for PRR
 
 ##Initial (hyper) parameters
 ##Posterior (∝likelihood×prior): https://en.wikipedia.org/wiki/Conjugate_prior
@@ -117,3 +124,4 @@ m0 = np.zeros(dimx)  #Hyperparameter in Gaussina distribution P(μ) (prior mean 
 V0 = np.eye(dimx)*2  #Hyperparameter in Inverse Wishart distribution P(Σ)(prior covariance matrix)
 n0 = 3.0             #Hyperparameter in Inverse Wishart distribution P(Σ) {>the number of dimenssions] (Influence degree of prior distribution of Σ)
 k0m0m0 = k0*np.dot(np.array([m0]).T,np.array([m0]))
+"""
