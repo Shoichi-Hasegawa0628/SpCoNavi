@@ -42,7 +42,7 @@ Approx = 0
 #状態遷移のダイナミクス(動作モデル)の仮定(確定的:0, 確率的:1, 近似:2(未実装))
 #Dynamics = 0
 
-cmd_vel = 1  #ロボットの移動量(ROSではcmd_vel [m/s], [rad/s])
+cmd_vel = 1  #ロボットの移動量(ROSではcmd_vel [m/s], [rad/s])[基本的に1(整数値)]
 MotionModelDist = "Gauss"  #"Gauss"：ガウス分布、"Triangular":三角分布
 
 #オドメトリ動作モデルパラメータ(AMCL or gmappingと同じ値にする)

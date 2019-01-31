@@ -2,13 +2,11 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
-# Akira Taniguchi 2018/12/13-2019/1/25
+# Akira Taniguchi 2018/12/13-2019/1/31
 ###########################################################
 
 ##########---遂行タスク---##########
 #テスト実行・デバッグ
-#事前計算できるものはできるだけpreprocess.pyで行ってファイル読み込みする形にする
-##(単語辞書生成、単語認識結果(N-best)、事前計算可能な確率値、Transition(T_horizonごとに保持)、・・・)
 #Viterbiの計算処理をTransitionをそのまま使わないように変更する（ムダが多く、メモリ消費・処理時間がかかる要因）
 #状態数の削減のための近似手法の実装
 #並列処理
@@ -23,6 +21,8 @@
 ##numbaのjitで高速化（？）and並列化（？）
 ##PathはROSの座標系と2次元配列上のインデックスの両方を保存する
 ##ViterbiPathの計算でlogを使う：PathWeightMapは確率で計算・保存、Transitionはlogで計算・保存する
+##事前計算できるものはできるだけファイル読み込みする形にもできるようにした
+###(単語辞書生成、単語認識結果(N-best)、事前計算可能な確率値、Transition(T_horizonごとに保持)、・・・)
 
 ###未確認・未使用
 #pi_2_pi
@@ -296,22 +296,44 @@ def Array_index_To_Map_coordinates(Index):
     X = np.array( (Index * resolution) + origin )
     return X
 
+#gridmap and costmap から確率の形のCostMapProbを得ておく
+@jit(parallel=True)
+def CostMapProb_jit(gridmap, costmap):
+    CostMapProb = (100.0 - costmap) /100.0     #コストマップを確率の形にする
+    #gridの数値が0（非占有）のところだけ数値を持つようにマスクする
+    GridMapProb = 1*(gridmap == 0)  #gridmap * (gridmap != 100) * (gridmap != -1)  #gridmap[][]が障害物(100)または未探索(-1)であれば確率0にする
+    
+    return CostMapProb * GridMapProb
+
 #@jit(nopython=True, parallel=True)
 @jit(parallel=True)  #並列化されていない？1CPUだけ使用される
-def PostProbMap_jit(gridmap,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
+def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     PostProbMap = np.zeros((map_length,map_width))
     #愚直な実装(for文の多用)
     #memo: np.vectorize or np.frompyfunc の方が処理は早い？    
     for length in prange(map_length):
       for width in prange(map_width):
-        if (gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
+        if (CostMapProb[length][width] != 0.0): #(gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
           X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
           #print X_temp,Mu
           sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
           sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = sum_c_ProbCtsum_i
-    return PostProbMap
+    return CostMapProb * PostProbMap
 
+@jit(parallel=True)
+def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
+    X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
+    #print X_temp,Mu
+    sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
+    PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
+    return PostProb
+
+@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
+def PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K,IndexMap):
+    PostProbMap = np.array([ [ PostProb_ij([width, length],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for width in xrange(map_width) ] for length in xrange(map_length) ])
+
+    return CostMapProb * PostProbMap
 
 #@jit(nopython=True, parallel=True)
 #@jit #(parallel=True) #なぜかエラーが出る
@@ -335,41 +357,50 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
     return Transition
 
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
-def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
+def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "[RUN] PathPlanner"
     #THETAを展開
     W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA
-
-    #MAPの縦横(length and width)のセルの長さを計る
-    map_length = len(costmap)
-    map_width  = len(costmap[0])
-    print "MAP[length][width]:",map_length,map_width
-
-    #事前計算できるものはしておく
-    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
-    
-    #コストマップを確率の形にする
-    CostMapProb = (100.0 - costmap) /100.0
 
     #ROSの座標系の現在位置を2次元配列のインデックスにする
     X_init_index = X_init ###TEST  #Map_coordinates_To_Array_index(X_init)
     print "Initial Xt:",X_init_index
 
+    #MAPの縦横(length and width)のセルの長さを計る
+    map_length = len(CostMapProb)  #len(costmap)
+    map_width  = len(CostMapProb[0])  #len(costmap[0])
+    print "MAP[length][width]:",map_length,map_width
+
+    #事前計算できるものはしておく
+    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+    ###SaveLookupTable(LookupTable_ProbCt, outputfile)
+    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #計算する場合と大差ないかも
+    
+    #コストマップを確率の形にする
+    #CostMapProb = (100.0 - costmap) /100.0
+    #CostMapProb = CostMapProb_jit(gridmap, costmap)
+
+    #地図の2次元配列インデックスと一次元配列の対応を保持する
+    IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
+
     print "Please wait for PostProbMap"
     #####"""
-    PostProbMap = PostProbMap_jit(gridmap,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも
-
-    PathWeightMap = CostMapProb * PostProbMap #後の処理のために、この時点ではlogにしない
+    #PathWeightMap = PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも #CostMapProb * PostProbMap #後の処理のために、この時点ではlogにしない
+    PathWeightMap = PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K,IndexMap) 
     print "[Done] PathWeightMap."
 
     #[TEST]計算結果を先に保存
-    SaveProbMap(PathWeightMap, outputname)
+    SaveProbMap(PathWeightMap, outputfile)
     #####"""
-    #####PathWeightMap = ReadProbMap(outputname)
+    #####PathWeightMap = ReadProbMap(outputfile)
 
     #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２次元配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
-    if (-T_horizon+X_init_index[0]>=0 and T_horizon+X_init_index[0]<=map_width and -T_horizon+X_init_index[1]>=0 and T_horizon+X_init_index[1]<=map_length):
-      PathWeightMap = PathWeightMap[-T_horizon+X_init_index[0]:T_horizon+X_init_index[0]+1, -T_horizon+X_init_index[1]:T_horizon+X_init_index[1]+1] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
+    x_min = X_init_index[0] - T_horizon
+    x_max = X_init_index[0] + T_horizon
+    y_min = X_init_index[1] - T_horizon
+    y_max = X_init_index[1] + T_horizon
+    if (x_min>=0 and x_max<=map_width and y_min>=0 and y_max<=map_length):
+      PathWeightMap = PathWeightMap[x_min:x_max+1, y_min:y_max+1] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
       X_init_index = [T_horizon, T_horizon]
       #再度、MAPの縦横(length and width)のセルの長さを計る
       map_length = len(PathWeightMap)
@@ -378,7 +409,6 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
       print "[ERROR] The initial position is outside the map."
       #print X_init, X_init_index
 
-
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
     PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=0.0]
@@ -386,7 +416,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     print "PathWeight_one_NOzero state_num:", state_num
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
-    IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
+    #IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
     IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう
     print "IndexMap_one_NOzero"
 
@@ -413,11 +443,10 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
     Transition = Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
 
     #[TEST]計算結果を先に保存
-    SaveTransition(Transition, outputname)
+    SaveTransition(Transition, outputfile)
     #"""
 
-    #####Transition = [[approx_log_zero for j in range(state_num)] for i in range(state_num)] 
-    #####Transition = ReadTransition(Transition, outputname)
+    #####Transition = ReadTransition(state_num, outputfile)
 
     Transition_one_NOzero = Transition #[PathWeightMap!=0.0]
     print "[Done] Transition distribution."
@@ -440,7 +469,7 @@ def PathPlanner(S_Nbest, X_init, THETA, gridmap, costmap):
 
 #移動位置の候補：現在の位置(2次元配列のインデックス)の近傍8セル+現在位置1セル
 def MovePosition_2D(Xt): 
-    PostPosition_list = np.array([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,0], [0,1], [1,-1],[1,0],[1,1] ]) + np.array(Xt)
+    PostPosition_list = np.array([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,0], [0,1], [1,-1],[1,0],[1,1] ])*cmd_vel + np.array(Xt)
     return PostPosition_list
 
 
@@ -519,47 +548,82 @@ def SavePath(X_init, Path, Path_ROS, outputname):
     print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
 
 
+#パス計算のために使用したLookupTable_ProbCtをファイル保存する
+def SaveLookupTable(LookupTable_ProbCt, outputfile):
+    # 結果をファイル保存
+    output = outputfile + "LookupTable_ProbCt.csv"
+    np.savetxt( output, LookupTable_ProbCt, delimiter=",")
+    print "Save LookupTable_ProbCt: " + output
+
+#パス計算のために使用したLookupTable_ProbCtをファイル読み込みする
+def ReadLookupTable(outputfile):
+    # 結果をファイル読み込み
+    output = outputfile + "LookupTable_ProbCt.csv"
+    LookupTable_ProbCt = np.loadtxt(output, delimiter=",")
+    print "Read LookupTable_ProbCt: " + output
+    return LookupTable_ProbCt
+
+
+#パス計算のために使用した確率値コストマップをファイル保存する
+def SaveCostMapProb(CostMapProb, outputfile):
+    # 結果をファイル保存
+    output = outputfile + "CostMapProb.csv"
+    np.savetxt( output, CostMapProb, delimiter=",")
+    print "Save CostMapProb: " + output
+
+#パス計算のために使用した確率値コストマップをファイル読み込みする
+def ReadCostMapProb(outputfile):
+    # 結果をファイル読み込み
+    output = outputfile + "CostMapProb.csv"
+    CostMapProb = np.loadtxt(output, delimiter=",")
+    print "Read CostMapProb: " + output
+    return CostMapProb
+
 #パス計算のために使用した確率値マップを（トピックかサービスで）送る
 #def SendProbMap(PathWeightMap):
 
 #パス計算のために使用した確率値マップをファイル保存する
-def SaveProbMap(PathWeightMap, outputname):
+def SaveProbMap(PathWeightMap, outputfile):
     # 結果をファイル保存
-    np.savetxt(outputname + "_PathWeightMap.csv", PathWeightMap, delimiter=",")
-    print "Save PathWeightMap: " + outputname + "_PathWeightMap.csv"
-
+    output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
+    np.savetxt( output, PathWeightMap, delimiter=",")
+    print "Save PathWeightMap: " + output
 
 #パス計算のために使用した確率値マップをファイル読み込みする
-def ReadProbMap(outputname):
+def ReadProbMap(outputfile):
     # 結果をファイル読み込み
-    PathWeightMap = np.loadtxt(outputname + "_PathWeightMap.csv", delimiter=",")
-    print "Read PathWeightMap: " + outputname + "_PathWeightMap.csv"
+    output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
+    PathWeightMap = np.loadtxt(output, delimiter=",")
+    print "Read PathWeightMap: " + output
     return PathWeightMap
 
-def SaveTransition(Transition, outputname):
+def SaveTransition(Transition, outputfile):
     # 結果をファイル保存
-    #np.savetxt(outputname + "_Transition_log.csv", Transition, delimiter=",")
-    f = open( outputname + "_Transition_log.csv" , "w")
+    output_transition = outputfile + "T"+str(T_horizon) + "_Transition_log.csv"
+    #np.savetxt(outputfile + "_Transition_log.csv", Transition, delimiter=",")
+    f = open( output_transition , "w")
     for i in xrange(len(Transition)):
       for j in xrange(len(Transition[i])):
         f.write(str(Transition[i][j]) + ",")
       f.write('\n')
     f.close()
-    print "Save Transition: " + outputname + "_Transition_log.csv"
+    print "Save Transition: " + output_transition
 
-def ReadTransition(Transition, outputname):
+def ReadTransition(state_num, outputfile):
+    Transition = [[approx_log_zero for j in xrange(state_num)] for i in xrange(state_num)] 
     # 結果をファイル読み込み
-    #Transition = np.loadtxt(outputname + "_Transition_log.csv", delimiter=",")
+    output_transition = outputfile + "T"+str(T_horizon) + "_Transition_log.csv"
+    #Transition = np.loadtxt(outputfile + "_Transition_log.csv", delimiter=",")
     i = 0
     #テキストファイルを読み込み
-    for line in open(outputname + "_Transition_log.csv", 'r'):
+    for line in open(output_transition, 'r'):
         itemList = line[:-1].split(',')
         for j in xrange(len(itemList)):
             if itemList[j] != '':
               Transition[i][j] = float(itemList[j])
         i = i + 1
 
-    print "Read Transition: " + outputname + "_Transition_log.csv"
+    print "Read Transition: " + output_transition
     return Transition
 
 ##単語辞書読み込み書き込み追加
@@ -730,12 +794,23 @@ if __name__ == '__main__':
     W_index = THETA[1]
     
     ##単語辞書登録
-    WordDictionaryUpdate2(step, filename, W_index)     
+    if (os.path.isfile(filename + '/WDnavi.htkdic') == False):  #すでに単語辞書ファイルがあれば作成しない
+      WordDictionaryUpdate2(step, filename, W_index)   
+    else:
+      print "Word dictionary already exists:", filename + '/WDnavi.htkdic'
 
     ##マップの読み込み
     gridmap = ReadMap(outputfile)
     ##コストマップの読み込み
     costmap = ReadCostMap(outputfile)
+
+    #コストマップを確率の形にする
+    CostMapProb = CostMapProb_jit(gridmap, costmap)
+
+    #確率化したコストマップの書き込み
+    SaveCostMapProb(CostMapProb, outputfile)
+    #確率化したコストマップの読み込み
+    #CostMapProb = ReadCostMapProb(outputfile)
 
     ##音声ファイルを読み込み
     speech_file = ReadSpeech(int(speech_num))
@@ -760,7 +835,7 @@ if __name__ == '__main__':
       fp.close()
 
     #パスプランニング
-    Path, Path_ROS, PathWeightMap = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, gridmap, costmap)
+    Path, Path_ROS, PathWeightMap = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
 
     if (time_recog == 1):
