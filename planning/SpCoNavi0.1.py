@@ -184,7 +184,7 @@ def ReadSpeech(num):
     return speech_file
 
 #音声データを受け取り、音声認識を行う⇒文字列配列を渡す・保存
-def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
+def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
     ##学習した単語辞書を用いて音声認識し、BoWを得る
     St = RecogNbest( speech_file, step, trialname )
     #print St
@@ -211,7 +211,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputname):
     print Otb_B
 
     # 認識結果をファイル保存
-    f = open( outputname + "_St.csv" , "w") # , "sjis" )
+    f = open( outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_St.csv" , "w") # , "sjis" )
     for i in xrange(len(St)):
         f.write(St[i].encode('sjis'))
         f.write('\n')
@@ -323,15 +323,21 @@ def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_w
 
 @jit(parallel=True)
 def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
-    X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
-    #print X_temp,Mu
-    sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
-    PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
+    if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
+      X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
+      #print X_temp,Mu
+      sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
+      PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
+    else:
+      PostProb = 0.0
     return PostProb
 
-@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
+#@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
 def PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K,IndexMap):
-    PostProbMap = np.array([ [ PostProb_ij([width, length],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for width in xrange(map_width) ] for length in xrange(map_length) ])
+    #PostProbMap = np.array([ [ PostProb_ij([width, length],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for width in xrange(map_width) ] for length in xrange(map_length) ])
+    
+    vfunc = np.vectorize(PostProb_ij)
+    PostProbMap = [vfunc(IndexMap[i],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for i in xrange(len(CostMapProb))]
 
     return CostMapProb * PostProbMap
 
@@ -788,9 +794,8 @@ if __name__ == '__main__':
     Makedir( outputfile )
     #Makedir( outputname )
 
-    #学習済みパラメータの読み込み
+    #学習済みパラメータの読み込み  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     THETA = ReadParameters(particle_num, filename)
-    #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     W_index = THETA[1]
     
     ##単語辞書登録
@@ -800,17 +805,17 @@ if __name__ == '__main__':
       print "Word dictionary already exists:", filename + '/WDnavi.htkdic'
 
     ##マップの読み込み
-    gridmap = ReadMap(outputfile)
+    #gridmap = ReadMap(outputfile)
     ##コストマップの読み込み
-    costmap = ReadCostMap(outputfile)
+    #costmap = ReadCostMap(outputfile)
 
     #コストマップを確率の形にする
-    CostMapProb = CostMapProb_jit(gridmap, costmap)
-
+    #CostMapProb = CostMapProb_jit(gridmap, costmap)
     #確率化したコストマップの書き込み
-    SaveCostMapProb(CostMapProb, outputfile)
+    #SaveCostMapProb(CostMapProb, outputfile)
+
     #確率化したコストマップの読み込み
-    #CostMapProb = ReadCostMapProb(outputfile)
+    CostMapProb = ReadCostMapProb(outputfile)
 
     ##音声ファイルを読み込み
     speech_file = ReadSpeech(int(speech_num))
@@ -824,7 +829,7 @@ if __name__ == '__main__':
       fp.close()
 
     #音声認識
-    S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputname)
+    S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputfile)
 
     if (time_recog == 1):
       #音声認識終了時刻（PP開始時刻）を保持

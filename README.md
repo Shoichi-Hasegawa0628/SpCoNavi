@@ -4,11 +4,11 @@ SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Pro
 ## Abstract
 TBA  
 
-Figure1: The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping   
-<img src="https://github.com/a-taniguchi/SpCoSLAM/blob/master/img/graphicalmodel02.jpg" width="520px">
+Figure1 (left): The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping   
+Figure2 (right): The graphical model of SpCoNavi: Spatial Concept-based Path-Planning   
+<img src="https://github.com/a-taniguchi/SpCoSLAM/blob/master/img/graphicalmodel02.jpg" width="500px">
+<img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/gmodel_spconavi_simple2.png" width="320px">
 
-Figure2: The graphical model of SpCoNavi: Spatial Concept-based Path-Planning   
-<img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/gmodel_spconavi_simple2.png" width="520px">
 
 ## Execution environment  
 - Ubuntu 14.04  
