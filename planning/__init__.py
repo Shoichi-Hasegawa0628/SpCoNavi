@@ -27,14 +27,17 @@ costmap_folder = navigation_folder
 
 
 #################### Parameters ####################
-T_horizon  = 10     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量次第
-N_best     = 10     #N of N-best (N<=10)
-step       = 50     #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
-time_recog = 1      #計算時間を保存するかどうか(保存する:1、保存しない:0)
+T_horizon  = 200     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第
+N_best     = 10      #N of N-best (N<=10)
+step       = 50      #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
 
 #自己位置の初期値(候補：目的地以外の理想的な位置分布のデータ平均)
 X_candidates = [[340, 590]] ###TEST #2次元配列のインデックス(VR340)
 ##kyouyuseki,kyukeijyo,roboqtookiba,ikidomari,miithingusupeesu,kyouinkennkyushitsu,purintaabeya,daidokoro,siroitana
+
+SAVE_time   = 1      #計算時間を保存するかどうか(保存する:1、保存しない:0)
+SAVE_X_init = 0      #初期値をファイル保存するか（ここで指定する場合は事前にわかっているので不要）
+SAVE_T_temp = 10     #途中のパスを一時ファイル保存する(途中のTの値ごと)
 
 #近似手法の選択(Proposed:0, samplingCtit:1(未実装), xの次元削減とか...(未実装))
 Approx = 0

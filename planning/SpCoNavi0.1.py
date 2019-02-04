@@ -67,6 +67,8 @@ from __init__ import *
 from JuliusNbest_dec import *
 from submodules import *
 from numba import jit, njit, prange
+from scipy.io import mmwrite, mmread
+from scipy.sparse import lil_matrix, csr_matrix
 
 #マップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
@@ -333,11 +335,11 @@ def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,
     return PostProb
 
 #@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
-def PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K,IndexMap):
-    #PostProbMap = np.array([ [ PostProb_ij([width, length],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for width in xrange(map_width) ] for length in xrange(map_length) ])
+def PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K): #,IndexMap):
+    PostProbMap = np.array([ [ PostProb_ij([width, length],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for width in xrange(map_width) ] for length in xrange(map_length) ])
     
-    vfunc = np.vectorize(PostProb_ij)
-    PostProbMap = [vfunc(IndexMap[i],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for i in xrange(len(CostMapProb))]
+    #vfunc = np.vectorize(PostProb_ij) ##エラーでうまくできなかった
+    #PostProbMap = [vfunc(IndexMap[i],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for i in xrange(len(CostMapProb))]
 
     return CostMapProb * PostProbMap
 
@@ -361,6 +363,26 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
           Transition[n][m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
         #  print n,m,c
     return Transition
+
+def Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
+    Transition = lil_matrix((state_num,state_num)) #[[0 for j in range(state_num)] for i in range(state_num)])
+    print "Memory OK"
+    #print IndexMap_one_NOzero
+    #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
+    for n in xrange(state_num):
+      Index_2D = IndexMap_one_NOzero[n] #.tolist()
+      MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
+      MoveIndex_list_n_list = MoveIndex_list_n.tolist()
+
+      for c in xrange(len(MoveIndex_list_n_list)):
+        #print c
+        if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
+          m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
+          Transition[n,m] = 1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
+        #  print n,m,c
+    Transition_csr = Transition.tocsr()
+    print "Transformed sparse csr format OK"
+    return Transition_csr
 
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
 def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
@@ -387,18 +409,22 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #CostMapProb = CostMapProb_jit(gridmap, costmap)
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
-    IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
+    #IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
 
     print "Please wait for PostProbMap"
-    #####"""
-    #PathWeightMap = PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも #CostMapProb * PostProbMap #後の処理のために、この時点ではlogにしない
-    PathWeightMap = PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K,IndexMap) 
+    output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
+    if (os.path.isfile(output) == False):  #すでにファイルがあれば作成しない
+      #PathWeightMap = PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも #CostMapProb * PostProbMap #後の処理のために、この時点ではlogにしない
+      PathWeightMap = PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #,IndexMap) 
+      
+      #[TEST]計算結果を先に保存
+      SaveProbMap(PathWeightMap, outputfile)
+    else:
+      PathWeightMap = ReadProbMap(outputfile)
+      #print "already exists:", output
+
     print "[Done] PathWeightMap."
 
-    #[TEST]計算結果を先に保存
-    SaveProbMap(PathWeightMap, outputfile)
-    #####"""
-    #####PathWeightMap = ReadProbMap(outputfile)
 
     #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２次元配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
     x_min = X_init_index[0] - T_horizon
@@ -422,7 +448,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "PathWeight_one_NOzero state_num:", state_num
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
-    #IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
+    IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
     IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう
     print "IndexMap_one_NOzero"
 
@@ -442,24 +468,28 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #MoveIndex_list = np.round(MovePosition(X_init_index)).astype(int)
     print "MoveIndex_list"
 
+    """
     #状態遷移確率(動作モデル)の計算
     print "Please wait for Transition"
-    #"""
-    #IndexMap_one_NOzero内の2次元配列上のインデックスと一致した要素のみ確率1を持つようにする
-    Transition = Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
+    output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse.mtx" # + "_Transition_log.csv"
+    if (os.path.isfile(output_transition) == False):  #すでにファイルがあれば作成しない
+      #IndexMap_one_NOzero内の2次元配列上のインデックスと一致した要素のみ確率1を持つようにする
+      #Transition = Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
+      Transition = Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
 
-    #[TEST]計算結果を先に保存
-    SaveTransition(Transition, outputfile)
-    #"""
-
-    #####Transition = ReadTransition(state_num, outputfile)
+      #[TEST]計算結果を先に保存
+      #SaveTransition(Transition, outputfile)
+      SaveTransition_sparse(Transition, outputfile)
+    else:
+      Transition = ReadTransition_sparse(state_num, outputfile) #ReadTransition(state_num, outputfile)
+      #print "already exists:", output_transition
 
     Transition_one_NOzero = Transition #[PathWeightMap!=0.0]
     print "[Done] Transition distribution."
-
+    """
 
     #Viterbi Algorithmを実行
-    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), Transition_one_NOzero)
+    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname) #, Transition_one_NOzero)
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
@@ -483,10 +513,51 @@ def MovePosition_2D(Xt):
 #@jit(parallel=True)
 def update(cost, trans, emiss):
     COST = 0 #COST, INDEX = range(2)  #0,1
-    arr = [c[COST]+t for c, t in zip(cost, trans)] #transもlogなら本来はc[COST]+t
+    arr = [c[COST]+t for c, t in zip(cost, trans)]
     max_arr = max(arr)
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
+
+#なぜか重くてTが進まない
+def update_sparse(cost, trans, emiss):
+    COST = 0 #COST, INDEX = range(2)  #0,1
+    trans_log = [(trans[0,i]==0)*approx_log_zero for i in xrange(trans.get_shape()[1])]     #trans.toarray() 
+    arr = [c[COST]+t for c, t in zip(cost, trans_log)]
+
+    #index = [i for i in xrange(trans.get_shape()[1])]
+    #arr = [c[COST]+np.log(trans[0,t]) for c, t in zip(cost, index)]
+    max_arr = max(arr)
+    #print max_arr + emiss, arr.index(max_arr)
+    return max_arr + emiss, arr.index(max_arr)
+
+def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition):
+    #COST = 0 #COST, INDEX = range(2)  #0,1
+    #Transition = np.array([approx_log_zero for j in range(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
+
+    #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
+    #n = index
+    #for n in prange(state_num):
+    if (1):
+      Index_2D = IndexMap_one_NOzero[n] #.tolist()
+      MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
+      MoveIndex_list_n_list = MoveIndex_list_n.tolist()
+
+      for c in prange(len(MoveIndex_list_n_list)):
+        #print c
+        if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
+          m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
+          Transition[m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
+        #  print n,m,c
+    
+    #trans = Transition #np.array(Transition)
+    #arr = [c[COST]+t for c, t in zip(cost, trans)]
+    #cost_np = np.array([cost[i][COST] for i in xrange(len(cost))])
+    arr = cost + Transition #trans
+    #max_arr = np.max(arr)
+    max_arr_index = np.argmax(arr)
+    #print max_arr + emiss, arr.index(max_arr)
+    #return max_arr + emiss, np.where(arr == max_arr)[0][0] #np.argmax(arr)#arr.index(max_arr)
+    return arr[max_arr_index] + emiss, max_arr_index
 
 #def transition(m, n):
 #    return [[1.0 for i in xrange(m)] for j in xrange(n)]
@@ -494,8 +565,8 @@ def update(cost, trans, emiss):
 #    return [random.random() for j in xrange(n)]
 
 #ViterbiPathを計算してPath(軌道)を返す
-@jit(parallel=True)
-def ViterbiPath(X_init, PathWeight, Transition):
+#@jit(parallel=True) #print関係(?)のエラーが出たので一時避難
+def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname): #, Transition):
     #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
     print "Start Viterbi Algorithm"
 
@@ -507,15 +578,36 @@ def ViterbiPath(X_init, PathWeight, Transition):
     cost[X_init] = (0.0, X_init) #初期位置は一意に与えられる(確率log(1.0))
     trellis = []
 
+    e = PathWeight #emission(nstates[i])
+    m = [i for i in xrange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
+    
+    temp = 1
     #Forward
     print "Forward"
-    for i in prange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
-        e = PathWeight #emission(nstates[i])
-        m = Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
-        
-        cost = [update(cost, t, f) for t, f in zip(m, e)]
+    for i in xrange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
+        print "T:",i+1
+        #cost = [update(cost, t, f) for t, f in zip(m, e)]
+        #cost = [update_sparse(cost, Transition[t], f) for t, f in zip(m, e)] #なぜか遅い
+        cost_np = np.array([cost[i][0] for i in xrange(len(cost))])
+        Transition = np.array([approx_log_zero for j in range(state_num)])
+
+        cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in zip(m, e)]
         trellis.append(cost)
         #print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
+        if (SAVE_T_temp == temp):
+            #Backward temp
+            last = [trellis[-1][j][0] for j in xrange(len(trellis[-1]))]
+            path_one = [last.index(max(last))] #最終的にいらないが計算上必要⇒最後のノードの最大値インデックスを保持する形でもできるはず
+            #print "last",last,"max",path
+
+            for x in reversed(trellis):
+              path_one = [x[path_one[0]][INDEX]] + path_one
+              #print "x", len(x), x
+            path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
+          
+            SavePathTemp(X_init, path_one, i+1, outputname, IndexMap_one_NOzero)
+            temp = 0
+        temp += 1
 
     #最後の遷移確率は一様にすればよいはず
     e_last = [0.0]
@@ -542,10 +634,11 @@ def ViterbiPath(X_init, PathWeight, Transition):
 #パスをファイル保存する（形式未定）
 def SavePath(X_init, Path, Path_ROS, outputname):
     print "PathSave"
-    # ロボット初期位置をファイル保存(index)
-    np.savetxt(outputname + "_X_init.csv", X_init, delimiter=",")
-    # ロボット初期位置をファイル保存(ROS)
-    np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
+    if (SAVE_X_init == 1):
+      # ロボット初期位置をファイル保存(index)
+      np.savetxt(outputname + "_X_init.csv", X_init, delimiter=",")
+      # ロボット初期位置をファイル保存(ROS)
+      np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
 
     # 結果をファイル保存(index)
     np.savetxt(outputname + "_Path.csv", Path, delimiter=",")
@@ -553,6 +646,21 @@ def SavePath(X_init, Path, Path_ROS, outputname):
     np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
     print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
 
+#パスをファイル保存する（形式未定）
+def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero):
+    print "PathSaveTemp"
+
+    #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
+    Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
+    Path_2D_index_original = np.array(Path_2D_index) + np.array(X_init) - T_horizon
+    Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #
+
+    Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
+    # 結果をファイル保存(index)
+    np.savetxt(outputname + "_Path" + str(temp) + ".csv", Path, delimiter=",")
+    # 結果をファイル保存(ROS)
+    np.savetxt(outputname + "_Path_ROS" + str(temp) + ".csv", Path_ROS, delimiter=",")
+    print "Save Path: " + outputname + "_Path" + str(temp) + ".csv and _Path_ROS" + str(temp) + ".csv"
 
 #パス計算のために使用したLookupTable_ProbCtをファイル保存する
 def SaveLookupTable(LookupTable_ProbCt, outputfile):
@@ -628,6 +736,25 @@ def ReadTransition(state_num, outputfile):
             if itemList[j] != '':
               Transition[i][j] = float(itemList[j])
         i = i + 1
+
+    print "Read Transition: " + output_transition
+    return Transition
+
+def SaveTransition_sparse(Transition, outputfile):
+    # 結果をファイル保存
+    output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse"
+    #np.savetxt(outputfile + "_Transition_log.csv", Transition, delimiter=",")
+    mmwrite(output_transition, Transition)
+
+    print "Save Transition: " + output_transition
+
+def ReadTransition_sparse(state_num, outputfile):
+    #Transition = [[0 for j in xrange(state_num)] for i in xrange(state_num)] 
+    # 結果をファイル読み込み
+    output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse.mtx"
+    #Transition = np.loadtxt(outputfile + "_Transition_log.csv", delimiter=",")
+    ### 読み出し
+    Transition = mmread(output_transition).tocsr()  #.todense()
 
     print "Read Transition: " + output_transition
     return Transition
@@ -780,7 +907,7 @@ if __name__ == '__main__':
     #最大尤度のパーティクル番号を保存
     particle_num = MAX_Samp
 
-    if (time_recog == 1):
+    if (SAVE_time == 1):
       #開始時刻を保持
       start_time = time.time()
 
@@ -820,7 +947,7 @@ if __name__ == '__main__':
     ##音声ファイルを読み込み
     speech_file = ReadSpeech(int(speech_num))
 
-    if (time_recog == 1):
+    if (SAVE_time == 1):
       #音声認識開始時刻(初期化読み込み処理終了時刻)を保持
       start_recog_time = time.time()
       time_init = start_recog_time - start_time
@@ -831,7 +958,7 @@ if __name__ == '__main__':
     #音声認識
     S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputfile)
 
-    if (time_recog == 1):
+    if (SAVE_time == 1):
       #音声認識終了時刻（PP開始時刻）を保持
       end_recog_time = time.time()
       time_recog = end_recog_time - start_recog_time
@@ -843,7 +970,7 @@ if __name__ == '__main__':
     Path, Path_ROS, PathWeightMap = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
 
-    if (time_recog == 1):
+    if (SAVE_time == 1):
       #PP終了時刻を保持
       end_pp_time = time.time()
       time_pp = end_pp_time - end_recog_time
