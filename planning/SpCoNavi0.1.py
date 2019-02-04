@@ -2,14 +2,12 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
-# Akira Taniguchi 2018/12/13-2019/1/31
+# Akira Taniguchi 2018/12/13-2019/2/4
 ###########################################################
 
 ##########---遂行タスク---##########
 #テスト実行・デバッグ
-#Viterbiの計算処理をTransitionをそのまま使わないように変更する（ムダが多く、メモリ消費・処理時間がかかる要因）
-#状態数の削減のための近似手法の実装
-#並列処理
+#ムダの除去・さらなる高速化
 
 ##########---作業終了タスク---##########
 ##文字コードをsjisのままにした
@@ -23,13 +21,14 @@
 ##ViterbiPathの計算でlogを使う：PathWeightMapは確率で計算・保存、Transitionはlogで計算・保存する
 ##事前計算できるものはできるだけファイル読み込みする形にもできるようにした
 ###(単語辞書生成、単語認識結果(N-best)、事前計算可能な確率値、Transition(T_horizonごとに保持)、・・・)
+##Viterbiの計算処理をTransitionをそのまま使わないように変更した（ムダが多く、メモリ消費・処理時間がかかる要因）
+##Viterbiのupdate関数を一部numpy化(高速化)
 
 ###未確認・未使用
 #pi_2_pi
 #Prob_Triangular_distribution_pdf
 #Motion_Model_Odometry
 #Motion_Model_Odometry_No_theta
-
 
 ###確認済み
 #ReadParameters
@@ -45,6 +44,9 @@
 
 ##########---保留---##########
 #状態遷移確率(動作モデル)を確率モデルで計算する実装
+#状態数の削減のための近似手法の実装
+#並列処理
+
 #SendPath
 #SendProbMap
 #PathDistance
@@ -489,7 +491,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     """
 
     #Viterbi Algorithmを実行
-    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname) #, Transition_one_NOzero)
+    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init) #, Transition_one_NOzero)
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
@@ -530,19 +532,22 @@ def update_sparse(cost, trans, emiss):
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
 
+@jit #こちらもコードによってはやはりエラーが出る場合があるので注意
 def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition):
     #COST = 0 #COST, INDEX = range(2)  #0,1
-    #Transition = np.array([approx_log_zero for j in range(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
+    #Transition = np.array([approx_log_zero for j in prange(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
+    for i in prange(len(Transition)):
+      Transition[i] = approx_log_zero
 
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
     #n = index
     #for n in prange(state_num):
-    if (1):
-      Index_2D = IndexMap_one_NOzero[n] #.tolist()
-      MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
-      MoveIndex_list_n_list = MoveIndex_list_n.tolist()
+    #if (1):
+    #Index_2D = IndexMap_one_NOzero[n] #.tolist()
+    MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #Index_2D #絶対座標系にする
+    MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
-      for c in prange(len(MoveIndex_list_n_list)):
+    for c in prange(len(MoveIndex_list_n_list)): #prangeの方がxrangeより速い
         #print c
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
@@ -566,7 +571,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
 
 #ViterbiPathを計算してPath(軌道)を返す
 #@jit(parallel=True) #print関係(?)のエラーが出たので一時避難
-def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname): #, Transition):
+def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original): #, Transition):
     #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
     print "Start Viterbi Algorithm"
 
@@ -574,23 +579,25 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
     INITIAL = (approx_log_zero, X_init)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
     #print "Initial:",X_init
 
-    cost = [INITIAL for i in xrange(len(PathWeight))] 
+    cost = [INITIAL for i in prange(len(PathWeight))] 
     cost[X_init] = (0.0, X_init) #初期位置は一意に与えられる(確率log(1.0))
     trellis = []
 
     e = PathWeight #emission(nstates[i])
-    m = [i for i in xrange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
+    m = [i for i in prange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
     
     temp = 1
     #Forward
     print "Forward"
-    for i in xrange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
+    for i in prange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
+        #このfor文の中でiを別途インディケータとして使わないこと
         print "T:",i+1
         #cost = [update(cost, t, f) for t, f in zip(m, e)]
         #cost = [update_sparse(cost, Transition[t], f) for t, f in zip(m, e)] #なぜか遅い
-        cost_np = np.array([cost[i][0] for i in xrange(len(cost))])
-        Transition = np.array([approx_log_zero for j in range(state_num)])
+        cost_np = np.array([cost[c][0] for c in prange(len(cost))])
+        Transition = np.array([approx_log_zero for j in range(state_num)]) #参照渡しになってしまう
 
+        #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in prange(len(e))]
         cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in zip(m, e)]
         trellis.append(cost)
         #print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
@@ -605,7 +612,7 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
               #print "x", len(x), x
             path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
           
-            SavePathTemp(X_init, path_one, i+1, outputname, IndexMap_one_NOzero)
+            SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero)
             temp = 0
         temp += 1
 
@@ -649,6 +656,7 @@ def SavePath(X_init, Path, Path_ROS, outputname):
 #パスをファイル保存する（形式未定）
 def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero):
     print "PathSaveTemp"
+    #X_init = IndexMap_one_NOzero[X_init_index_one]
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
