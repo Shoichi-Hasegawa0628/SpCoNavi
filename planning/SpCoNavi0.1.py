@@ -2,7 +2,7 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
-# Akira Taniguchi 2018/12/13-2019/2/4
+# Akira Taniguchi 2018/12/13-2019/2/5-
 ###########################################################
 
 ##########---遂行タスク---##########
@@ -71,6 +71,7 @@ from submodules import *
 from numba import jit, njit, prange
 from scipy.io import mmwrite, mmread
 from scipy.sparse import lil_matrix, csr_matrix
+from itertools import izip
 
 #マップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
@@ -273,14 +274,14 @@ def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
     delta_trans = cmd_vel #sqrt( (x_dash_bar - x_bar)**2 + (y_dash_bar - y_bar)**2 )
     delta_trans_hat = sqrt( (x_dash - x)**2 + (y_dash - y)**2 )
 
-    p2 = Motion_Model_Prob( delta_trans - delta_trans_hat, odom_alpha3*(delta_trans_hat**2) )# + 
+    p2 = Motion_Model_Prob( delta_trans - delta_trans_hat, odom_alpha3*(delta_trans_hat**2) )
 
     return p2  #p1*p2*p3
 
 #動作モデル(独自) #角度は考慮せず、移動先位置に応じて確率が決まる(ガウス分布)
 def Motion_Model_Original(xt,ut,xt_1):
     xt = np.array(xt)
-    ut = np.array(ut)
+    #ut = np.array(ut)
     xt_1 = np.array(xt_1)
     dist = np.sum((xt-xt_1)**2)
     
@@ -303,7 +304,7 @@ def Array_index_To_Map_coordinates(Index):
 #gridmap and costmap から確率の形のCostMapProbを得ておく
 @jit(parallel=True)
 def CostMapProb_jit(gridmap, costmap):
-    CostMapProb = (100.0 - costmap) /100.0     #コストマップを確率の形にする
+    CostMapProb = (100.0 - costmap) / 100.0     #コストマップを確率の形にする
     #gridの数値が0（非占有）のところだけ数値を持つようにマスクする
     GridMapProb = 1*(gridmap == 0)  #gridmap * (gridmap != 100) * (gridmap != -1)  #gridmap[][]が障害物(100)または未探索(-1)であれば確率0にする
     
@@ -321,8 +322,8 @@ def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_w
           X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
           #print X_temp,Mu
           sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
-          sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
-          PostProbMap[length][width] = sum_c_ProbCtsum_i
+          #sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
+          PostProbMap[length][width] = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
     return CostMapProb * PostProbMap
 
 @jit(parallel=True)
@@ -340,27 +341,24 @@ def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,
 def PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K): #,IndexMap):
     PostProbMap = np.array([ [ PostProb_ij([width, length],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for width in xrange(map_width) ] for length in xrange(map_length) ])
     
-    #vfunc = np.vectorize(PostProb_ij) ##エラーでうまくできなかった
-    #PostProbMap = [vfunc(IndexMap[i],Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) for i in xrange(len(CostMapProb))]
-
     return CostMapProb * PostProbMap
 
 #@jit(nopython=True, parallel=True)
 #@jit #(parallel=True) #なぜかエラーが出る
 def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
-    #Transition = np.zeros((state_num,state_num)) * np.log(10**(-300))
+    #Transition = np.ones((state_num,state_num)) * approx_log_zero
     Transition = [[approx_log_zero for j in range(state_num)] for i in range(state_num)] 
     print "Memory OK"
     #print IndexMap_one_NOzero
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
     for n in prange(state_num):
-      Index_2D = IndexMap_one_NOzero[n] #.tolist()
-      MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
+      #Index_2D = IndexMap_one_NOzero[n] #.tolist()
+      MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #.tolist() #Index_2D #絶対座標系にする
       MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
       for c in prange(len(MoveIndex_list_n_list)):
         #print c
-        if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
+        if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
           Transition[n][m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
         #  print n,m,c
@@ -369,22 +367,20 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
 def Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
     Transition = lil_matrix((state_num,state_num)) #[[0 for j in range(state_num)] for i in range(state_num)])
     print "Memory OK"
-    #print IndexMap_one_NOzero
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
     for n in xrange(state_num):
-      Index_2D = IndexMap_one_NOzero[n] #.tolist()
-      MoveIndex_list_n = MoveIndex_list + Index_2D #絶対座標系にする
+      #Index_2D = IndexMap_one_NOzero[n] #.tolist()
+      MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #.tolist() #Index_2D #絶対座標系にする
       MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
       for c in xrange(len(MoveIndex_list_n_list)):
-        #print c
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
           Transition[n,m] = 1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
         #  print n,m,c
-    Transition_csr = Transition.tocsr()
-    print "Transformed sparse csr format OK"
-    return Transition_csr
+    #Transition_csr = Transition.tocsr()
+    #print "Transformed sparse csr format OK"
+    return Transition.tocsr() #Transition_csr
 
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
 def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
@@ -404,14 +400,8 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #事前計算できるものはしておく
     LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
     ###SaveLookupTable(LookupTable_ProbCt, outputfile)
-    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #計算する場合と大差ないかも
-    
-    #コストマップを確率の形にする
-    #CostMapProb = (100.0 - costmap) /100.0
-    #CostMapProb = CostMapProb_jit(gridmap, costmap)
+    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #事前計算結果をファイル読み込み(計算する場合と大差ないかも)
 
-    #地図の2次元配列インデックスと一次元配列の対応を保持する
-    #IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
 
     print "Please wait for PostProbMap"
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
@@ -424,7 +414,6 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     else:
       PathWeightMap = ReadProbMap(outputfile)
       #print "already exists:", output
-
     print "[Done] PathWeightMap."
 
 
@@ -451,19 +440,18 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
 
     #地図の2次元配列インデックスと一次元配列の対応を保持する
     IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
-    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう
+    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう #実装上、np.arrayではなく2次元配列リストにしている
     print "IndexMap_one_NOzero"
 
 
     #1次元配列上の初期位置
     if (X_init_index in IndexMap_one_NOzero):
-      X_init_index_one = IndexMap_one_NOzero.index(X_init_index) #.tolist())  
-      #np.arrayでは2次元配列のインデックスが取得できなかった
+      X_init_index_one = IndexMap_one_NOzero.index(X_init_index)
     else:
       print "[ERROR] The initial position is not a movable position on the map."
       #print X_init, X_init_index
       X_init_index_one = 0
-    print "Initial index",X_init_index_one
+    print "Initial index", X_init_index_one
 
     #移動先候補のインデックス座標のリスト(相対座標)
     MoveIndex_list = MovePosition_2D([0,0]) #.tolist()
@@ -494,15 +482,14 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init) #, Transition_one_NOzero)
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
-    Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
-    Path_2D_index_original = np.array(Path_2D_index) + np.array(X_init) - T_horizon
-    Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #
+    Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
+    Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
+    Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #ROSのパスの形式にできればなおよい
 
-    Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
-    #ROSのパスの形式にできればなおよい
+    #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
     print "Init:", X_init
-    print "Path:\n", Path
-    return Path, Path_ROS, PathWeightMap
+    print "Path:\n", Path_2D_index_original
+    return Path_2D_index_original, Path_ROS, PathWeightMap
 
 
 #移動位置の候補：現在の位置(2次元配列のインデックス)の近傍8セル+現在位置1セル
@@ -520,7 +507,7 @@ def update(cost, trans, emiss):
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
 
-#なぜか重くてTが進まない
+#なぜか重くてTが進まない(不採用)
 def update_sparse(cost, trans, emiss):
     COST = 0 #COST, INDEX = range(2)  #0,1
     trans_log = [(trans[0,i]==0)*approx_log_zero for i in xrange(trans.get_shape()[1])]     #trans.toarray() 
@@ -532,35 +519,26 @@ def update_sparse(cost, trans, emiss):
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
 
-@jit #こちらもコードによってはやはりエラーが出る場合があるので注意
+@jit #jitはコードによってエラーが出る場合があるので注意
 def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition):
-    #COST = 0 #COST, INDEX = range(2)  #0,1
     #Transition = np.array([approx_log_zero for j in prange(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
     for i in prange(len(Transition)):
       Transition[i] = approx_log_zero
 
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
-    #n = index
-    #for n in prange(state_num):
-    #if (1):
     #Index_2D = IndexMap_one_NOzero[n] #.tolist()
     MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #Index_2D #絶対座標系にする
     MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
     for c in prange(len(MoveIndex_list_n_list)): #prangeの方がxrangeより速い
-        #print c
-        if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
+        if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
           Transition[m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
-        #  print n,m,c
     
     #trans = Transition #np.array(Transition)
-    #arr = [c[COST]+t for c, t in zip(cost, trans)]
-    #cost_np = np.array([cost[i][COST] for i in xrange(len(cost))])
     arr = cost + Transition #trans
     #max_arr = np.max(arr)
     max_arr_index = np.argmax(arr)
-    #print max_arr + emiss, arr.index(max_arr)
     #return max_arr + emiss, np.where(arr == max_arr)[0][0] #np.argmax(arr)#arr.index(max_arr)
     return arr[max_arr_index] + emiss, max_arr_index
 
@@ -595,10 +573,10 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
         #cost = [update(cost, t, f) for t, f in zip(m, e)]
         #cost = [update_sparse(cost, Transition[t], f) for t, f in zip(m, e)] #なぜか遅い
         cost_np = np.array([cost[c][0] for c in prange(len(cost))])
-        Transition = np.array([approx_log_zero for j in range(state_num)]) #参照渡しになってしまう
+        Transition = np.array([approx_log_zero for j in prange(state_num)]) #参照渡しになってしまう
 
         #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in prange(len(e))]
-        cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in zip(m, e)]
+        cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in izip(m, e)] #izipの方がメモリ効率は良いが、zipとしても処理速度は変わらない
         trellis.append(cost)
         #print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
         if (SAVE_T_temp == temp):
@@ -613,6 +591,7 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
             path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
           
             SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero)
+            SaveTrellis(trellis, outputname, i+1)
             temp = 0
         temp += 1
 
@@ -656,19 +635,24 @@ def SavePath(X_init, Path, Path_ROS, outputname):
 #パスをファイル保存する（形式未定）
 def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero):
     print "PathSaveTemp"
-    #X_init = IndexMap_one_NOzero[X_init_index_one]
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
     Path_2D_index_original = np.array(Path_2D_index) + np.array(X_init) - T_horizon
     Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #
 
-    Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
+    #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
     # 結果をファイル保存(index)
-    np.savetxt(outputname + "_Path" + str(temp) + ".csv", Path, delimiter=",")
+    np.savetxt(outputname + "_Path" + str(temp) + ".csv", Path_2D_index_original, delimiter=",")
     # 結果をファイル保存(ROS)
     np.savetxt(outputname + "_Path_ROS" + str(temp) + ".csv", Path_ROS, delimiter=",")
     print "Save Path: " + outputname + "_Path" + str(temp) + ".csv and _Path_ROS" + str(temp) + ".csv"
+
+def SaveTrellis(trellis, outputname, temp):
+    print "SaveTrellis"
+    # 結果をファイル保存
+    np.save(outputname + "_trellis" + str(temp) + ".npy", trellis) #, delimiter=",")
+    print "Save trellis: " + outputname + "_trellis" + str(temp) + ".npy"
 
 #パス計算のために使用したLookupTable_ProbCtをファイル保存する
 def SaveLookupTable(LookupTable_ProbCt, outputfile):
@@ -749,9 +733,8 @@ def ReadTransition(state_num, outputfile):
     return Transition
 
 def SaveTransition_sparse(Transition, outputfile):
-    # 結果をファイル保存
+    # 結果をファイル保存(.mtx形式)
     output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse"
-    #np.savetxt(outputfile + "_Transition_log.csv", Transition, delimiter=",")
     mmwrite(output_transition, Transition)
 
     print "Save Transition: " + output_transition
@@ -760,8 +743,6 @@ def ReadTransition_sparse(state_num, outputfile):
     #Transition = [[0 for j in xrange(state_num)] for i in xrange(state_num)] 
     # 結果をファイル読み込み
     output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse.mtx"
-    #Transition = np.loadtxt(outputfile + "_Transition_log.csv", delimiter=",")
-    ### 読み出し
     Transition = mmread(output_transition).tocsr()  #.todense()
 
     print "Read Transition: " + output_transition
@@ -881,14 +862,6 @@ def WordDictionaryUpdate2(step, filename, W_list):
   fp.close()
 
 
-"""
-#パスの移動距離を計算、ファイル保存
-def PathDistance(PathWeightMap):
-    Distance = 0
-
-    return Distance
-"""
-
 ########################################
 if __name__ == '__main__': 
     print "[START] SpCoNavi."
@@ -939,18 +912,19 @@ if __name__ == '__main__':
     else:
       print "Word dictionary already exists:", filename + '/WDnavi.htkdic'
 
-    ##マップの読み込み
-    #gridmap = ReadMap(outputfile)
-    ##コストマップの読み込み
-    #costmap = ReadCostMap(outputfile)
+    if (os.path.isfile(outputfile + "CostMapProb.csv") == False):  #すでにファイルがあれば計算しない
+      ##マップの読み込み
+      gridmap = ReadMap(outputfile)
+      ##コストマップの読み込み
+      costmap = ReadCostMap(outputfile)
 
-    #コストマップを確率の形にする
-    #CostMapProb = CostMapProb_jit(gridmap, costmap)
-    #確率化したコストマップの書き込み
-    #SaveCostMapProb(CostMapProb, outputfile)
-
-    #確率化したコストマップの読み込み
-    CostMapProb = ReadCostMapProb(outputfile)
+      #コストマップを確率の形にする
+      CostMapProb = CostMapProb_jit(gridmap, costmap)
+      #確率化したコストマップの書き込み
+      SaveCostMapProb(CostMapProb, outputfile)
+    else:
+      #確率化したコストマップの読み込み
+      CostMapProb = ReadCostMapProb(outputfile)
 
     ##音声ファイルを読み込み
     speech_file = ReadSpeech(int(speech_num))

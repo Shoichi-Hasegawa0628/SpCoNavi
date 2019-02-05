@@ -12,12 +12,22 @@ import matplotlib.pyplot as plt
 from __init__ import *
 from submodules import *
 
-#地図のファイルを読み込む
+#マップを読み込む⇒確率値に変換⇒2次元配列に格納
+def ReadMap(outputfile):
+    #outputfolder + trialname + navigation_folder + map.csv
+    gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
+    print "Read map: " + outputfile + "map.csv"
+    return gridmap
 
-#パスを読み込む
 
-#地図の上にパスを加える
+########################################
+if __name__ == '__main__': 
+    #地図のファイルを読み込む
+
+    #パスを読み込む
+
+    #地図の上にパスを加える
 
 
-#地図をカラー画像として保存
+    #地図をカラー画像として保存
 

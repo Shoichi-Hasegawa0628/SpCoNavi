@@ -1,6 +1,6 @@
 #coding:utf-8
 #The file for setting parameters
-#Akira Taniguchi 2018/12/13-2019/01/25
+#Akira Taniguchi 2018/12/13-2019/01/25-
 import numpy as np
 
 ##実行コマンド
@@ -27,13 +27,13 @@ costmap_folder = navigation_folder
 
 
 #################### Parameters ####################
-T_horizon  = 200     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第
+T_horizon  = 100     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第
 N_best     = 10      #N of N-best (N<=10)
 step       = 50      #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
 
 #自己位置の初期値(候補：目的地以外の理想的な位置分布のデータ平均)
 X_candidates = [[340, 590]] ###TEST #2次元配列のインデックス(VR340)
-##kyouyuseki,kyukeijyo,roboqtookiba,ikidomari,miithingusupeesu,kyouinkennkyushitsu,purintaabeya,daidokoro,siroitana
+##0:kyouyuseki,1:kyukeijyo,2:roboqtookiba,3:ikidomari,4:miithingusupeesu,5:kyouinkennkyushitsu,6:purintaabeya,7:daidokoro,8:siroitana
 
 SAVE_time   = 1      #計算時間を保存するかどうか(保存する:1、保存しない:0)
 SAVE_X_init = 0      #初期値をファイル保存するか（ここで指定する場合は事前にわかっているので不要）
