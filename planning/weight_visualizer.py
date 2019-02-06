@@ -42,16 +42,6 @@ def Array_index_To_Map_coordinates(Index):
     X = np.array( (Index * resolution) + origin )
     return X
 
-#https://qiita.com/AnchorBlues/items/0dd1499196670fdf1c46
-def draw(data,cb_min,cb_max):  #cb_min,cb_max:カラーバーの下端と上端の値
-    X,Y=np.meshgrid(np.arange(data.shape[1]),np.arange(data.shape[0]))
-    plt.figure(figsize=(10,4))  #図の縦横比を指定する
-    div=20.0                    #図を描くのに何色用いるか
-    delta=(cb_max-cb_min)/div
-    interval=np.arange(cb_min,abs(cb_max)*2+delta,delta)[0:int(div)+1]
-    plt.contourf(X,Y,data,interval)
-    plt.show()
-    
 
 ########################################
 if __name__ == '__main__': 
@@ -89,8 +79,6 @@ if __name__ == '__main__':
 
     #地図の上に重み(ヒートマップ形式)を加える
     plt.imshow(gridmap + (50+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100) #, vmin = 0.0, vmax = 1.0)
-    #wmax = np.log(np.max(PathWeightMap))
-    #wmin = np.log(np.min(PathWeightMap))
     plt.imshow(PathWeightMap,norm=LogNorm(), origin='lower', cmap='viridis') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
     #extent=[0, PathWeightMap.shape[1], PathWeightMap.shape[0],0 ] ) #, vmin = 0.0, vmax = 1.0) + np.log((np.exp(wmin)+np.exp(wmax))/2.0)
     
@@ -113,67 +101,4 @@ if __name__ == '__main__':
 
     #plt.show()
     
-    ########################################
-    """
-    p2 = PathWeighMap
-
-    #y軸z軸作成
-    yy,zz = [],[]
-    y = p2[0,:]
-    z = p2[:,0]
-    y = y[1:]
-    z = z[1:]
-
-    for num in range(len(y)):
-        yy.append(y)
-    for num in range(len(z)):
-        zz.append(z)
-    Y = np.array(yy)
-    Z = np.array(zz).T
-
-    #データ2次元配列生成
-    p2 = np.delete(p2,0,1)
-    p2 = np.delete(p2,0,0)
-
-    #描画
-    plt.contourf(Y,Z,p2,100)
-    plt.xlabel("y")
-    plt.ylabel("z")
-    plt.show()
-    """
-
-    """
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
     
-    H = ax.hist2d(x,y, bins=40)
-    ax.set_title('1st graph')
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    fig.colorbar(H[3],ax=ax)
-    plt.show()
-    """
-
-    """
-    min_index = [0,0]
-    min_map = Array_index_To_Map_coordinates(min_index)
-    max_index = [map_width,map_length]
-    max_map = Array_index_To_Map_coordinates(max_index)
-    
-    x = np.arange(min_map[0], max_map[0], resolution) #x軸の描画範囲の生成。0から10まで0.05刻み。
-    y = np.arange(min_map[1], max_map[1], resolution) #y軸の描画範囲の生成。0から10まで0.05刻み。
-
-    X, Y = np.meshgrid(x, y)
-    Z = PathWeightMap[x][y] #np.sin(X) + np.cos(Y)   # 表示する計算式の指定。等高線はZに対して作られる。
-
-    plt.pcolormesh(X, Y, Z, cmap='hsv') # 等高線図の生成。cmapで色付けの規則を指定する。
-    #plt.pcolor(X, Y, Z, cmap='hsv') # 等高線図の生成。cmapで色付けの規則を指定する。
-    """
-
-    #plt.title("100x100 matrix")
-    #ax = plt.gca()
-    #ax.invert_xaxis()
-    #ax.invert_yaxis()
-
-
-
