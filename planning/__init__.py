@@ -25,9 +25,11 @@ navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder 
 #Cost map folder
 costmap_folder = navigation_folder
 
+#途中から始める場合(trellisを読み込むためのtの値, 最初から:0)
+T_restart = 0 #次元削減の処理で計算上の状態数が変わってしまうため使えない
 
 #################### Parameters ####################
-T_horizon  = 100     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第
+T_horizon  = 200     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第
 N_best     = 10      #N of N-best (N<=10)
 step       = 50      #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
 

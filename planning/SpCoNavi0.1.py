@@ -564,16 +564,23 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
     e = PathWeight #emission(nstates[i])
     m = [i for i in prange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
     
+    Transition = np.array([approx_log_zero for j in prange(state_num)]) #参照渡しになってしまう
+
     temp = 1
     #Forward
     print "Forward"
     for i in prange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
-        #このfor文の中でiを別途インディケータとして使わないこと
-        print "T:",i+1
+      #このfor文の中でiを別途インディケータとして使わないこと
+      print "T:",i+1
+      if (i+1 == T_restart):
+        outputname_restart = outputfile + "T"+str(T_restart)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
+        trellis = ReadTrellis(outputname_restart, i+1)
+        cost = trellis[-1]
+      if (i+1 >= T_restart):
         #cost = [update(cost, t, f) for t, f in zip(m, e)]
         #cost = [update_sparse(cost, Transition[t], f) for t, f in zip(m, e)] #なぜか遅い
         cost_np = np.array([cost[c][0] for c in prange(len(cost))])
-        Transition = np.array([approx_log_zero for j in prange(state_num)]) #参照渡しになってしまう
+        #Transition = np.array([approx_log_zero for j in prange(state_num)]) #参照渡しになってしまう
 
         #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in prange(len(e))]
         cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in izip(m, e)] #izipの方がメモリ効率は良いが、zipとしても処理速度は変わらない
@@ -653,6 +660,13 @@ def SaveTrellis(trellis, outputname, temp):
     # 結果をファイル保存
     np.save(outputname + "_trellis" + str(temp) + ".npy", trellis) #, delimiter=",")
     print "Save trellis: " + outputname + "_trellis" + str(temp) + ".npy"
+
+def ReadTrellis(outputname, temp):
+    print "ReadTrellis"
+    # 結果をファイル保存
+    trellis = np.load(outputname + "_trellis" + str(temp) + ".npy") #, delimiter=",")
+    print "Read trellis: " + outputname + "_trellis" + str(temp) + ".npy"
+    return trellis
 
 #パス計算のために使用したLookupTable_ProbCtをファイル保存する
 def SaveLookupTable(LookupTable_ProbCt, outputfile):

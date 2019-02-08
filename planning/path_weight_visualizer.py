@@ -1,6 +1,6 @@
 #coding:utf-8
 #Akira Taniguchi 2019/01/22-2019/02/05-
-#For Visualization of Path on the grid map
+#For Visualization of Path and Posterior emission probability (PathWeightMap) on the grid map
 import sys
 #from math import pi as PI
 #from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2
@@ -12,7 +12,7 @@ from matplotlib.colors import LogNorm
 from __init__ import *
 #from submodules import *
 ##実行コマンド例：
-##python ./path_visualizer.py alg2wicWSLAG10lln008 8
+##python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 
 
 #マップを読み込む⇒確率値に変換⇒2次元配列に格納
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     gridmap = ReadMap(outputfile)
 
     #PathWeightMapを読み込む
-    #PathWeightMap = ReadProbMap(outputfile)
+    PathWeightMap = ReadProbMap(outputfile)
 
     init_position_num = 0
     X_init = X_candidates[int(init_position_num)]
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     x_min = 180 #X_init_index[1] - T_horizon
     x_max = 510 #X_init_index[1] + T_horizon
     #if (x_min>=0 and x_max<=map_width and y_min>=0 and y_max<=map_length):
-    #PathWeightMap = PathWeightMap[x_min:x_max, y_min:y_max] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
+    PathWeightMap = PathWeightMap[x_min:x_max, y_min:y_max] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
     PathMap = PathMap[x_min:x_max, y_min:y_max] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
     gridmap = gridmap[x_min:x_max, y_min:y_max]
 
@@ -112,13 +112,12 @@ if __name__ == '__main__':
 
     #地図の上に重み(ヒートマップ形式)を加える
     plt.imshow(gridmap + (50+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100) #, vmin = 0.0, vmax = 1.0)
-    plt.imshow(PathMap,norm=LogNorm(), origin='lower', cmap='viridis') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
-    #plt.imshow(PathWeightMap,norm=LogNorm(), origin='lower', cmap='viridis') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
+    plt.imshow(PathWeightMap,norm=LogNorm(), origin='lower', cmap='viridis') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
+    
 
-
-    #pp=plt.colorbar (orientation="vertical",shrink=0.8) # カラーバーの表示 
-    #pp.set_label("Probability (log scale)", fontname="Arial", fontsize=10) #カラーバーのラベル
-    #pp.ax.tick_params(labelsize=8)
+    pp=plt.colorbar (orientation="vertical",shrink=0.8) # カラーバーの表示 
+    pp.set_label("Probability (log scale)", fontname="Arial", fontsize=10) #カラーバーのラベル
+    pp.ax.tick_params(labelsize=8)
     plt.tick_params(axis='x', which='major', labelsize=8)
     plt.tick_params(axis='y', which='major', labelsize=8)
     #plt.xlim([380,800])             #x軸の範囲
@@ -126,11 +125,14 @@ if __name__ == '__main__':
     plt.xlabel('X', fontsize=10)
     plt.ylabel('Y', fontsize=10)
 
+    plt.imshow(PathMap, origin='lower', cmap='autumn') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
+
+
     #地図をカラー画像として保存
     #output = outputfile + "N"+str(N_best)+"G"+str(speech_num)
-    plt.savefig(outputname + '_Path.eps', dpi=300)#, transparent=True
-    plt.savefig(outputname + '_Path.png', dpi=300)#, transparent=True
-    plt.savefig(outputname + '_Path.pdf', dpi=300)#, transparent=True
+    plt.savefig(outputname + '_Path_Weight.eps', dpi=300)#, transparent=True
+    plt.savefig(outputname + '_Path_Weight.png', dpi=300)#, transparent=True
+    plt.savefig(outputname + '_Path_Weight.pdf', dpi=300)#, transparent=True
 
     #plt.show()
     
