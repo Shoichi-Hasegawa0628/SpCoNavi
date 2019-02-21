@@ -2,7 +2,9 @@
 SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Probabilistic Inference on Bayesian Generative Model
 
 ## Abstract
-TBA  
+The aim of this study is to enable a mobile robot to perform navigation tasks by probabilistic inference using spatial concepts on a probabilistic model. 
+Specifically, path planning is performed to the target state of a spatial concept estimated through human speech instructions such as ``Go to the kitchen''.
+In the experiment, places instructed by the speech command of the user showed high probability values, and the trajectory toward the target place was correctly estimated.   
 
 | Figure1: The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping | Figure2: The graphical model of SpCoNavi: Spatial Concept-based Path-Planning | 
 | :---: | :---: | 
@@ -43,17 +45,28 @@ python costmap.py alg2wicWSLAG10lln008
 
 【SpCoNaviのテスト実行コマンド】  
 ~~~
-python ./SpCoNavi0.01.py alg2wicWSLAG10lln008 0 0 0
+python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
 ~~~
+
+ python ./SpCoNavi0.1.py trialname particle\_num init\_position_num speech\_num  
 
 【準備コマンド】  
 ~~~
 sudo pip install numba
-sudo pip install colorama
 ~~~
 
 ## Notes
-TBA  
+実行時に、以下のようなWarning文が出るときは、pipでcoloramaをインストールorアップデートしてみてください。  
+~~~
+/usr/local/lib/python2.7/dist-packages/numba/errors.py:104: UserWarning: Insufficiently recent colorama version found. Numba requires colorama >= 0.3.9
+  warnings.warn(msg)
+~~~
+
+~~~
+sudo pip install colorama
+~~~
+
+
 
 ---
 【Other repositories】  
@@ -62,4 +75,4 @@ TBA
  - [SpCoSLAM 2.0](https://github.com/a-taniguchi/SpCoSLAM2): An Improved and Scalable Online Learning of Spatial Concepts and Language Models with Mapping (New version of online learning algorithm)   
  - [SpCoSLAM_evaluation](https://github.com/a-taniguchi/SpCoSLAM_evaluation): The codes for the evaluation or the visualization in our paper  
 
-2019/01/22  Akira Taniguchi  
+2019/02/21  Akira Taniguchi  

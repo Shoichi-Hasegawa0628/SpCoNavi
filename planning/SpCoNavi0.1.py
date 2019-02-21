@@ -9,6 +9,8 @@
 #テスト実行・デバッグ
 #ムダの除去・さらなる高速化
 
+#sum_i_GaussMultiがnp.arrayになっていなかった(?)⇒np.array化したが計算上変わらないはず (2019/02/17)
+
 ##########---作業終了タスク---##########
 ##文字コードをsjisのままにした
 ##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
@@ -331,7 +333,7 @@ def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,
     if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
       X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
       #print X_temp,Mu
-      sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
+      sum_i_GaussMulti = np.array( [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ] ) ##########!!!
       PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
     else:
       PostProb = 0.0
@@ -405,7 +407,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
 
     print "Please wait for PostProbMap"
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
-    if (os.path.isfile(output) == False):  #すでにファイルがあれば作成しない
+    if (os.path.isfile(output) == False) or (UPDATE_PostProbMap == 1):  #すでにファイルがあれば作成しない
       #PathWeightMap = PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも #CostMapProb * PostProbMap #後の処理のために、この時点ではlogにしない
       PathWeightMap = PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #,IndexMap) 
       
@@ -429,7 +431,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       map_length = len(PathWeightMap)
       map_width  = len(PathWeightMap[0])
     else:
-      print "[ERROR] The initial position is outside the map."
+      print "[WARNING] The initial position (or init_pos +/- T_horizon) is outside the map."
       #print X_init, X_init_index
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
@@ -598,7 +600,8 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
             path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
           
             SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero)
-            SaveTrellis(trellis, outputname, i+1)
+            if (SAVE_Trellis == 1):
+              SaveTrellis(trellis, outputname, i+1)
             temp = 0
         temp += 1
 
