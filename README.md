@@ -1,7 +1,6 @@
 # SpCoNavi
 SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Probabilistic Inference on Bayesian Generative Model  
-
-<img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/outline.png" width="420px">
+<img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/outline.png" width="480px">
 
 ## Abstract
 The aim of this study is to enable a mobile robot to perform navigation tasks by probabilistic inference using spatial concepts on a probabilistic model. 
@@ -20,8 +19,6 @@ In the experiment, places instructed by the speech command of the user showed hi
 - Speech recognition system: Julius dictation-kit-v4.4 GMM-HMM/DNN-HMM (Using Japanese syllabary dictionary, N-best output)  
 
 ## Preparation for execution  
-TBA  
-
 【準備コマンド】  
 ~~~
 sudo pip install numpy scipy matplotlib numba
@@ -39,8 +36,6 @@ sudo pip install colorama
 ~~~
 
 ## Execution procedure
-TBA  
-
 【コストマップ取得のためのコマンドリスト】  
 ~~~
 (別ターミナル：起動しなくてもいい)
@@ -60,6 +55,7 @@ roslaunch fourth_robot_2dnav global_costmap.launch map_file:=my_map.yaml
 cd ~/Dropbox/SpCoNavi/planning
 python costmap.py alg2wicWSLAG10lln008
 ~~~
+'alg2wicWSLAG10lln008'の箇所には、SpCoSLAM実行時の'trialname'を指定してください。  
 
 【SpCoNaviのテスト実行コマンド】  
 ~~~
