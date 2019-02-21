@@ -1,14 +1,14 @@
 # SpCoNavi
 SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Probabilistic Inference on Bayesian Generative Model  
 
-<img src="https://github.com/a-taniguchi/SpCoSLAM/blob/master/img/outline.png" width="420px">
+<img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/outline.png" width="420px">
 
 ## Abstract
 The aim of this study is to enable a mobile robot to perform navigation tasks by probabilistic inference using spatial concepts on a probabilistic model. 
 Specifically, path planning is performed to the target state of a spatial concept estimated through human speech instructions such as ``Go to the kitchen''.
 In the experiment, places instructed by the speech command of the user showed high probability values, and the trajectory toward the target place was correctly estimated.   
 
-| Figure1: The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping [^1] | Figure2: The graphical model of SpCoNavi: Spatial Concept-based Path-Planning [^2] | 
+| Fig.1: The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping [1] | Fig.2: The graphical model of SpCoNavi: Spatial Concept-based Path-Planning [2] | 
 | :---: | :---: | 
 | <img src="https://github.com/a-taniguchi/SpCoSLAM/blob/master/img/graphicalmodel02.jpg" width="320px"> | <img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/gmodel_spconavi_simple2.png" width="320px"> | 
 
@@ -27,7 +27,7 @@ TBA
 sudo pip install numpy scipy matplotlib numba
 ~~~
 
-### Notes
+【Notes】  
 実行時に、以下のようなWarning文が出るときは、pipでcoloramaをインストールorアップデートしてみてください。  
 ~~~
 /usr/local/lib/python2.7/dist-packages/numba/errors.py:104: UserWarning: Insufficiently recent colorama version found. Numba requires colorama >= 0.3.9
@@ -71,12 +71,12 @@ python ./SpCoNavi0.1.py trialname particle\_num init\_position_num speech\_num
 ~~~
 python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 ~~~
-python ./path\_weight\_visualizer.py alg2wicWSLAG10lln008 speech\_num  
+python ./path\_weight\_visualizer.py trialname speech\_num  
 
 ---
 ## Reference
-[^1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
-[^2]: 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019. (発表予定)  
+[1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
+[2]: 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019. (発表予定)  
 
 【Other repositories】  
  - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
