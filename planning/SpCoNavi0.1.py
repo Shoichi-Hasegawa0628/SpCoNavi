@@ -420,6 +420,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
 
 
     #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２次元配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
+    Bug_removal_savior = 0  #座標変換の際にバグを生まないようにするためのフラグ
     x_min = X_init_index[0] - T_horizon
     x_max = X_init_index[0] + T_horizon
     y_min = X_init_index[1] - T_horizon
@@ -432,6 +433,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       map_width  = len(PathWeightMap[0])
     else:
       print "[WARNING] The initial position (or init_pos +/- T_horizon) is outside the map."
+      Bug_removal_savior = 1
       #print X_init, X_init_index
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
@@ -485,7 +487,10 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
-    Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
+    if ( Bug_removal_savior == 0):
+      Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
+    else:
+      Path_2D_index_original = Path_2D_index
     Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #ROSのパスの形式にできればなおよい
 
     #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
@@ -647,8 +652,11 @@ def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero):
     print "PathSaveTemp"
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
-    Path_2D_index = [ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ]
-    Path_2D_index_original = np.array(Path_2D_index) + np.array(X_init) - T_horizon
+    Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
+    if ( Bug_removal_savior == 0):
+      Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
+    else:
+      Path_2D_index_original = Path_2D_index
     Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #
 
     #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
