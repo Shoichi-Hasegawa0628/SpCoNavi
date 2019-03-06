@@ -37,14 +37,14 @@ X_candidates = [[340, 590]] ###TEST #2次元配列のインデックス(VR340)
 ##0:kyouyuseki,1:kyukeijyo,2:roboqtookiba,3:ikidomari,4:miithingusupeesu,5:kyouinkennkyushitsu,6:purintaabeya,7:daidokoro,8:siroitana
 
 #途中から始める場合(trellisを読み込むためのtの値, 最初から:0)
-T_restart = 0 #T_horizonが変わると次元削減の処理で計算上の状態数が変わってしまうため現状使えない
+T_restart = 0 #T_horizonが変わると次元削減の処理で計算上の状態数が変わってしまうため現状使えない。trellisを保存していないとそもそも途中から再開できない。
 
 SAVE_time    = 1      #計算時間を保存するかどうか(保存する:1、保存しない:0)
 SAVE_X_init  = 0      #初期値をファイル保存するか（このファイルで指定する場合は事前にわかっているので不要）
 SAVE_T_temp  = 10     #途中のパスを一時ファイル保存する(途中のTの値ごと)
 SAVE_Trellis = 0      #Viterbi Path推定時のトレリスを保存するか(保存する:1、保存しない:0)
 
-UPDATE_PostProbMap = 1 #ファイルが既にあっても、PostProbMapの計算を行う(1)
+UPDATE_PostProbMap = 0 #ファイルが既にあっても、PostProbMapの計算を行う(1)
 
 #近似手法の選択(Proposed(JSAI2019版):0, samplingCtit:1(未実装), xの次元削減とか...(未実装), 近似せずに厳格に計算:-1)
 Approx = 0

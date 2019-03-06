@@ -333,7 +333,7 @@ def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,
     if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
       X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
       #print X_temp,Mu
-      sum_i_GaussMulti = np.array( [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ] ) ##########!!!
+      sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ] ##########np.array( ) !!! np.arrayにすると、numbaがエラーを吐く
       PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
     else:
       PostProb = 0.0
@@ -433,7 +433,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       map_width  = len(PathWeightMap[0])
     else:
       print "[WARNING] The initial position (or init_pos +/- T_horizon) is outside the map."
-      Bug_removal_savior = 1
+      Bug_removal_savior = 0 #1
       #print X_init, X_init_index
 
     #計算量削減のため状態数を減らす(状態空間を一次元配列にする⇒0の要素を除く)
@@ -483,7 +483,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     """
 
     #Viterbi Algorithmを実行
-    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init) #, Transition_one_NOzero)
+    Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior) #, Transition_one_NOzero)
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする
     Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
@@ -556,7 +556,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
 
 #ViterbiPathを計算してPath(軌道)を返す
 #@jit(parallel=True) #print関係(?)のエラーが出たので一時避難
-def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original): #, Transition):
+def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original, Bug_removal_savior): #, Transition):
     #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
     print "Start Viterbi Algorithm"
 
@@ -604,7 +604,7 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
               #print "x", len(x), x
             path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
           
-            SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero)
+            SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero, Bug_removal_savior)
             if (SAVE_Trellis == 1):
               SaveTrellis(trellis, outputname, i+1)
             temp = 0
@@ -648,7 +648,7 @@ def SavePath(X_init, Path, Path_ROS, outputname):
     print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
 
 #パスをファイル保存する（形式未定）
-def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero):
+def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero, Bug_removal_savior):
     print "PathSaveTemp"
 
     #1次元配列のインデックスを2次元配列のインデックスへ⇒ROSの座標系にする

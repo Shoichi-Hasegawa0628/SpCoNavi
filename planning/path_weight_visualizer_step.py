@@ -73,8 +73,9 @@ if __name__ == '__main__':
     outputname = outputfile + conditions
 
 
-    for temp in range(SAVE_T_temp,T_horizon,SAVE_T_temp):
-
+    #for temp in range(SAVE_T_temp,T_horizon+SAVE_T_temp,SAVE_T_temp):
+    temp = 400
+    if (1):
       #地図のファイルを読み込む
       gridmap = ReadMap(outputfile)
 
@@ -98,6 +99,7 @@ if __name__ == '__main__':
             if (X_init[0] == i) and (X_init[1] == j):
               PathMap[i][j] = 1.0
             for t in xrange(len(Path)):
+              #if ( Path[t][0] == i ) and ( Path[t][1] == j ): ################バグがないならこっちを使う
               if ( int(Path[t][0] -X_init[0]+T_horizon) == i) and ( int(Path[t][1] -X_init[1]+T_horizon) == j): ################バグに対処療法した
                 PathMap[i][j] = 1.0
 
