@@ -1,8 +1,8 @@
 #coding:utf-8
 
 ###########################################################
-# SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
-# Akira Taniguchi 2018/12/13-2019/3/10-
+# SpCoNavi: Spatial Concept-based Path-Planning Program (開発中：StのN-bestを別々に計算する版)
+# Akira Taniguchi 2018/12/13-2019/3/28
 ###########################################################
 
 ##########---遂行タスク---##########
@@ -196,36 +196,37 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
     ##学習した単語辞書を用いて音声認識し、BoWを得る
     St = RecogNbest( speech_file, step, trialname )
     #print St
-    Otb_B = [0 for i in xrange(len(W_index))] #[[] for j in xrange(len(St))]
-    for j in xrange(len(St)):
+    Otb_B_N = [ [0 for i in xrange(len(W_index))] for n in xrange(N_best)]
+    #Otb_B = [0 for i in xrange(len(W_index))] #[[] for j in xrange(len(St))]
+    for n in xrange(N_best):
       for i in xrange(5):
-              St[j] = St[j].replace("<s>", "")
-              St[j] = St[j].replace("</s>", "")
-              St[j] = St[j].replace(" <s> ", "")
-              St[j] = St[j].replace("<sp>", "")
-              St[j] = St[j].replace(" </s>", "")
-              St[j] = St[j].replace("  ", " ") 
-              St[j] = St[j].replace("\n", "")   
-      print j,St[j]
-      Otb = St[j].split(" ")
+              St[n] = St[n].replace(" <s> ", "")
+              St[n] = St[n].replace("<sp>", "")
+              St[n] = St[n].replace(" </s>", "")
+              St[n] = St[n].replace("<s>", "")
+              St[n] = St[n].replace("</s>", "")
+              St[n] = St[n].replace("  ", " ") 
+              St[n] = St[n].replace("\n", "")   
+      print n,St[n]
+      Otb = St[n].split(" ")
 
-      for j2 in xrange(len(Otb)):
-          #print n,j,len(Otb_Samp[r][n])
+      for j in xrange(len(Otb)):
+          #print n,n,len(Otb_Samp[r][n])
           for i in xrange(len(W_index)):
             #print W_index[i].decode('sjis'),Otb[j]
-            if (W_index[i].decode('sjis') == Otb[j2] ):  #'utf8'
-              Otb_B[i] = Otb_B[i] + 1
-              #print W_index[i].decode('sjis'),Otb[j]
-    print Otb_B
+            if (W_index[i].decode('sjis') == Otb[j] ):  #'utf8'
+              Otb_B_N[n][i] = Otb_B_N[n][i] + 1
+              #print W_index[i].decode('sjis'),Otb[n]
+    print Otb_B_N
 
     # 認識結果をファイル保存
     f = open( outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_St.csv" , "w") # , "sjis" )
-    for i in xrange(len(St)):
+    for i in xrange(N_best):
         f.write(St[i].encode('sjis'))
         f.write('\n')
     f.close()
 
-    return Otb_B
+    return Otb_B_N
 
 #角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
 def pi_2_pi(angle):
@@ -401,7 +402,10 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "MAP[length][width]:",map_length,map_width
 
     #事前計算できるものはしておく
-    LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+    Sum_C_Multi_nbest = [ sum([multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c]) for c in xrange(L)]) for n in xrange(N_best)]
+    LookupTable_ProbCt = np.array([ sum([ (multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c])/Sum_C_Multi_nbest[n]) for n in xrange(N_best)]) * Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+    #LookupTable_ProbCt = np.array([ sum([ (multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c])) for n in xrange(N_best)]) * Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+    
     ###SaveLookupTable(LookupTable_ProbCt, outputfile)
     ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #事前計算結果をファイル読み込み(計算する場合と大差ないかも)
 
@@ -538,7 +542,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #Index_2D #絶対座標系にする
     MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
-　　count_t = 0
+    count_t = 0
     for c in prange(len(MoveIndex_list_n_list)): #prangeの方がxrangeより速い
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
@@ -547,9 +551,9 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     
     #計算上おかしい場合はエラー表示を出す．
     if (count_t == 0): #遷移確率がすべて0．移動できないということを意味する．
-      print "[ERROR] All transition is approx_log_zero."
+      print("[ERROR] All transition is approx_log_zero.")
     elif (count_t == 1): #遷移確率がひとつだけある．移動可能な座標が一択．
-      print "[WARNING] One transition is zero."
+      print("[WARNING] One transition is zero.", n, m) #なぜかこれがでる．問題ないのか調査中。n==mのときになっている
     
     #trans = Transition #np.array(Transition)
     arr = cost + Transition #trans

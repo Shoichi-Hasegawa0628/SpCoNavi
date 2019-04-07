@@ -125,6 +125,11 @@ if __name__ == '__main__':
     #plt.ylim([180,510])             #y軸の範囲
     plt.xlabel('X', fontsize=10)
     plt.ylabel('Y', fontsize=10)
+    
+    ######type 1 font#####
+    #plt.rcParams['ps.useafm'] = True
+    #plt.rcParams['pdf.use14corefonts'] = True
+    ##plt.rcParams['text.usetex'] = True
 
     #地図をカラー画像として保存
     #output = outputfile + "N"+str(N_best)+"G"+str(speech_num)

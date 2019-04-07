@@ -1,6 +1,6 @@
 #coding:utf-8
 #The file for setting parameters
-#Akira Taniguchi 2018/12/13-2019/01/25-
+#Akira Taniguchi 2018/12/13-2019/03/10-
 import numpy as np
 
 ##実行コマンド
@@ -19,8 +19,10 @@ speech_folder_go = "/home/akira/Dropbox/Julius/directory/SpCoSLAMgo/*.wav"  #評
 lmfolder = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language model (word dictionary)
 
 #Navigation folder (他の出力ファイルも同フォルダ)
-navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
+navigation_folder = "/navi_s/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 #SpCoSLAMのフォルダ形式に従うようにしている
+#"/navi_s/"は、StのN-bestを別々に計算する版
+#"/navi_s2/"は、StのN-bestを別々に計算する版+URの分母の割り算省略版
 
 #Cost map folder
 costmap_folder = navigation_folder
@@ -28,7 +30,7 @@ costmap_folder = navigation_folder
 
 
 #################### Parameters ####################
-T_horizon  = 400     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第
+T_horizon  = 10     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第 #値が大きすぎる(400)と，数値計算(おそらく遷移確立)の問題でパス生成がバグることがあるので注意
 N_best     = 10      #N of N-best (N<=10)
 step       = 50      #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
 
@@ -44,10 +46,11 @@ SAVE_X_init  = 0      #初期値をファイル保存するか（このファイ
 SAVE_T_temp  = 10     #途中のパスを一時ファイル保存する(途中のTの値ごと)
 SAVE_Trellis = 0      #Viterbi Path推定時のトレリスを保存するか(保存する:1、保存しない:0)
 
-UPDATE_PostProbMap = 0 #ファイルが既にあっても、PostProbMapの計算を行う(1)
+UPDATE_PostProbMap = 1 #ファイルが既にあっても、PostProbMapの計算を行う(1)
 
 #近似手法の選択(Proposed(JSAI2019版):0, samplingCtit:1(未実装), xの次元削減とか...(未実装), 近似せずに厳格に計算:-1)
-Approx = 0
+Approx = 0  
+#現状、N-best近似しない版は別のプログラム（SpCoNavi0.1s.py）
 
 #状態遷移のダイナミクス(動作モデル)の仮定(確定的:0, 確率的:1, 近似:2(未実装))
 #Dynamics = 0
@@ -55,7 +58,7 @@ Approx = 0
 cmd_vel = 1  #ロボットの移動量(ROSではcmd_vel [m/s], [rad/s])[基本的に1(整数値)]
 MotionModelDist = "Gauss"  #"Gauss"：ガウス分布、"Triangular":三角分布
 
-#オドメトリ動作モデルパラメータ(AMCL or gmappingと同じ値にする)
+#オドメトリ動作モデルパラメータ(AMCL or gmappingと同じ値にする)：未使用
 odom_alpha1 = 0.2  #(ダブル、デフォルト：0.2) ロボットの動きの回転移動からオドメトリの回転移動のノイズ
 odom_alpha2 = 0.2  #(ダブル、デフォルト：0.2) ロボットの動きの平行移動からオドメトリの回転移動のノイズ
 odom_alpha3 = 0.2  #(ダブル、デフォルト：0.2) ロボットの動きの平行移動からオドメトリの平行移動のノイズ
@@ -68,7 +71,7 @@ odom_alpha4 = 0.2  #(ダブル、デフォルト：0.2) ロボットの動きの
 #ROSのトピック名
 MAP_TOPIC     = "/map"
 COSTMAP_TOPIC = "/move_base/global_costmap/costmap"
-#PATH_TOPIC = "/spconavi/path"
+#PATH_TOPIC = "/spconavi/path" #未実装
 
 #地図のyamlファイルと同じ値にする
 resolution = 0.050000
@@ -79,12 +82,12 @@ origin =  np.array([-30.000000, -20.000000]) #, 0.000000]
 #map_width  = 0
 
 #Julius parameters
-##Please see "syllable.jconf" in Julius folder
 JuliusVer      = "v4.4"   #"v.4.3.1"
 HMMtype        = "DNN"    #"GMM"
 lattice_weight = "AMavg"  #"exp" #音響尤度(対数尤度："AMavg"、尤度："exp")
 wight_scale    = -1.0
 #WDs = "0"   #DNN版の単語辞書の音素を*_Sだけにする("S"), BIE or Sにする("S"以外)
+##In other parameters, please see "main.jconf" in Julius folder
 
 if (JuliusVer ==  "v4.4"):
   Juliusfolder = "/home/akira/Dropbox/Julius/dictation-kit-v4.4/"
