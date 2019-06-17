@@ -16,7 +16,7 @@ In the experiment, places instructed by the speech command of the user showed hi
 - Ubuntu 14.04  
 - Python 2.7.6  
 - ROS indigo  
-- Speech recognition system: Julius dictation-kit-v4.4 GMM-HMM/DNN-HMM (Using Japanese syllabary dictionary, N-best output)  
+- Speech recognition system: Julius dictation-kit-v4.4 GMM-HMM/DNN-HMM (N-best output)  
 
 ## Preparation for execution  
 【準備コマンド】  
@@ -59,20 +59,32 @@ python costmap.py alg2wicWSLAG10lln008
 
 【SpCoNaviのテスト実行コマンド】  
 ~~~
+python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
+~~~
+例：
+~~~
 python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
 ~~~
-python ./SpCoNavi0.1.py trialname particle\_num init\_position_num speech\_num  
 
 【出力確率とパスの可視化の実行コマンド】
 ~~~
+python ./path\_weight\_visualizer.py trialname speech_num  
+~~~
+例：
+~~~
 python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 ~~~
-python ./path\_weight\_visualizer.py trialname speech\_num  
 
+## Folder
+ - `/costmap_global/`: Get 2d costmap
+ - `/data/alg2wicWSLAG10lln008/navi/`: Sample output data
+ - `/img/`: Image files for README.md
+ - `/planning/`: Main codes for planning
+ 
 ---
 ## Reference
 [1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
-[2]: 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019. (発表予定)  
+[2]: 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019. (Japanese)  
 
 【Other repositories】  
  - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
@@ -81,3 +93,4 @@ python ./path\_weight\_visualizer.py trialname speech\_num
  - [SpCoSLAM_evaluation](https://github.com/a-taniguchi/SpCoSLAM_evaluation): The codes for the evaluation or the visualization in our paper  
 
 2019/02/21  Akira Taniguchi  
+2019/06/17  Akira Taniguchi (Update)  
