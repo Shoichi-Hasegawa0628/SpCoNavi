@@ -19,7 +19,7 @@ speech_folder_go = "/home/akira/Dropbox/Julius/directory/SpCoSLAMgo/*.wav"  #評
 lmfolder = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language model (word dictionary)
 
 #Navigation folder (他の出力ファイルも同フォルダ)
-navigation_folder = "/navi_s/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
+navigation_folder = "/navi_s2/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 #SpCoSLAMのフォルダ形式に従うようにしている
 #"/navi_s/"は、StのN-bestを別々に計算する版
 #"/navi_s2/"は、StのN-bestを別々に計算する版+URの分母の割り算省略版
