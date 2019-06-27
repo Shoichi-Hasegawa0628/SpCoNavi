@@ -112,5 +112,7 @@ PythonRobotics-master/
 navigation/
 *.py~
 CoRL/dataset/
+CoRL/data/
 CoRL/test/
+.lnk
 Spacial_Concept_Formation/
