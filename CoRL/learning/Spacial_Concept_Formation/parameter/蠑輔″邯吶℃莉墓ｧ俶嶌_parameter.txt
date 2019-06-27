@@ -1,0 +1,15 @@
+引き継ぎ　プログラム仕様書（2017/3月 石伏　智)
+
+
+description_function.txt　機能記述情報の辞書
+place_name.txt 場所の名前情報の辞書
+
+gibbs_hyper_parameter.txt 場所領域モデルに用いるハイパーパラメータ
+gibbs_trans_hyper_parameter.txt 学習に用いるハイパーパラメータ
+
+training_list 学習に用いるデータセットを記載するテキスト（出力のデータセット番号に一致）
+
+
+
+
+

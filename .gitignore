@@ -112,3 +112,5 @@ PythonRobotics-master/
 navigation/
 *.py~
 CoRL/dataset/
+CoRL/test/
+Spacial_Concept_Formation/

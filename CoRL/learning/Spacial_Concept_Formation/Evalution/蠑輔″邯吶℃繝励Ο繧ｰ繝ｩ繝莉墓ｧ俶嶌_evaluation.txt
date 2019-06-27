@@ -1,0 +1,152 @@
+引き継ぎ　プログラム仕様書（2017/3月 石伏　智)
+
+
+~~~~~~~~~~~IROS2017用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+＜＜前処理プログラム＞＞
+学習後、評価を行う前に実行する必要がある.
+-------------
+mutual_information.py :学習結果から場所の名前と場所概念のクラスに対する相互情報量を計算する。
+計算方法は修論を参照
+
+使用コマンド 
+$python mutual_information.py "学習結果フォルダ"
+
+使用例 
+$python mutual_information.py "学習結果フォルダ"
+
+--------
+name_self_information_generate.py 各学習データセットの名前情報の情報量を計算（データセット内にname_point.txtがある場合は実行する必要なし）
+
+使用例 
+
+
+
+
+＜＜場所の名前の推定プログラム＞＞＞＞
+・name_estimate.py 
+:transfer_Model または　Multimodal_place concept model またはSpcoAの学習結果から
+場所の名前の推定を行うプログラム
+
+
+・出力
+シェル上にに各環境におけるテストセットに対して名前の推定を行った評価値のtotalとaverageを出力
+（評価方法は修論を参照)
+
+各テストデータに対して推定した場所の名前のBest3を学習結果のフォルダにname_estimate_new.txtとして保存される。
+
+
+・使用コマンド
+$python name_estimate.py "学習結果のフォルダ" "学習データセットのリスト" "テストセット番号" "Best number"
+
+・使用例
+
+$python name_estimate.py ../result/transfer_result_example/ ../parameter/training_list 1 3
+
+
+このとき../result/transfer_result_example/ の結果を用いてテストセット１番のデータに対して名前の推定を行い評価する
+。結果は3Bestで出力される。
+
+
+
+
+------------
+・name_estimate_for_LDA.py　
+:Multimodal HDP LDAによって学習された結果をもちいて場所の名前の推定を行う.
+
+・使用コマンド
+$python name_estimate_for_LDA.py　"学習結果のフォルダ" "テストセット番号"
+
+・使用例
+$python name_estimate_for_LDA.py ../result/IROS_and_master_thesis_result/MHDP_LDA/LDA_word_3.5%/ 1 
+
+このとき../result/IROS_and_master_thesis_result/MHDP_LDA/LDA_word_3.5%/の学習結果をもちいて
+テストセット１番のデータに対して場所の名前の推定を行う.
+
+
+------------------
+concept_to_name.py
+学習された結果から場所概念における場所の名前のBest3を確認する.
+
+使用例$ python concept_to_name.py ../result/transfer_result_example/
+
+-----------------
+concept_to_function.py
+学習された結果から場所概念における機能記述情報のBest3を確認する
+
+使用例 $python concept_to_function.py ../result/transfer_result_example/
+
+
+-----------
+place_gauss_draw.py 学習された結果から場所領域のガウス分布をrvz上に出力する.
+
+使用例
+
+$python place_gauss_draw.py ../result/transfer_result_example/dataset0/ 15
+
+このとき15は出力した場所領域のインデックス番号である。
+
+----------
+region_name_check.py 学習された結果から場所領域における場所の名前のBest3を出力
+
+使用例
+$python region_name_estimate.py ../result/transfer_result_example/dataset0/ 4
+
+このとき４は出力したい場所領域のインデックス番号
+
+
+-----
+mutual_information_function.py 学習された結果から各場所概念のおける機能記述情報と場所概念の相互情報量を計算する.
+
+使用例
+$ python mutual_information_function.py ../result/transfer_result_example/dataset0/
+
+-----
+region_name_check.py 学習された結果から各場所領域における場所の名前と機能記述情報のベスト３を出力する
+
+使用例
+$python region_name_check.py ../result/transfer_result_example/dataset0/ 30
+
+このとき30は場所領域のインデックス
+
+
+
+
+
+＜＜＜＜位置推定用＞＞＞＞＞＞＞
+
+position_estimate_transfer.py 学習された結果を用いて場所の名前が与えられて時の位置を推定する.
+
+・出力
+シェル上---与えられた場所の名前に対して最も尤度が高い場所概念のインデックス、場所領域のインデックス
+入力した学習結果フォルダ内----place_samplingというフォルダに入力した場所の名前から推定した位置情報のサンプル点
+を出力する
+
+使用コマンド　python position_estimate_transfer.py "学習結果フォルダ"/dataset”データセット番号"/
+
+使用例　 python position_estimate_transfer.py  ../result/transfer_result_example/dataset0/ 
+
+
+入力する場所の名前はプログラム130行目のリストを書き換える。
+
+
+~~~~~~~~~~その他~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----
+name_count.py 各環境で場所の名前、機能記述が与えらた回数を確認する(
+出力はトレーニングデータセット内にname_count.txt function_count.txtとして出力される
+
+使用コマンド python name_count.py ”学習データセットフォルダ" ”データ数"
+
+
+------
+sampling_data.py 学習された結果（場所領域推定モデル）の場所領域のガウス分布から
+パーティクルをサンプリングする。
+
+---
+place_draw.py sampling_data.pyによってサンプリングされた値をrviz上に描写する。
+
+
+
+
+
+
+

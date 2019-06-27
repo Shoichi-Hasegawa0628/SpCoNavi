@@ -1,6 +1,6 @@
 #coding:utf-8
 #The file for setting parameters
-#Akira Taniguchi 2018/12/13-2019/03/10-
+#Akira Taniguchi 2018/12/13-2019/03/10-2019/06/27-
 import numpy as np
 
 ##実行コマンド
@@ -12,6 +12,7 @@ import numpy as np
 datafolder    = "/mnt/hgfs/D/Dropbox/SpCoSLAM/data/" #"/home/akira/Dropbox/SpCoSLAM/data/"  #
 #Setting of PATH for output folder
 outputfolder  = "/mnt/hgfs/D/Dropbox/SpCoSLAM/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
 #音声ファイルフォルダ
 speech_folder    = "/home/akira/Dropbox/Julius/directory/SpCoSLAM/*.wav"    #音声の教示データフォルダ
@@ -19,13 +20,13 @@ speech_folder_go = "/home/akira/Dropbox/Julius/directory/SpCoSLAMgo/*.wav"  #評
 lmfolder = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language model (word dictionary)
 
 #Navigation folder (他の出力ファイルも同フォルダ)
-navigation_folder = "/navi_s2/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
+navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 #SpCoSLAMのフォルダ形式に従うようにしている
 #"/navi_s/"は、StのN-bestを別々に計算する版
 #"/navi_s2/"は、StのN-bestを別々に計算する版+URの分母の割り算省略版
 
 #Cost map folder
-costmap_folder = navigation_folder
+costmap_folder = navigation_folder  #"/costmap/" #
 
 
 

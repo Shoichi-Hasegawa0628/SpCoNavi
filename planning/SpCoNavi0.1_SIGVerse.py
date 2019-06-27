@@ -1,13 +1,13 @@
 #coding:utf-8
 
 ###########################################################
-# SpCoNavi: Spatial Concept-based Path-Planning Program (開発中)
-# Akira Taniguchi 2018/12/13-2019/3/10-
+# SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse(開発中)
+# Akira Taniguchi 2019/06/24-
 ###########################################################
 
 ##########---遂行タスク---##########
-#テスト実行・デバッグ
-#ムダの除去・さらなる高速化
+#移動量と累積報酬（log likelihood）を保存するようにする
+
 
 
 
@@ -46,6 +46,8 @@
 #ViterbiPath
 
 ##########---保留---##########
+#テスト実行・デバッグ
+#ムダの除去・さらなる高速化
 #状態遷移確率(動作モデル)を確率モデルで計算する実装
 #状態数の削減のための近似手法の実装
 #並列処理
@@ -69,7 +71,7 @@ from scipy.stats import multivariate_normal,multinomial #,t,invwishart,rv_discre
 from math import pi as PI
 from math import cos,sin,sqrt,exp,log,degrees,radians,atan2 #,gamma,lgamma,fabs,fsum
 from __init__ import *
-from JuliusNbest_dec import *
+from JuliusNbest_dec_SIGVerse import *
 from submodules import *
 from numba import jit, njit, prange
 from scipy.io import mmwrite, mmread
@@ -497,7 +499,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
     print "Init:", X_init
     print "Path:\n", Path_2D_index_original
-    return Path_2D_index_original, Path_ROS, PathWeightMap
+    return Path_2D_index_original, Path_ROS, PathWeightMap, Path_one #, LogLikelihood_step, LogLikelihood_sum
 
 
 #移動位置の候補：現在の位置(2次元配列のインデックス)の近傍8セル+現在位置1セル
@@ -782,6 +784,29 @@ def ReadTransition_sparse(state_num, outputfile):
     print "Read Transition: " + output_transition
     return Transition
 
+#各ステップごとのlog likelihoodの値を保存
+def SaveLogLikekihood(LogLikelihood,flag):
+    # 結果をファイル保存
+    if   (flag == 0):
+        output_likelihood = outputfile + "T"+str(T_horizon) + "_Log_likelihood_step.csv"
+    elif (flag == 1):
+        output_likelihood = outputfile + "T"+str(T_horizon) + "_Log_likelihood_sum.csv"
+    np.savetxt( output_likelihood, LogLikelihood, delimiter=",")
+    print "Save LogLikekihood: " + output_likelihood
+
+#パスの移動距離を計算する
+def PathDistance(Path):
+    Distance = len(collections.Counter(Path))
+    print "Path Distance is ", Distance
+    return Distance
+
+#パスの移動距離を保存
+def SavePathDistance(Distance):
+    # 結果をファイル保存
+    output = outputfile + "T"+str(T_horizon) + "_Distance.csv"
+    np.savetxt( output, Distance, delimiter=",")
+    print "Save Distance: " + output
+
 ##単語辞書読み込み書き込み追加
 def WordDictionaryUpdate2(step, filename, W_list):
   LIST = []
@@ -983,7 +1008,7 @@ if __name__ == '__main__':
       fp.close()
 
     #パスプランニング
-    Path, Path_ROS, PathWeightMap = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
+    Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
 
     if (SAVE_time == 1):
@@ -995,7 +1020,10 @@ if __name__ == '__main__':
       fp.close()
 
     #パスの移動距離
-    #Distance = PathDistance(Path)
+    Distance = PathDistance(Path_one)
+    
+    #パスの移動距離を保存
+    SavePathDistance(Distance)
 
     #パスを送る
     #SendPath(Path)
@@ -1007,6 +1035,26 @@ if __name__ == '__main__':
 
     #確率値マップを保存(PathPlanner内部で実行)
     #####SaveProbMap(PathWeightMap, outputname)
+    
+    #PathWeightMapとPathからlog likelihoodの値を再計算する
+    LogLikelihood_step = np.zeros(T_horizon)
+    LogLikelihood_sum = np.zeros(T_horizon)
+    
+    for t in range(T_horizon):
+         LogLikelihood_step[t] = PathWeightMap[ Path[t][0] ][ Path[t][1] ]
+         if (t == 0):
+             LogLikelihood_sum[t] = LogLikelihood_step[t]
+         elif (t >= 1):
+             LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
+    
+    
+    #すべてのステップにおけるlog likelihoodの値を保存
+    SaveLogLikekihood(LogLikelihood_step,0)
+    
+    #すべてのステップにおける累積報酬（sum log likelihood）の値を保存
+    SaveLogLikekihood(LogLikelihood_sum,1)
+    
+    
     print "[END] SpCoNavi."
 
 

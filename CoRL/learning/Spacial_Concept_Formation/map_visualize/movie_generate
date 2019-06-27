@@ -1,0 +1,1 @@
+ ffmpeg -framerate 10 -i map_visualize/emalab_case2/color_word_map_%d.jpg -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p output.mp4
