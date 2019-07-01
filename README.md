@@ -68,7 +68,7 @@ python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
 
 【出力確率とパスの可視化の実行コマンド】
 ~~~
-python ./path\_weight\_visualizer.py trialname speech_num  
+python ./path_weight_visualizer.py trialname speech_num  
 ~~~
 例：
 ~~~
