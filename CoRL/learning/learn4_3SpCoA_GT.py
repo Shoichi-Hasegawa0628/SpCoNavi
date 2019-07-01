@@ -103,9 +103,8 @@ from numpy.linalg import inv, cholesky
 from scipy.stats import chi2
 from math import pi as PI
 from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2
-#from pygame.locals import *
-#pygame.init()
 from __init__ import *
+from submodules import *
 
 def gaussian(x,myu,sig):
     ###1次元ガウス分布
@@ -234,6 +233,65 @@ def Mutual_Info(W,pi):  #Mutual information:W、π
     return MI
 
 
+def position_data_read_pass(directory,DATA_NUM):
+    all_position=[] 
+    hosei = 1.5 # 04だけ*2, 06は-1, 10は*1.5
+
+    for i in range(DATA_NUM):
+            #if  (i in test_num)==False:
+            f=directory+"/position/"+repr(i)+".txt"
+            position=[] #(x,y,sin,cos)
+            itigyoume = 1
+            for line in open(f, 'r').readlines():
+                if (itigyoume == 1):
+                  data=line[:-1].split('	')
+                  #print data
+                  position +=[float(data[0])*(-1) + float(origin[0]*resolution)*hosei]
+                  position +=[float(data[1])]
+                  itigyoume = 0
+            all_position.append(position)
+    
+    #座標系の返還
+    #Xt = (np.array(all_position) + origin[0] ) / resolution #* 10
+    return np.array(all_position)
+
+
+"""
+def Name_data_read(directory,word_increment,DATA_NUM):
+    name_data_set=[]
+    
+    for i in range(DATA_NUM):
+        name_data=[0 for w in range(len(name_list))]
+
+        if  (i in test_num)==False:
+            try:
+                file=directory+Name_data_dir+repr(i)+".txt"
+                data=np.genfromtxt(file, delimiter="\n", dtype='S' )
+                #print file
+
+                try:
+                    for d in data:
+                        #print d
+                        for w,dictionry in enumerate(name_list):
+                            if d == dictionry:
+                                name_data[w]+=word_increment
+
+
+                except TypeError:
+                    #print d
+                    for w,dictionry in enumerate(name_list):
+                        if data == dictionry:
+                            name_data[w]+=word_increment
+            except IOError:
+                pass
+            name_data=np.array(name_data)
+            name_data_set.append(name_data)
+        else:
+            print i
+        #else:
+            #print i,"is test data."
+    return np.array(name_data_set)
+"""
 
 # Simulation
 def simulate(iteration,filename):
@@ -246,22 +304,26 @@ def simulate(iteration,filename):
     inputfile = inputfolder_SIG  + trialname
     filename  = outputfolder_SIG + trialname
     
-    #S# ### Ishibushi code ###
+    ##S## ##### Ishibushi's code #####
     env_para = np.genfromtxt(inputfile+"/Environment_parameter.txt",dtype= None,delimiter =" ")
 
-    MAP_X[e] = float(env_para[0][1])  #Max x value of the map
-    MAP_Y[e] = float(env_para[1][1])  #Max y value of the map
-    map_x[e] = float(env_para[2][1]) #Min x value of the map
-    map_y[e] = float(env_para[3][1]) #Max y value of the map
+    MAP_X = float(env_para[0][1])  #Max x value of the map
+    MAP_Y = float(env_para[1][1])  #Max y value of the map
+    map_x = float(env_para[2][1])  #Min x value of the map
+    map_y = float(env_para[3][1])  #Max y value of the map
 
-    map_center_x = ((MAP_X[e] - map_x[e])/2)+map_x[e]
-    map_center_y = ((MAP_Y[e] - map_x[e])/2)+map_y[e]
-    mu_0=np.array([map_center_x,map_center_y,0,0])
-    mu_0_set.append(mu_0)
+    map_center_x = ((MAP_X - map_x)/2)+map_x
+    map_center_y = ((MAP_Y - map_x)/2)+map_y
+    mu_0 = np.array([map_center_x,map_center_y,0,0])
+    #mu_0_set.append(mu_0)
     DATA_initial_index = int(env_para[5][1]) #Initial data num
     DATA_last_index = int(env_para[6][1]) #Last data num
-    DATA_NUM =DATA_last_index - DATA_initial_index +1
-    #E# ### Ishibushi code ###
+    DATA_NUM = DATA_last_index - DATA_initial_index +1
+    ##E## ##### Ishibushi's code ######
+    
+    #DATA read
+    pose = position_data_read_pass(inputfile,DATA_NUM)
+    #name = Name_data_read(inputfile,word_increment,DATA_NUM)
     
     for sample in xrange(sample_num):
       #NN = 0
@@ -270,7 +332,9 @@ def simulate(iteration,filename):
       #テキストファイルを読み込み
       #for line in open(filename + '/out_gmm_' + str(iteration) + '/' + str(sample) + '_samp.100', 'r'):   ##*_samp.100を順番に読み込む
       for word_data_num in range(DATA_NUM):
-        line = open(filename + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
+        f = open(inputfile + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
+        line = f.read()
+        #print line
         itemList = line[:-1].split(' ')
         
         #<s>,<sp>,</s>を除く処理：単語に区切られていた場合
@@ -309,9 +373,9 @@ def simulate(iteration,filename):
         #  Otb[] = Otb[NN] + itemList
         #  NN = NN + 1
         
-        for j in xrange(len(itemList)):
-            print "%s " % (str(itemList[j])),
-        print ""  #改行用
+        #for j in xrange(len(itemList)):
+        #    print "%s " % (str(itemList[j])),
+        #print ""  #改行用
       
       
       ##場所の名前の多項分布のインデックス用
@@ -335,12 +399,12 @@ def simulate(iteration,filename):
         for j in xrange(len(Otb[n])):
           for i in xrange(len(W_index)):
             if (W_index[i] == Otb[n][j] ):
-              Otb_B[n][i] = Otb_B[n][i] + 1
+              Otb_B[n][i] = Otb_B[n][i] + word_increment
       #print Otb_B
       
-      
-      if kyouji_count != N:
-         print "N:KYOUJI error!!" + str(N)   ##教示フェーズの教示数と読み込んだ発話文データ数が違う場合
+      #N = DATA_NUM
+      if N != DATA_NUM:
+         print "DATA_NUM" + str(DATA_NUM) + ":KYOUJI error!! N:" + str(N)  ##教示フェーズの教示数と読み込んだ発話文データ数が違う場合
          #exit()
       
       #TN = [i for i in xrange(N)]#[0,1,2,3,4,5]  #テスト用
@@ -351,7 +415,8 @@ def simulate(iteration,filename):
       #for t in xrange(len(TN)):
       #  x_temp = x_temp + [Xt[int(TN[t])][0]]  #設定は実際の教示時刻に対応できるようになっている。
       #  y_temp = y_temp + [Xt[int(TN[t])][1]]  #以前の設定のままで、動かせるようにしている。
-      
+      """
+      EndStep = 0
       if (data_name != 'test000'):
         i = 0
         Xt = []
@@ -366,6 +431,9 @@ def simulate(iteration,filename):
         
         #Xt = Xt_temp
         EndStep = len(Xt)-1
+      """
+      Xt = pose
+      TN = [i for i in range(DATA_NUM)]
       
       
   ######################################################################
@@ -378,8 +446,8 @@ def simulate(iteration,filename):
       ##各パラメータ初期化処理
       print u"Initialize Parameters..."
       #xtは既にある、ct,it,Myu,S,Wは事前分布からサンプリングにする？(要相談)
-      Ct = [ int(random.uniform(0,L)) for n in xrange(N)] #[0,0,1,1,2,3]     #物体概念のindex[N]
-      It = [ int(random.uniform(0,K)) for n in xrange(N)]#[1,1,2,2,3,2]     #位置分布のindex[N]
+      Ct = [ int(n/15) for n in xrange(N)] #[0,0,1,1,2,3] random.uniform(0,L)    #物体概念のindex[N]
+      It = [ int(n/15) for n in xrange(N)]#[1,1,2,2,3,2] random.uniform(0,K)    #位置分布のindex[N]
       ##領域範囲内に一様乱数
       #if (data_name == "test000"):
       Myu = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
@@ -417,89 +485,7 @@ def simulate(iteration,filename):
         print 'Iter.'+repr(iter+1)+'\n'
         
         
-        ########## ↓ ##### it(位置分布のindex)のサンプリング ##### ↓ ##########
-        print u"Sampling it..."
-        
-        #It_B = [0 for k in xrange(K)] #[ [0 for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
-        #itと同じtのCtの値c番目のφc  の要素kごとに事後多項分布の値を計算
-        temp = np.zeros(K)
-        for t in xrange(N):    #時刻tごとのデータ
-          phi_c = phi_l[int(Ct[t])]
-          #np.array([ 0.0 for k in xrange(K) ])   #多項分布のパラメータ
-          
-          for k in xrange(K):
-            #phi_temp = Multinomial(phi_c)
-            #phi_temp.pmf([kのとき1のベクトル]) #パラメータと値は一致するのでphi_c[k]のままで良い
-            
-            #it=k番目のμΣについてのガウス分布をitと同じtのxtから計算
-            xt_To = TN[t]
-            g2 = gaussian2d(Xt[xt_To][0],Xt[xt_To][1],Myu[k][0],Myu[k][1],S[k])  #2次元ガウス分布を計算
-            
-            temp[k] = g2 * phi_c[k]
-            #print g2,phi_c[k]  ###Xtとμが遠いとg2の値がアンダーフローする可能性がある
-            
-          temp = temp / np.sum(temp)  #正規化
-          #print temp
-          #Mult_samp = np.random.multinomial(1,temp)
-          
-          #print Mult_samp
-          It_B = np.random.multinomial(1,temp) #Mult_samp [t]
-          #print It_B[t]
-          It[t] = np.where(It_B == 1)[0][0] #It_B.index(1)
-          #for k in xrange(K):
-          #  if (It_B[k] == 1):
-          #    It[t] = k
-          #    #print k
-          
-        #gaussian2d(Xx,Xy,myux,myuy,sigma)
-        
-        print It
-        
-        #多項分布からのサンプリング(1点)
-        #http://docs.scipy.org/doc/numpy/reference/generated/numpy.random.multinomial.html#numpy.random.multinomial
-        #Mult_samp = np.random.multinomial(1,[確率の配列])
-        ########## ↑ ##### it(位置分布のindex)のサンプリング ##### ↑ ##########
-        
-        
-        ########## ↓ ##### Ct(場所概念のindex)のサンプリング ##### ↓ ##########
-        print u"Sampling Ct..."
-        #Ct～多項値P(Ot|Wc)*多項値P(it|φc)*多項P(c|π)  N個
-        
-        #It_B = [ [int(k == It[n]) for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
-        #Ct_B = [0 for c in xrange(L)] #[ [0 for c in xrange(L)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][l]
-        
-        temp = np.zeros(L)
-        for t in xrange(N):    #時刻tごとのデータ
-          #for k in xrange(K):
-          #  if (k == It[t]):
-          #    It_B[t][k] = 1
-          
-          #print It_B[t] #ok
-          
-          #np.array([ 0.0 for c in xrange(L) ])   #多項分布のパラメータ
-          for c in xrange(L):  #場所概念のindexの多項分布それぞれについて
-            #phi_temp = Multinomial(phi_l[c])
-            W_temp = Multinomial(W[c])
-            #print pi[c], phi_temp.pmf(It_B[t]), W_temp.pmf(Otb_B[t])
-            temp[c] = pi[c] * phi_l[c][It[t]] * W_temp.pmf(Otb_B[t])    # phi_temp.pmf(It_B[t])各要素について計算
-          
-          temp = temp / np.sum(temp)  #正規化
-          #print temp
-          #Mult_samp = np.random.multinomial(1,temp)
-          
-          #print Mult_samp
-          Ct_B = np.random.multinomial(1,temp) #Mult_samp
-          #print Ct_B[t]
-          
-          Ct[t] = np.where(Ct_B == 1)[0][0] #Ct_B.index(1)
-          #for c in xrange(L):
-          #  if (Ct_B[c] == 1):
-          #    Ct[t] = c
-          #    #print c
-          
-        print Ct
-        ########## ↑ ##### Ct(場所概念のindex)のサンプリング ##### ↑ ##########
-        
+
         
         ########## ↓ ##### W(場所の名前：多項分布)のサンプリング ##### ↓ ##########
         ##ディリクレ多項からディリクレ事後分布を計算しサンプリングする
@@ -684,6 +670,88 @@ def simulate(iteration,filename):
           
         ########## ↑ ##### φ(位置分布のindexの多項分布)のサンプリング ##### ↑ ##########
         
+        ########## ↓ ##### it(位置分布のindex)のサンプリング ##### ↓ ##########
+        print u"Sampling it..."
+        
+        #It_B = [0 for k in xrange(K)] #[ [0 for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
+        #itと同じtのCtの値c番目のφc  の要素kごとに事後多項分布の値を計算
+        temp = np.zeros(K)
+        for t in xrange(N):    #時刻tごとのデータ
+          phi_c = phi_l[int(Ct[t])]
+          #np.array([ 0.0 for k in xrange(K) ])   #多項分布のパラメータ
+          
+          for k in xrange(K):
+            #phi_temp = Multinomial(phi_c)
+            #phi_temp.pmf([kのとき1のベクトル]) #パラメータと値は一致するのでphi_c[k]のままで良い
+            
+            #it=k番目のμΣについてのガウス分布をitと同じtのxtから計算
+            xt_To = TN[t]
+            g2 = gaussian2d(Xt[xt_To][0],Xt[xt_To][1],Myu[k][0],Myu[k][1],S[k])  #2次元ガウス分布を計算
+            
+            temp[k] = g2 * phi_c[k]
+            #print g2,phi_c[k]  ###Xtとμが遠いとg2の値がアンダーフローする可能性がある
+            
+          temp = temp / np.sum(temp)  #正規化
+          #print temp
+          #Mult_samp = np.random.multinomial(1,temp)
+          
+          #print Mult_samp
+          It_B = np.random.multinomial(1,temp) #Mult_samp [t]
+          #print It_B[t]
+          It[t] = np.where(It_B == 1)[0][0] #It_B.index(1)
+          #for k in xrange(K):
+          #  if (It_B[k] == 1):
+          #    It[t] = k
+          #    #print k
+          
+        #gaussian2d(Xx,Xy,myux,myuy,sigma)
+        
+        print It
+        
+        #多項分布からのサンプリング(1点)
+        #http://docs.scipy.org/doc/numpy/reference/generated/numpy.random.multinomial.html#numpy.random.multinomial
+        #Mult_samp = np.random.multinomial(1,[確率の配列])
+        ########## ↑ ##### it(位置分布のindex)のサンプリング ##### ↑ ##########
+        
+        
+        ########## ↓ ##### Ct(場所概念のindex)のサンプリング ##### ↓ ##########
+        print u"Sampling Ct..."
+        #Ct～多項値P(Ot|Wc)*多項値P(it|φc)*多項P(c|π)  N個
+        
+        #It_B = [ [int(k == It[n]) for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
+        #Ct_B = [0 for c in xrange(L)] #[ [0 for c in xrange(L)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][l]
+        
+        temp = np.zeros(L)
+        for t in xrange(N):    #時刻tごとのデータ
+          #for k in xrange(K):
+          #  if (k == It[t]):
+          #    It_B[t][k] = 1
+          
+          #print It_B[t] #ok
+          
+          #np.array([ 0.0 for c in xrange(L) ])   #多項分布のパラメータ
+          for c in xrange(L):  #場所概念のindexの多項分布それぞれについて
+            #phi_temp = Multinomial(phi_l[c])
+            W_temp = Multinomial(W[c])
+            #print pi[c], phi_temp.pmf(It_B[t]), W_temp.pmf(Otb_B[t])
+            temp[c] = pi[c] * phi_l[c][It[t]] * W_temp.pmf(Otb_B[t])    # phi_temp.pmf(It_B[t])各要素について計算
+          
+          temp = temp / np.sum(temp)  #正規化
+          #print temp
+          #Mult_samp = np.random.multinomial(1,temp)
+          
+          #print Mult_samp
+          Ct_B = np.random.multinomial(1,temp) #Mult_samp
+          #print Ct_B[t]
+          
+          Ct[t] = np.where(Ct_B == 1)[0][0] #Ct_B.index(1)
+          #for c in xrange(L):
+          #  if (Ct_B[c] == 1):
+          #    Ct[t] = c
+          #    #print c
+          
+        print Ct
+        ########## ↑ ##### Ct(場所概念のindex)のサンプリング ##### ↑ ##########
         
         """
         ########## ↓ ##### xt(教示時刻で場合分け)のサンプリング ##### ↓ ##########
@@ -892,7 +960,7 @@ def simulate(iteration,filename):
         
         #サンプリングごとに各パラメータ値を出力
         if loop == 1:
-          fp = open( filename + '/' + filename +'_kekka_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+          fp = open( filename + '/' + trialname +'_kekka_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
           fp.write('sampling_data,'+repr(iter+1)+'\n')  #num_iter = 10  #イテレーション回数
           fp.write('Ct\n')
           for i in xrange(N):
@@ -951,7 +1019,7 @@ def simulate(iteration,filename):
         
         
         #各パラメータ値、初期値を出力
-        fp_init = open( filename + '/' + filename + '_init_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp_init = open( filename + '/' + trialname + '_init_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         fp_init.write('init_data\n')  #num_iter = 10  #イテレーション回数
         fp_init.write('L,'+repr(L)+'\n')
         fp_init.write('K,'+repr(K)+'\n')
@@ -1029,7 +1097,7 @@ def simulate(iteration,filename):
         
         ##認識発話単語集合をファイルへ出力
         #filename_ot = raw_input("Otb:filename?(.csv) >")  #ファイル名を個別に指定する場合
-        filename_ot = filename
+        filename_ot = trialname
         fp = open(filename + '/' + filename_ot + '_ot_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         fp2 = open(filename + '/' + filename_ot + '_w_index_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for n in xrange(N) : 
@@ -1049,40 +1117,40 @@ def simulate(iteration,filename):
       
       ##パラメータそれぞれをそれぞれのファイルとしてはく
       if loop == 1:
-        fp = open( filename + '/' + filename + '_Myu_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_Myu_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for k in xrange(K):
           fp.write(repr(float(Myu[k][0][0]))+','+repr(float(Myu[k][1][0])) + '\n')
         fp.close()
-        fp = open( filename + '/' + filename + '_S_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_S_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for k in xrange(K):
           fp.write(repr(S[k][0][0])+','+repr(S[k][0][1])+','+repr(S[k][1][0]) + ','+repr(S[k][1][1])+'\n')
         fp.close()
-        fp = open( filename + '/' + filename + '_W_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_W_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for c in xrange(L):
           for i in xrange(len(W_index)):
             fp.write(repr(W[c][i])+',')
           fp.write('\n')
           #fp.write(repr(W[l][0])+','+repr(W[l][1])+'\n')
         fp.close()
-        fp = open( filename + '/' + filename + '_phi_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_phi_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for c in xrange(L):
           for k in xrange(K):
             fp.write(repr(phi_l[c][k])+',')
           fp.write('\n')
         fp.close()
-        fp = open( filename + '/' + filename + '_pi_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_pi_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for c in xrange(L):
           fp.write(repr(pi[c])+',')
         fp.write('\n')
         fp.close()
         
-        fp = open( filename + '/' + filename + '_Ct_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_Ct_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for t in xrange(N):
           fp.write(repr(Ct[t])+',')
         fp.write('\n')
         fp.close()
         
-        fp = open( filename + '/' + filename + '_It_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
+        fp = open( filename + '/' + trialname + '_It_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for t in xrange(N):
           fp.write(repr(It[t])+',')
         fp.write('\n')
@@ -1122,16 +1190,6 @@ def simulate(iteration,filename):
       #iti = iti + [[K_yes,Plot]]  #最後の要素[[位置分布の数],[位置分布ごとのプロット数]]
       #print iti
       filename2 = str(iteration) + "_" + str(sample)
-      
-      #loop = 0 #メインループ用フラグ
-      #while loop:
-      #  #MAINCLOCK.tick(FPS)
-      #  events = pygame.event.get()
-      #  for event in events:
-      #      if event.type == KEYDOWN:
-      #          if event.key  == K_ESCAPE: exit()
-      #  viewer.show(world,iti,0,[filename],[filename2])
-      #  loop = 0
       """
       
 if __name__ == '__main__':

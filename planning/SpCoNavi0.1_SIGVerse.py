@@ -6,10 +6,7 @@
 ###########################################################
 
 ##########---遂行タスク---##########
-#移動量と累積報酬（log likelihood）を保存するようにする
-
-
-
+##ファイル読み込みパスの指定の変更
 
 ##########---作業終了タスク---##########
 ##文字コードをsjisのままにした
@@ -26,6 +23,10 @@
 ##Viterbiの計算処理をTransitionをそのまま使わないように変更した（ムダが多く、メモリ消費・処理時間がかかる要因）
 ##Viterbiのupdate関数を一部numpy化(高速化)
 #sum_i_GaussMultiがnp.arrayになっていなかった(?)⇒np.array化したが計算上変わらないはず (2019/02/17)⇒np.arrayにすると、numbaがエラーを吐くため元に戻した．
+
+### NEW for SIGVerse ###
+##移動量と累積報酬（log likelihood）を保存するようにする
+##numbaの使用を廃止
 
 ###未確認・未使用
 #pi_2_pi
@@ -73,10 +74,11 @@ from math import cos,sin,sqrt,exp,log,degrees,radians,atan2 #,gamma,lgamma,fabs,
 from __init__ import *
 from JuliusNbest_dec_SIGVerse import *
 from submodules import *
-from numba import jit, njit, prange
+#from numba import jit, njit, xrange
 from scipy.io import mmwrite, mmread
 from scipy.sparse import lil_matrix, csr_matrix
 from itertools import izip
+import collections
 
 #マップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
@@ -93,9 +95,10 @@ def ReadCostMap(outputfile):
     return costmap
 
 #場所概念の学習済みパラメータを読み込む
-def ReadParameters(particle_num, filename):
+def ReadParameters(iteration, sample, filename, trialname):
     #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
-    r = particle_num
+    #r = iteration
+    """
     i = 0
     for line in open(filename + 'index' + str(r) + '.csv', 'r'):   ##読み込む
         itemList = line[:-1].split(',')
@@ -106,13 +109,14 @@ def ReadParameters(particle_num, filename):
           K = len(itemList) -1
         i += 1
     print "L:",L,"K:",K
+    """
 
     W_index = []
     i = 0
     #テキストファイルを読み込み
-    for line in open(filename + 'W_list' + str(r) + '.csv', 'r'): 
+    for line in open(filename + "/" + trialname + '_w_index_' + str(iteration) + '_' + str(sample) + '.csv', 'r'): 
         itemList = line[:-1].split(',')
-        if(i == 0):
+        if(i == 1):
             for j in xrange(len(itemList)):
               if (itemList[j] != ""):
                 W_index = W_index + [itemList[j]]
@@ -128,23 +132,24 @@ def ReadParameters(particle_num, filename):
       
     i = 0
     ##Muの読み込み
-    for line in open(filename + 'mu' + str(r) + '.csv', 'r'):
+    for line in open(filename + "/" + trialname + '_Myu_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
+        #Mu[i] = np.array([ float(itemList[0]) - origin[0] , float(itemList[1]) - origin[1] ]) / resolution
         Mu[i] = np.array([ float(itemList[0]) , float(itemList[1]) ])
-        #Mu[i] = np.array([[ float(itemList[0]) ],[ float(itemList[1]) ]])
         i = i + 1
       
     i = 0
     ##Sigの読み込み
-    for line in open(filename + 'sig' + str(r) + '.csv', 'r'):
+    for line in open(filename + "/" + trialname + '_S_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
-        Sig[i] = np.array([[ float(itemList[0]), float(itemList[1]) ], [ float(itemList[2]), float(itemList[3]) ]])
+        #Sig[i] = np.array([[ float(itemList[0])/ resolution, float(itemList[1]) ], [ float(itemList[2]), float(itemList[3])/ resolution ]]) #/ resolution
+        Sig[i] = np.array([[ float(itemList[0]), float(itemList[1]) ], [ float(itemList[2]), float(itemList[3]) ]]) 
         i = i + 1
       
     ##phiの読み込み
     c = 0
     #テキストファイルを読み込み
-    for line in open(filename + 'phi' + str(r) + '.csv', 'r'):
+    for line in open(filename + "/" + trialname + '_phi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in xrange(len(itemList)):
             if itemList[i] != "":
@@ -152,7 +157,7 @@ def ReadParameters(particle_num, filename):
         c = c + 1
         
     ##Piの読み込み
-    for line in open(filename + 'pi' + str(r) + '.csv', 'r'):
+    for line in open(filename + "/" + trialname + '_pi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in xrange(len(itemList)):
           if itemList[i] != '':
@@ -161,7 +166,7 @@ def ReadParameters(particle_num, filename):
     ##Wの読み込み
     c = 0
     #テキストファイルを読み込み
-    for line in open(filename + 'W' + str(r) + '.csv', 'r'):
+    for line in open(filename + "/" + trialname + '_W_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in xrange(len(itemList)):
             if itemList[i] != '':
@@ -307,7 +312,7 @@ def Array_index_To_Map_coordinates(Index):
     return X
 
 #gridmap and costmap から確率の形のCostMapProbを得ておく
-@jit(parallel=True)
+#@jit(parallel=True)
 def CostMapProb_jit(gridmap, costmap):
     CostMapProb = (100.0 - costmap) / 100.0     #コストマップを確率の形にする
     #gridの数値が0（非占有）のところだけ数値を持つようにマスクする
@@ -316,13 +321,13 @@ def CostMapProb_jit(gridmap, costmap):
     return CostMapProb * GridMapProb
 
 #@jit(nopython=True, parallel=True)
-@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
+#@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
 def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     PostProbMap = np.zeros((map_length,map_width))
     #愚直な実装(for文の多用)
     #memo: np.vectorize or np.frompyfunc の方が処理は早い？    
-    for length in prange(map_length):
-      for width in prange(map_width):
+    for length in xrange(map_length):
+      for width in xrange(map_width):
         if (CostMapProb[length][width] != 0.0): #(gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
           X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
           #print X_temp,Mu
@@ -331,7 +336,7 @@ def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_w
           PostProbMap[length][width] = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
     return CostMapProb * PostProbMap
 
-@jit(parallel=True)
+#@jit(parallel=True)
 def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
       X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
@@ -356,12 +361,12 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
     print "Memory OK"
     #print IndexMap_one_NOzero
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
-    for n in prange(state_num):
+    for n in xrange(state_num):
       #Index_2D = IndexMap_one_NOzero[n] #.tolist()
       MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #.tolist() #Index_2D #絶対座標系にする
       MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
-      for c in prange(len(MoveIndex_list_n_list)):
+      for c in xrange(len(MoveIndex_list_n_list)):
         #print c
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
@@ -421,6 +426,8 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       #print "already exists:", output
     print "[Done] PathWeightMap."
 
+    PathWeightMap_origin = PathWeightMap
+
 
     #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２次元配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
     Bug_removal_savior = 0  #座標変換の際にバグを生まないようにするためのフラグ
@@ -428,12 +435,16 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     x_max = X_init_index[0] + T_horizon
     y_min = X_init_index[1] - T_horizon
     y_max = X_init_index[1] + T_horizon
-    if (x_min>=0 and x_max<=map_width and y_min>=0 and y_max<=map_length):
+    if (x_min>=0 and x_max<=map_width and y_min>=0 and y_max<=map_length) and (memory_reduction == 1):
       PathWeightMap = PathWeightMap[x_min:x_max+1, y_min:y_max+1] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
       X_init_index = [T_horizon, T_horizon]
+      print "Re Initial Xt:", X_init_index
       #再度、MAPの縦横(length and width)のセルの長さを計る
       map_length = len(PathWeightMap)
       map_width  = len(PathWeightMap[0])
+    elif(memory_reduction == 0):
+      print "NO memory reduction process."
+      Bug_removal_savior = 1  #バグを生まない(1)
     else:
       print "[WARNING] The initial position (or init_pos +/- T_horizon) is outside the map."
       Bug_removal_savior = 1  #バグを生まない(1)
@@ -499,7 +510,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
     print "Init:", X_init
     print "Path:\n", Path_2D_index_original
-    return Path_2D_index_original, Path_ROS, PathWeightMap, Path_one #, LogLikelihood_step, LogLikelihood_sum
+    return Path_2D_index_original, Path_ROS, PathWeightMap_origin, Path_one #, LogLikelihood_step, LogLikelihood_sum
 
 
 #移動位置の候補：現在の位置(2次元配列のインデックス)の近傍8セル+現在位置1セル
@@ -529,10 +540,10 @@ def update_sparse(cost, trans, emiss):
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
 
-@jit #jitはコードによってエラーが出る場合があるので注意
+#@jit #jitはコードによってエラーが出る場合があるので注意
 def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition):
-    #Transition = np.array([approx_log_zero for j in prange(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
-    for i in prange(len(Transition)):
+    #Transition = np.array([approx_log_zero for j in xrange(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
+    for i in xrange(len(Transition)):
       Transition[i] = approx_log_zero
 
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
@@ -540,17 +551,17 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #Index_2D #絶対座標系にする
     MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
-　　count_t = 0
-    for c in prange(len(MoveIndex_list_n_list)): #prangeの方がxrangeより速い
+    count_t = 0
+    for c in xrange(len(MoveIndex_list_n_list)): #xrangeの方がxrangeより速い
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
-          Transition[m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
+          Transition[m] = 0.0 #1 #このインデックスは状態から状態への遷移確率（地図のx,yではない）
           count_t += 1
     
     #計算上おかしい場合はエラー表示を出す．
     if (count_t == 0): #遷移確率がすべて0．移動できないということを意味する．
       print "[ERROR] All transition is approx_log_zero."
-    elif (count_t == 1): #遷移確率がひとつだけある．移動可能な座標が一択．
+    elif (count_t == 1): #遷移確率がひとつだけある．移動可能な座標が一択．（このWARNINGが出ても問題ない場合がある？）
       print "[WARNING] One transition is zero."
     
     #trans = Transition #np.array(Transition)
@@ -575,19 +586,19 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
     INITIAL = (approx_log_zero, X_init)  # (cost, index) #indexに初期値の一次元配列インデックスを入れる
     #print "Initial:",X_init
 
-    cost = [INITIAL for i in prange(len(PathWeight))] 
+    cost = [INITIAL for i in xrange(len(PathWeight))] 
     cost[X_init] = (0.0, X_init) #初期位置は一意に与えられる(確率log(1.0))
     trellis = []
 
     e = PathWeight #emission(nstates[i])
-    m = [i for i in prange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
+    m = [i for i in xrange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
     
-    Transition = np.array([approx_log_zero for j in prange(state_num)]) #参照渡しになってしまう
+    Transition = np.array([approx_log_zero for j in xrange(state_num)]) #参照渡しになってしまう
 
     temp = 1
     #Forward
     print "Forward"
-    for i in prange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
+    for i in xrange(T_horizon):  #len(nstates)): #計画区間まで1セルずつ移動していく+1+1
       #このfor文の中でiを別途インディケータとして使わないこと
       print "T:",i+1
       if (i+1 == T_restart):
@@ -597,10 +608,10 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
       if (i+1 >= T_restart):
         #cost = [update(cost, t, f) for t, f in zip(m, e)]
         #cost = [update_sparse(cost, Transition[t], f) for t, f in zip(m, e)] #なぜか遅い
-        cost_np = np.array([cost[c][0] for c in prange(len(cost))])
-        #Transition = np.array([approx_log_zero for j in prange(state_num)]) #参照渡しになってしまう
+        cost_np = np.array([cost[c][0] for c in xrange(len(cost))])
+        #Transition = np.array([approx_log_zero for j in xrange(state_num)]) #参照渡しになってしまう
 
-        #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in prange(len(e))]
+        #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in xrange(len(e))]
         cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in izip(m, e)] #izipの方がメモリ効率は良いが、zipとしても処理速度は変わらない
         trellis.append(cost)
         #print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
@@ -614,8 +625,30 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
               path_one = [x[path_one[0]][INDEX]] + path_one
               #print "x", len(x), x
             path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
-          
+            
             SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero, Bug_removal_savior)
+            
+            ##log likelihood 
+            #PathWeight (log)とpath_oneからlog likelihoodの値を再計算する
+            LogLikelihood_step = np.zeros(i+1)
+            LogLikelihood_sum = np.zeros(i+1)
+    
+            for t in range(i+1):
+                LogLikelihood_step[t] = PathWeight[ path_one[t]]
+                if (t == 0):
+                     LogLikelihood_sum[t] = LogLikelihood_step[t]
+                elif (t >= 1):
+                     LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
+
+            SaveLogLikelihood(LogLikelihood_step,0,i+1)
+            SaveLogLikelihood(LogLikelihood_sum,1,i+1)
+
+            #パスの移動距離
+            Distance = PathDistance(path_one)
+    
+            #パスの移動距離を保存
+            SavePathDistance_temp(Distance, i+1)
+
             if (SAVE_Trellis == 1):
               SaveTrellis(trellis, outputname, i+1)
             temp = 0
@@ -785,12 +818,19 @@ def ReadTransition_sparse(state_num, outputfile):
     return Transition
 
 #各ステップごとのlog likelihoodの値を保存
-def SaveLogLikekihood(LogLikelihood,flag):
+def SaveLogLikelihood(LogLikelihood,flag,flag2):
     # 結果をファイル保存
-    if   (flag == 0):
-        output_likelihood = outputfile + "T"+str(T_horizon) + "_Log_likelihood_step.csv"
-    elif (flag == 1):
-        output_likelihood = outputfile + "T"+str(T_horizon) + "_Log_likelihood_sum.csv"
+    if (flag2 == 0):
+      if   (flag == 0):
+        output_likelihood = outputname + "_Log_likelihood_step.csv"
+      elif (flag == 1):
+        output_likelihood = outputname + "_Log_likelihood_sum.csv"
+    else:
+      if   (flag == 0):
+        output_likelihood = outputname + "_Log_likelihood_step" + str(flag2) + ".csv"
+      elif (flag == 1):
+        output_likelihood = outputname + "_Log_likelihood_sum" + str(flag2) + ".csv"
+
     np.savetxt( output_likelihood, LogLikelihood, delimiter=",")
     print "Save LogLikekihood: " + output_likelihood
 
@@ -803,8 +843,15 @@ def PathDistance(Path):
 #パスの移動距離を保存
 def SavePathDistance(Distance):
     # 結果をファイル保存
-    output = outputfile + "T"+str(T_horizon) + "_Distance.csv"
-    np.savetxt( output, Distance, delimiter=",")
+    output = outputname + "_Distance.csv"
+    np.savetxt( output, np.array([Distance]), delimiter=",")
+    print "Save Distance: " + output
+
+#パスの移動距離を保存
+def SavePathDistance_temp(Distance,temp):
+    # 結果をファイル保存
+    output = outputname + "_Distance"+str(temp)+".csv"
+    np.savetxt( output, np.array([Distance]), delimiter=",")
     print "Save Distance: " + output
 
 ##単語辞書読み込み書き込み追加
@@ -929,15 +976,19 @@ if __name__ == '__main__':
     #print trialname
     #trialname = raw_input("trialname?(folder) >")
 
-    #読み込むパーティクル番号を要求
-    particle_num = sys.argv[2] #0
+    #iterationを要求
+    iteration = sys.argv[2] #1
+
+    #sampleを要求
+    sample = sys.argv[3] #0
 
     #ロボット初期位置の候補番号を要求
-    init_position_num = sys.argv[3] #0
+    init_position_num = sys.argv[4] #0
 
     #音声命令のファイル番号を要求   
-    speech_num = sys.argv[4] #0
+    speech_num = sys.argv[5] #0
 
+    """
     i = 0
     #重みファイルを読み込み
     for line in open(datafolder + trialname + '/'+ str(step) + '/weights.csv', 'r'):   ##読み込む
@@ -946,15 +997,16 @@ if __name__ == '__main__':
           i += 1
     #最大尤度のパーティクル番号を保存
     particle_num = MAX_Samp
+    """
 
     if (SAVE_time == 1):
       #開始時刻を保持
       start_time = time.time()
 
     ##FullPath of folder
-    filename = datafolder + trialname + "/" + str(step) +"/"
-    print filename, particle_num
-    outputfile = outputfolder + trialname + navigation_folder
+    filename = outputfolder_SIG + trialname #+ "/" 
+    print filename, iteration, sample
+    outputfile = filename + navigation_folder #outputfolder + trialname + navigation_folder
     outputname = outputfile + "T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
 
     #Makedir( outputfolder + trialname )
@@ -962,14 +1014,16 @@ if __name__ == '__main__':
     #Makedir( outputname )
 
     #学習済みパラメータの読み込み  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
-    THETA = ReadParameters(particle_num, filename)
+    THETA = ReadParameters(iteration, sample, filename, trialname)
     W_index = THETA[1]
     
+    """
     ##単語辞書登録
     if (os.path.isfile(filename + '/WDnavi.htkdic') == False):  #すでに単語辞書ファイルがあれば作成しない
       WordDictionaryUpdate2(step, filename, W_index)   
     else:
       print "Word dictionary already exists:", filename + '/WDnavi.htkdic'
+    """
 
     if (os.path.isfile(outputfile + "CostMapProb.csv") == False):  #すでにファイルがあれば計算しない
       ##マップの読み込み
@@ -986,8 +1040,8 @@ if __name__ == '__main__':
       CostMapProb = ReadCostMapProb(outputfile)
 
     ##音声ファイルを読み込み
-    speech_file = ReadSpeech(int(speech_num))
-
+    #speech_file = ReadSpeech(int(speech_num))
+    """
     if (SAVE_time == 1):
       #音声認識開始時刻(初期化読み込み処理終了時刻)を保持
       start_recog_time = time.time()
@@ -995,7 +1049,7 @@ if __name__ == '__main__':
       fp = open( outputname + "_time_init.txt", 'w')
       fp.write(str(time_init)+"\n")
       fp.close()
-
+    
     #音声認識
     S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputfile)
 
@@ -1006,15 +1060,19 @@ if __name__ == '__main__':
       fp = open( outputname + "_time_recog.txt", 'w')
       fp.write(str(time_recog)+"\n")
       fp.close()
+    """
+
+    Otb_B = [int(W_index[i] == Goal_Word[int(speech_num)]) * N_best for i in xrange(len(W_index))]
+    print "BoW:",  Otb_B
 
     #パスプランニング
-    Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
+    Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
 
     if (SAVE_time == 1):
       #PP終了時刻を保持
       end_pp_time = time.time()
-      time_pp = end_pp_time - end_recog_time
+      time_pp = end_pp_time - start_time #end_recog_time
       fp = open( outputname + "_time_pp.txt", 'w')
       fp.write(str(time_pp)+"\n")
       fp.close()
@@ -1041,7 +1099,8 @@ if __name__ == '__main__':
     LogLikelihood_sum = np.zeros(T_horizon)
     
     for t in range(T_horizon):
-         LogLikelihood_step[t] = PathWeightMap[ Path[t][0] ][ Path[t][1] ]
+         #print PathWeightMap.shape, Path[t][0], Path[t][1]
+         LogLikelihood_step[t] = np.log(PathWeightMap[ Path[t][0] ][ Path[t][1] ])
          if (t == 0):
              LogLikelihood_sum[t] = LogLikelihood_step[t]
          elif (t >= 1):
@@ -1049,10 +1108,10 @@ if __name__ == '__main__':
     
     
     #すべてのステップにおけるlog likelihoodの値を保存
-    SaveLogLikekihood(LogLikelihood_step,0)
+    SaveLogLikelihood(LogLikelihood_step,0,0)
     
     #すべてのステップにおける累積報酬（sum log likelihood）の値を保存
-    SaveLogLikekihood(LogLikelihood_sum,1)
+    SaveLogLikelihood(LogLikelihood_sum,1,0)
     
     
     print "[END] SpCoNavi."

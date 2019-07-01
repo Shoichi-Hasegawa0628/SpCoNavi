@@ -2,55 +2,18 @@
 
 ###########################################################
 # Path-Planning Program by A star algorithm (開発中)
-# Akira Taniguchi 2019/06/24-2019/06/27
-# Spacial Thanks ; Ryo Ozaki
+# Akira Taniguchi 2019/06/24-2019/06/30
+# Spacial Thanks: Ryo Ozaki
 ###########################################################
+
+##実行コマンド
+#python ./Astar.py trialname mapname iteration sample init_position_num speech_num
+#python ./Astar.py 3LDK_01 s1DK_01 1 0 0 0
 
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
-maze_file = "../CoRL/data/s1DK_01/navi/s1DK_01.pgm" #"./sankou/sample_maze.txt"
-
-maze = np.zeros((192,192))
-height, width = maze.shape
-
-##########
-#PGMファイルの読み込み
-#http://www.not-enough.org/abe/manual/api-aa09/fileio2.html
-infile = open(maze_file , 'rb') #sys.argv[1]
-#outfile = open(sys.argv[2], 'w')
-
-for i in range(4): #最初の4行は無視
-    d = infile.readline()
-    print(d)
-    #outfile.write(d)
-
-#data = infile.read()#.decode('utf-8',"ignore")
-#print(data)
-#maze = np.array(data) #, dtype="int")  #文字列として読み込まれることに注意
-
-for h in range(height):
-    for w in range(width):
-        d = infile.read(1)
-        maze[h][w] = int(255 - ord(d))/255
-"""
-while True:
-    d = infile.read(1)
-    if len(d) == 0:
-        break\
-    #print( ord(d) )
-    #print('(%x) ' % ord(d))
-"""
-infile.close
-##########
-
-
-#maze = np.loadtxt(maze_file, dtype=int)
-height, width = maze.shape
-
-start = (83,39) #(92,126) #(126,92) #(1, 1)
-goal = (95,41) #(97,55) #(55,97) #(height-2, width-2)
+from __init__ import *
 
 def right(pos):
     return (pos[0], pos[1] + 1)
@@ -64,12 +27,177 @@ def up(pos):
 def down(pos):
     return (pos[0] + 1, pos[1])
 
-action_functions = [right, left, up, down]
-cost_of_actions  = [    1,    1,  1,    1]
-
 def Manhattan_distance(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
+#場所概念の学習済みパラメータを読み込む
+def ReadParameters(iteration, sample, filename, trialname):
+    #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
+    #r = iteration
+    """
+    i = 0
+    for line in open(filename + 'index' + str(r) + '.csv', 'r'):   ##読み込む
+        itemList = line[:-1].split(',')
+        #print itemList
+        if (i == 0):
+          L = len(itemList) -1
+        elif (i == 1):
+          K = len(itemList) -1
+        i += 1
+    print "L:",L,"K:",K
+    """
+
+    W_index = []
+    i = 0
+    #テキストファイルを読み込み
+    for line in open(filename + "/" + trialname + '_w_index_' + str(iteration) + '_' + str(sample) + '.csv', 'r'): 
+        itemList = line[:-1].split(',')
+        if(i == 1):
+            for j in xrange(len(itemList)):
+              if (itemList[j] != ""):
+                W_index = W_index + [itemList[j]]
+        i = i + 1
+    
+    #####パラメータW、μ、Σ、φ、πを入力する#####
+    Mu    = [ np.array([ 0.0, 0.0 ]) for i in xrange(K) ]  #[ np.array([[ 0.0 ],[ 0.0 ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
+    Sig   = [ np.array([ [0.0, 0.0],[0.0, 0.0] ]) for i in xrange(K) ]      #位置分布の共分散(2×2次元)[K]
+    W     = [ [0.0 for j in xrange(len(W_index))] for c in xrange(L) ]  #場所の名前(多項分布：W_index次元)[L]
+    #theta = [ [0.0 for j in xrange(DimImg)] for c in xrange(L) ] 
+    Pi    = [ 0.0 for c in xrange(L)]     #場所概念のindexの多項分布(L次元)
+    Phi_l = [ [0.0 for i in xrange(K)] for c in xrange(L) ]  #位置分布のindexの多項分布(K次元)[L]
+      
+    i = 0
+    ##Muの読み込み
+    for line in open(filename + "/" + trialname + '_Myu_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        #Mu[i] = np.array([ float(itemList[0]) - origin[0] , float(itemList[1]) - origin[1] ]) / resolution
+        Mu[i] = np.array([ float(itemList[0]) , float(itemList[1]) ])
+        i = i + 1
+      
+    i = 0
+    ##Sigの読み込み
+    for line in open(filename + "/" + trialname + '_S_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        #Sig[i] = np.array([[ float(itemList[0])/ resolution, float(itemList[1]) ], [ float(itemList[2]), float(itemList[3])/ resolution ]]) #/ resolution
+        Sig[i] = np.array([[ float(itemList[0]), float(itemList[1]) ], [ float(itemList[2]), float(itemList[3]) ]]) 
+        i = i + 1
+      
+    ##phiの読み込み
+    c = 0
+    #テキストファイルを読み込み
+    for line in open(filename + "/" + trialname + '_phi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        for i in xrange(len(itemList)):
+            if itemList[i] != "":
+              Phi_l[c][i] = float(itemList[i])
+        c = c + 1
+        
+    ##Piの読み込み
+    for line in open(filename + "/" + trialname + '_pi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        for i in xrange(len(itemList)):
+          if itemList[i] != '':
+            Pi[i] = float(itemList[i])
+      
+    ##Wの読み込み
+    c = 0
+    #テキストファイルを読み込み
+    for line in open(filename + "/" + trialname + '_W_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        for i in xrange(len(itemList)):
+            if itemList[i] != '':
+              #print c,i,itemList[i]
+              W[c][i] = float(itemList[i])
+        c = c + 1
+
+    """
+    ##thetaの読み込み
+    c = 0
+    #テキストファイルを読み込み
+    for line in open(filename + 'theta' + str(r) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        for i in xrange(len(itemList)):
+            if itemList[i] != '':
+              #print c,i,itemList[i]
+              theta[c][i] = float(itemList[i])
+        c = c + 1
+    """
+
+    THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
+    return THETA
+
+
+#################################################
+print "[START] A star algorithm."
+
+#地図データの入った部屋環境フォルダ名（学習済みパラメータフォルダ名）を要求
+trialname = sys.argv[1]
+
+#マップファイル名を要求
+mapname = sys.argv[2]
+
+#iterationを要求
+iteration = sys.argv[3] #1
+
+#sampleを要求
+sample = sys.argv[4] #0
+
+#ロボット初期位置の候補番号を要求
+init_position_num = sys.argv[5] #0
+
+#音声命令のファイル番号を要求   
+speech_num = sys.argv[6] #0
+
+start = Start_Position[int(init_position_num)]#(83,39) #(92,126) #(126,92) #(1, 1)
+#goal  = (95,41) #(97,55) #(55,97) #(height-2, width-2)
+
+##FullPath of folder
+filename = outputfolder_SIG + trialname #+ "/" 
+print filename, iteration, sample
+maze_file = filename + navigation_folder + mapname + ".pgm"
+#maze_file = "../CoRL/data/1DK_01/navi/s1DK_01.pgm" #"./sankou/sample_maze.txt"
+
+#maze = np.loadtxt(maze_file, dtype=int)
+#height, width = maze.shape
+
+##########
+#PGMファイルの読み込み
+#http://www.not-enough.org/abe/manual/api-aa09/fileio2.html
+infile = open(maze_file , 'rb') #sys.argv[1]
+
+for i in range(4): #最初の4行は無視
+    d = infile.readline()
+    print(d)
+    if (i == 2): #3行目を読み込む
+        item   = d[:-1].split(' ')
+        height = int(ord(item[0]))
+        width  = int(ord(item[1]))
+
+maze = np.zeros((height, width))
+
+for h in range(height):
+    for w in range(width):
+        d = infile.read(1)
+        maze[h][w] = int(255 - ord(d))/255
+
+infile.close
+##########
+
+action_functions = [right, left, up, down]
+cost_of_actions  = [    1,    1,  1,    1]
+
+#学習済みパラメータの読み込み  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
+THETA = ReadParameters(iteration, sample, filename, trialname)
+W_index = THETA[1]
+
+#####場所概念によってゴール地点を推定
+Otb_B = [int(W_index[i] == Goal_Word[int(speech_num)]) * N_best for i in xrange(len(W_index))]
+print "BoW:",  Otb_B
+
+
+goal = (0,0)
+
+#####描画
 plt.imshow(maze, cmap="binary")
 plt.xticks(rotation=90)
 #plt.xticks(np.arange(width), np.arange(width))

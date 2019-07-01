@@ -1,5 +1,5 @@
 #coding:utf-8
-#Akira Taniguchi 2018/12/13-2019/01/16
+#Akira Taniguchi 2018/12/13-2019/01/16-2019/06/26
 #コストマップを読み込む⇒ファイル書き込み
 #ROS対応：マップとコストマップのトピックを受け取り、ファイル書き込み
 #参考：spco_mapping-master/src/learning.py 
@@ -15,12 +15,16 @@ from submodules import *
 class CostMap(object):
 
     def do_mkdir(self):
-        #学習済みパラメータフォルダ名を要求
+        #学習済みパラメータフォルダ名を要求(SIGVerse実験の場合、部屋のIDに設定した)
         self.trialname = sys.argv[1]
         #print trialname
         #trialname = raw_input("trialname?(folder) >")
-    
-        self.outputfile = outputfolder_SIG + costmap_folder + self.trialname + "/" #outputfolder + self.trialname + navigation_folder
+        
+        self.trialfolder = outputfolder_SIG + self.trialname
+        Makedir( self.trialfolder )
+        print "make dir:", self.trialfolder
+        
+        self.outputfile = self.trialfolder + costmap_folder #+ "/" #outputfolder + self.trialname + navigation_folder
         Makedir( self.outputfile )
         print "make dir:", self.outputfile
 

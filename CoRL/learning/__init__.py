@@ -5,7 +5,16 @@ import numpy as np
 
 ##### NEW #####
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
-outputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+#Navigation folder (他の出力ファイルも同フォルダ)
+navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
+
+#地図のyamlファイルと同じ値にする
+resolution = 0.1 #0.050000
+origin =  np.array([-10.000000, -10.000000]) #, 0.000000] #np.array([-30.000000, -20.000000]) #, 0.000000]
+
+
+word_increment = 10
 
 ####################パラメータ####################
 kyouji_count = 50 #100 #教示数をカウントする
@@ -32,10 +41,10 @@ WallYmax = -10
 
 
 ##初期(ハイパー)パラメータ
-num_iter = 1          #場所概念学習のイテレーション回数
-L = 50 #100                  #場所概念の数50#
-K = 50 #100                  #位置分布の数50#
-alpha = 10.0 #0.1 #10.0 #5.0#1.5#10.0               #位置分布のindexの多項分布のハイパーパラメータ1.5#
+num_iter = 10          #場所概念学習のイテレーション回数
+L = 10 #100                  #場所概念の数50#
+K = 10 #100                  #位置分布の数50#
+alpha = 1.0 #0.1 #10.0 #5.0#1.5#10.0               #位置分布のindexの多項分布のハイパーパラメータ1.5#
 gamma = 1.0 #20.0 #15.0#8.0#20.0               #場所概念のindexの多項分布のハイパーパラメータ8.0#
 beta0 = 0.1 #0.4#0.2               #場所の名前Wのハイパーパラメータ0.5#
 kappa0 = 1e-3                #μのパラメータ、旧モデルのbeta0であることに注意
@@ -43,7 +52,7 @@ m0 = np.array([[0.0],[0.0]])   #μのパラメータ
 V0 = np.eye(2)*2 #*1000              #Σのパラメータ
 nu0 = 3.0 #3.0                    #Σのパラメータ、旧モデルでは1としていた(自由度の問題で2の方が良い?)、事後分布の計算のときに1加算していた
 
-sig_init =  10.0 
+sig_init =  1.0 
 
 ##latticelmパラメータ
 knownn = [2,3,4] #[3]#         #言語モデルのn-gram長 (3)

@@ -1,4 +1,4 @@
-image: ../CoRL/data/costmap/s3LDK_04/s3LDK_04.pgm
+image: ./s3LDK_04.pgm
 resolution: 0.100000
 origin: [-10.000000, -10.000000, 0.000000]
 negate: 0
