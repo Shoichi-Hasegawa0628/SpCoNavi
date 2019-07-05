@@ -2,7 +2,7 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse(開発中)
-# Akira Taniguchi 2019/06/24-
+# Akira Taniguchi 2019/06/24-2019/07/05
 ###########################################################
 
 ##########---遂行タスク---##########
@@ -320,6 +320,7 @@ def CostMapProb_jit(gridmap, costmap):
     
     return CostMapProb * GridMapProb
 
+"""
 #@jit(nopython=True, parallel=True)
 #@jit(parallel=True)  #並列化されていない？1CPUだけ使用される
 def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
@@ -335,6 +336,7 @@ def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_w
           #sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
           PostProbMap[length][width] = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
     return CostMapProb * PostProbMap
+"""
 
 #@jit(parallel=True)
 def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
@@ -353,6 +355,7 @@ def PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_leng
     
     return CostMapProb * PostProbMap
 
+"""
 #@jit(nopython=True, parallel=True)
 #@jit #(parallel=True) #なぜかエラーが出る
 def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
@@ -373,7 +376,9 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
           Transition[n][m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
         #  print n,m,c
     return Transition
+"""
 
+"""
 def Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
     Transition = lil_matrix((state_num,state_num)) #[[0 for j in range(state_num)] for i in range(state_num)])
     print "Memory OK"
@@ -391,6 +396,7 @@ def Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
     #Transition_csr = Transition.tocsr()
     #print "Transformed sparse csr format OK"
     return Transition.tocsr() #Transition_csr
+"""
 
 #動的計画法によるグローバルパス推定（SpCoNaviの計算）
 def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
@@ -515,7 +521,11 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
 
 #移動位置の候補：現在の位置(2次元配列のインデックス)の近傍8セル+現在位置1セル
 def MovePosition_2D(Xt): 
+  if (NANAME == 1):
     PostPosition_list = np.array([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,0], [0,1], [1,-1],[1,0],[1,1] ])*cmd_vel + np.array(Xt)
+  else:
+    PostPosition_list = np.array([ [-1,0], [0,-1],[0,0], [0,1], [1,0] ])*cmd_vel + np.array(Xt)
+    
     return PostPosition_list
 
 
@@ -528,6 +538,7 @@ def update(cost, trans, emiss):
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
 
+"""
 #なぜか重くてTが進まない(不採用)
 def update_sparse(cost, trans, emiss):
     COST = 0 #COST, INDEX = range(2)  #0,1
@@ -539,12 +550,13 @@ def update_sparse(cost, trans, emiss):
     max_arr = max(arr)
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
+"""
 
 #@jit #jitはコードによってエラーが出る場合があるので注意
 def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition):
     #Transition = np.array([approx_log_zero for j in xrange(state_num)]) #emissのindex番号に応じて、これをつくる処理を入れる
     for i in xrange(len(Transition)):
-      Transition[i] = approx_log_zero
+      Transition[i] = float('-inf') #approx_log_zero #-infでも計算結果に変わりはない模様
 
     #今、想定している位置1セルと隣接する8セルのみの遷移を考えるようにすればよい
     #Index_2D = IndexMap_one_NOzero[n] #.tolist()
@@ -562,7 +574,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     if (count_t == 0): #遷移確率がすべて0．移動できないということを意味する．
       print "[ERROR] All transition is approx_log_zero."
     elif (count_t == 1): #遷移確率がひとつだけある．移動可能な座標が一択．（このWARNINGが出ても問題ない場合がある？）
-      print "[WARNING] One transition is zero."
+      print "[WARNING] One transition can move only."
     
     #trans = Transition #np.array(Transition)
     arr = cost + Transition #trans
@@ -614,6 +626,8 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
         #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in xrange(len(e))]
         cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in izip(m, e)] #izipの方がメモリ効率は良いが、zipとしても処理速度は変わらない
         trellis.append(cost)
+        if (float('inf') in cost) or (float('-inf') in cost) or (float('nan') in cost):
+            print("[ERROR] cost:", str(cost))
         #print "i", i, [(c[COST], c[INDEX]) for c in cost] #前のノードがどこだったか（どこから来たか）を記録している
         if (SAVE_T_temp == temp):
             #Backward temp

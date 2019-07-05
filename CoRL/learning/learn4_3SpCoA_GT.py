@@ -235,7 +235,7 @@ def Mutual_Info(W,pi):  #Mutual information:W、π
 
 def position_data_read_pass(directory,DATA_NUM):
     all_position=[] 
-    hosei = 1.5 # 04だけ*2, 06は-1, 10は*1.5
+    hosei = 1 #1.5 # 04だけ*2, 06は-1, 10は*1.5
 
     for i in range(DATA_NUM):
             #if  (i in test_num)==False:

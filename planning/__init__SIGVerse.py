@@ -1,11 +1,26 @@
 #coding:utf-8
 #The file for setting parameters
-#Akira Taniguchi 2018/12/13-2019/03/10-
+#Akira Taniguchi 2018/12/13-2019/03/10-2019/06/27-
 import numpy as np
 
 ##実行コマンド
-#python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num
-#python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
+#python ./SpCoNavi0.1_SIGVerse.py trialname iteration sample init_position_num speech_num
+#python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0
+
+##### NEW #####
+inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+
+Start_Position = [[100,100]]
+Goal_Word = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室"]
+#玄関,リビング,ダイニング,キッチン,風呂,洗面所,トイレ,寝室,
+
+#Same values as /learning/__init.py__
+L = 10 #100                  #場所概念の数50#
+K = 10 #100                  #位置分布の数50#
+
+memory_reduction = 1 #00 #
+NANAME = 0 #斜め座標の遷移も動作に含む（１）
 
 #################### Folder PATH ####################
 #Setting of PATH for a folder of learned spatial concept parameters
@@ -19,18 +34,18 @@ speech_folder_go = "/home/akira/Dropbox/Julius/directory/SpCoSLAMgo/*.wav"  #評
 lmfolder = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language model (word dictionary)
 
 #Navigation folder (他の出力ファイルも同フォルダ)
-navigation_folder = "/navi_s2/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
+navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 #SpCoSLAMのフォルダ形式に従うようにしている
 #"/navi_s/"は、StのN-bestを別々に計算する版
 #"/navi_s2/"は、StのN-bestを別々に計算する版+URの分母の割り算省略版
 
 #Cost map folder
-costmap_folder = navigation_folder
+costmap_folder = navigation_folder  #"/costmap/" #
 
 
 
 #################### Parameters ####################
-T_horizon  = 400     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第 #値が大きすぎる(400)と，数値計算(おそらく遷移確立)の問題でパス生成がバグることがあるので注意
+T_horizon  = 200     #計画区間(予測ホライズン) #150~200以上はほしいがメモリ容量or計算量次第 #値が大きすぎる(400)と，数値計算(おそらく遷移確立)の問題でパス生成がバグることがあるので注意
 N_best     = 10      #N of N-best (N<=10)
 step       = 50      #使用するSpCoSLAMの学習時のタイムステップ(教示回数)
 
@@ -46,10 +61,12 @@ SAVE_X_init  = 0      #初期値をファイル保存するか（このファイ
 SAVE_T_temp  = 10     #途中のパスを一時ファイル保存する(途中のTの値ごと)
 SAVE_Trellis = 0      #Viterbi Path推定時のトレリスを保存するか(保存する:1、保存しない:0)
 
-UPDATE_PostProbMap = 1 #ファイルが既にあっても、PostProbMapの計算を行う(1)
+UPDATE_PostProbMap = 0 #1 #ファイルが既にあっても、PostProbMapの計算を行う(1) 
 
 #近似手法の選択(Proposed(JSAI2019版):0, samplingCtit:1(未実装), xの次元削減とか...(未実装), 近似せずに厳格に計算:-1)
 Approx = 0  
+if (NANAME != 1):
+  Approx = 1
 #現状、N-best近似しない版は別のプログラム（SpCoNavi0.1s.py）
 
 #状態遷移のダイナミクス(動作モデル)の仮定(確定的:0, 確率的:1, 近似:2(未実装))
@@ -74,8 +91,8 @@ COSTMAP_TOPIC = "/move_base/global_costmap/costmap"
 #PATH_TOPIC = "/spconavi/path" #未実装
 
 #地図のyamlファイルと同じ値にする
-resolution = 0.050000
-origin =  np.array([-30.000000, -20.000000]) #, 0.000000]
+resolution = 0.1 #0.050000
+origin =  np.array([-10.000000, -10.000000]) #, 0.000000] #np.array([-30.000000, -20.000000]) #, 0.000000]
 
 #地図のサイズの縦横(length and width)があらかじめ分かる場合はこちらに記載しても良いかも
 #map_length = 0

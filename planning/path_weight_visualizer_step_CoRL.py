@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 #import seaborn as sns
 #import pandas as pd
-from __init__ import *
+from initJSAI2019 import *
 from submodules import *
 ##実行コマンド例：
 ##python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
-
+T_horizon = 400
 
 #マップを読み込む⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
@@ -52,6 +52,8 @@ def ReadPath(outputname,temp):
 
 ########################################
 if __name__ == '__main__': 
+    T_horizon = 400
+    Approx = 0  
     #学習済みパラメータフォルダ名を要求
     trialname = sys.argv[1]
     #print trialname
@@ -61,9 +63,9 @@ if __name__ == '__main__':
     speech_num = sys.argv[2] #0
   
     ##FullPath of folder
-    #filename = datafolder + trialname + "/" + str(step) +"/"
-    #print filename #, particle_num
-    outputfile = outputfolder_SIG + trialname + navigation_folder
+    filename = datafolder + trialname + "/" + str(step) +"/"
+    print filename #, particle_num
+    outputfile = outputfolder + trialname + navigation_folder
 
     init_position_num = 0
     X_init = X_candidates[int(init_position_num)]
@@ -71,12 +73,11 @@ if __name__ == '__main__':
 
     conditions = "T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
     outputname = outputfile + conditions
-    
-    Makedir(outputfile + "step")
 
-    temp = T_horizon #400
-    for temp in range(SAVE_T_temp,T_horizon+SAVE_T_temp,SAVE_T_temp):
-      #if (1):
+
+    #for temp in range(SAVE_T_temp,T_horizon+SAVE_T_temp,SAVE_T_temp):
+    temp = 280 #300
+    if (1):
       #地図のファイルを読み込む
       gridmap = ReadMap(outputfile)
 
@@ -100,11 +101,10 @@ if __name__ == '__main__':
             if (X_init[0] == i) and (X_init[1] == j):
               PathMap[i][j] = 1.0
             for t in xrange(len(Path)):
-              if ( Path[t][0] == i ) and ( Path[t][1] == j ): ################バグがないならこっちを使う
-                #if ( int(Path[t][0] -X_init[0]+T_horizon) == i) and ( int(Path[t][1] -X_init[1]+T_horizon) == j): ################バグに対処療法した
+              #if ( Path[t][0] == i ) and ( Path[t][1] == j ): ################バグがないならこっちを使う
+              if ( int(Path[t][0] -X_init[0]+T_horizon) == i) and ( int(Path[t][1] -X_init[1]+T_horizon) == j): ################バグに対処療法した
                 PathMap[i][j] = 1.0
-      
-      """
+
       y_min = 380 #X_init_index[0] - T_horizon
       y_max = 800 #X_init_index[0] + T_horizon
       x_min = 180 #X_init_index[1] - T_horizon
@@ -113,7 +113,6 @@ if __name__ == '__main__':
       PathWeightMap = PathWeightMap[x_min:x_max, y_min:y_max] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
       PathMap = PathMap[x_min:x_max, y_min:y_max] # X[-T+I[0]:T+I[0],-T+I[1]:T+I[1]]
       gridmap = gridmap[x_min:x_max, y_min:y_max]
-      """
 
       #MAPの縦横(length and width)のセルの長さを計る
       map_length = len(gridmap)  #len(costmap)
@@ -121,28 +120,28 @@ if __name__ == '__main__':
       print "MAP[length][width]:",map_length,map_width
 
       #地図の上に重み(ヒートマップ形式)を加える
-      plt.imshow(gridmap + (40+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100, interpolation='none') #, vmin = 0.0, vmax = 1.0)
-      plt.imshow(PathWeightMap,norm=LogNorm(), origin='lower', cmap='viridis', interpolation='none') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
-    
+      plt.imshow(gridmap + (40+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100) #, vmin = 0.0, vmax = 1.0)
+      plt.imshow(PathWeightMap,norm=LogNorm(), origin='lower', cmap='viridis') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
+      plt.gca().spines['right'].set_visible(False)
 
-      pp=plt.colorbar (orientation="vertical",shrink=0.8) # カラーバーの表示 
-      pp.set_label("Probability (log scale)", fontname="Arial", fontsize=10) #カラーバーのラベル
-      pp.ax.tick_params(labelsize=8)
-      plt.tick_params(axis='x', which='major', labelsize=8)
-      plt.tick_params(axis='y', which='major', labelsize=8)
-      #plt.xlim([380,800])             #x軸の範囲
-      #plt.ylim([180,510])             #y軸の範囲
-      plt.xlabel('X', fontsize=10)
-      plt.ylabel('Y', fontsize=10)
+      pp=plt.colorbar (orientation="vertical",shrink=0.75) # カラーバーの表示 
+      pp.set_label("Probability (log scale)", fontname="Arial", fontsize=14) #カラーバーのラベル
+      pp.ax.tick_params(labelsize=12)
+      #plt.tick_params(axis='x', which='major', labelsize=16)
+      #plt.tick_params(axis='y', which='major', labelsize=16)
+      ##plt.xlim([380,800])             #x軸の範囲
+      ##plt.ylim([180,510])             #y軸の範囲
+      #plt.xlabel('X', fontsize=20) #10
+      #plt.ylabel('Y', fontsize=20) #10
 
-      plt.imshow(PathMap, origin='lower', cmap='autumn', interpolation='none') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
+      plt.imshow(PathMap, origin='lower', cmap='autumn') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
 
 
       #地図をカラー画像として保存
       #output = outputfile + "N"+str(N_best)+"G"+str(speech_num)
       #plt.savefig(outputname + '_Path_Weight.eps', dpi=300)#, transparent=True
-      plt.savefig(outputfile + "step/" + conditions + '_Path_Weight' +  str(temp).zfill(3) + '.png', dpi=300)#, transparent=True
-      plt.savefig(outputfile + "step/" + conditions + '_Path_Weight' +  str(temp).zfill(3) + '.pdf', dpi=300, transparent=True)#, transparent=True
+      plt.savefig(outputfile + "step/" + conditions + '_Path_Weight' +  str(temp).zfill(3) + 'CoRL.png', dpi=300)#, transparent=True
+      plt.savefig(outputfile + "step/" + conditions + '_Path_Weight' +  str(temp).zfill(3) + 'CoRL.pdf', dpi=300, transparent=True)#
       plt.clf()
 
     #plt.show()

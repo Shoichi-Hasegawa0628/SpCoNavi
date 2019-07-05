@@ -13,13 +13,16 @@ outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbo
 
 Start_Position = [[100,100]]
 Goal_Word = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室"]
-#玄関,リビング,ダイニング,キッチン,風呂,洗面所,トイレ,寝室,
+#0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,8:寝室,
 
 #Same values as /learning/__init.py__
 L = 10 #100                  #場所概念の数50#
 K = 10 #100                  #位置分布の数50#
 
 memory_reduction = 1 #00 #
+NANAME = 0 #斜め座標の遷移も動作に含む（１）
+
+word_increment = 10
 
 #################### Folder PATH ####################
 #Setting of PATH for a folder of learned spatial concept parameters
@@ -56,7 +59,7 @@ X_candidates = [[340, 590]] ###TEST #2次元配列のインデックス(VR340)
 T_restart = 0 #T_horizonが変わると次元削減の処理で計算上の状態数が変わってしまうため現状使えない。trellisを保存していないとそもそも途中から再開できない。
 
 SAVE_time    = 1      #計算時間を保存するかどうか(保存する:1、保存しない:0)
-SAVE_X_init  = 0      #初期値をファイル保存するか（このファイルで指定する場合は事前にわかっているので不要）
+SAVE_X_init  = 1      #初期値をファイル保存するか（このファイルで指定する場合は事前にわかっているので不要）
 SAVE_T_temp  = 10     #途中のパスを一時ファイル保存する(途中のTの値ごと)
 SAVE_Trellis = 0      #Viterbi Path推定時のトレリスを保存するか(保存する:1、保存しない:0)
 
@@ -64,6 +67,8 @@ UPDATE_PostProbMap = 0 #1 #ファイルが既にあっても、PostProbMapの計
 
 #近似手法の選択(Proposed(JSAI2019版):0, samplingCtit:1(未実装), xの次元削減とか...(未実装), 近似せずに厳格に計算:-1)
 Approx = 0  
+if (NANAME != 1):
+  Approx = 1
 #現状、N-best近似しない版は別のプログラム（SpCoNavi0.1s.py）
 
 #状態遷移のダイナミクス(動作モデル)の仮定(確定的:0, 確率的:1, 近似:2(未実装))
