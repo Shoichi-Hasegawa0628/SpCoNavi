@@ -1079,6 +1079,12 @@ if __name__ == '__main__':
     Otb_B = [int(W_index[i] == Goal_Word[int(speech_num)]) * N_best for i in xrange(len(W_index))]
     print "BoW:",  Otb_B
 
+    while (sum(Otb_B) == 0):
+      print("[ERROR] BoW is all zero.", W_index)
+      word_temp = raw_input("Please word?>")
+      Otb_B = [int(W_index[i] == word_temp) * N_best for i in xrange(len(W_index))]
+      print("BoW (NEW):",  Otb_B)
+
     #パスプランニング
     Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
@@ -1100,7 +1106,7 @@ if __name__ == '__main__':
     #パスを送る
     #SendPath(Path)
     #パスを保存
-    SavePath(X_candidates[int(init_position_num)], Path, Path_ROS, outputname)
+    SavePath(Start_Position[int(init_position_num)], Path, Path_ROS, outputname)
 
     #確率値マップを送る
     #SendProbMap(PathWeightMap)

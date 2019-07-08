@@ -411,7 +411,7 @@ if (maze[goal[0]][goal[1]] != 0):
 #####描画
 #plt.imshow(maze, cmap="binary")
 gridmap = maze
-plt.imshow(gridmap + (50+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100, interpolation='none') #, vmin = 0.0, vmax = 1.0)
+plt.imshow(gridmap + (40+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100, interpolation='none') #, vmin = 0.0, vmax = 1.0)
      
 plt.xticks(rotation=90)
 plt.tick_params(axis='x', which='major', labelsize=8)
@@ -425,8 +425,8 @@ plt.ylabel('Y', fontsize=10)
 plt.gca().set_aspect('equal')
 
 # スタートとゴールをプロットする
-plt.plot(start[1], start[0], "D", color="tab:blue", markersize=1)
-plt.plot(goal[1], goal[0], "D", color="tab:pink", markersize=1)
+#plt.plot(start[1], start[0], "D", color="tab:blue", markersize=1)
+#plt.plot(goal[1], goal[0], "D", color="tab:pink", markersize=1)
 
 #plt.show()
 
@@ -542,7 +542,7 @@ for i in range(T_horizon):
     else:
         t = len(Path) -1
     #print PathWeightMap.shape, Path[t][0], Path[t][1]
-    LogLikelihood_step[t] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path[t][1] ])
+    LogLikelihood_step[t] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
     if (t == 0):
         LogLikelihood_sum[t] = LogLikelihood_step[t]
     elif (t >= 1):

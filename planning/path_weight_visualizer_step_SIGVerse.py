@@ -57,16 +57,19 @@ if __name__ == '__main__':
     #print trialname
     #trialname = raw_input("trialname?(folder) >")
 
+    #ロボット初期位置の候補番号を要求
+    init_position_num = sys.argv[2] #0
+
     #音声命令のファイル番号を要求   
-    speech_num = sys.argv[2] #0
+    speech_num = sys.argv[3] #0
   
     ##FullPath of folder
     #filename = datafolder + trialname + "/" + str(step) +"/"
     #print filename #, particle_num
     outputfile = outputfolder_SIG + trialname + navigation_folder
 
-    init_position_num = 0
-    X_init = X_candidates[int(init_position_num)]
+    #init_position_num = 0
+    X_init = Start_Position[int(init_position_num)]
     print X_init
 
     conditions = "T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)

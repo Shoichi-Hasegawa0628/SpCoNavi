@@ -11,9 +11,9 @@ import numpy as np
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
-Start_Position = [[100,100]]
+Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75]] #x,yが逆（Astarの指定座標と同じ）
 Goal_Word = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室"]
-#0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,8:寝室,
+#0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,7:寝室,
 
 #Same values as /learning/__init.py__
 L = 10 #100                  #場所概念の数50#
