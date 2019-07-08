@@ -6,6 +6,8 @@ SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Pro
 ## Execution environment  
 - Ubuntu 16.04 (on VMware)  
     - Python 2.7.12 and 3.5.2  
+        - Python2: numpy 1.16.4, scipy 1.2.2, maplotlib 1.5.1  
+        - Python3: numpy 1.16.4, scipy 1.3.0, maplotlib 3.0.3  
     - ROS kinetic  
 - Windows 10  
     - Unity 2018.4.0f1  
@@ -15,7 +17,11 @@ SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Pro
 SIGVerseのサイトに従い、UnityとSIGVerseProjectをセットアップ  
 サンプルのHSRのHsrTeleopを起動  
 
+SIGverse wiki: http://www.sigverse.org/wiki/  
+SIGVerse github: https://github.com/SIGVerse  
+
 【部屋環境の変更】  
+SweetHome3D\_rooms: https://github.com/EmergentSystemLabStudent/SweetHome3D_rooms  
 (TBA)  
 
 
