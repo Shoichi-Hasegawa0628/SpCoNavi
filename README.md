@@ -19,13 +19,13 @@ In the experiment, places instructed by the speech command of the user showed hi
 - Speech recognition system: Julius dictation-kit-v4.4 GMM-HMM/DNN-HMM (N-best output)  
 
 ## Preparation for execution  
-【準備コマンド】  
+【Command for preparation】  
 ~~~
 sudo pip install numpy scipy matplotlib numba
 ~~~
 
 【Notes】  
-実行時に、以下のようなWarning文が出るときは、pipでcoloramaをインストールorアップデートしてみてください。  
+If you get the following warning statement at runtime, please install or update `colorama` with pip.  
 ~~~
 /usr/local/lib/python2.7/dist-packages/numba/errors.py:104: UserWarning: Insufficiently recent colorama version found. Numba requires colorama >= 0.3.9
   warnings.warn(msg)
@@ -36,55 +36,60 @@ sudo pip install colorama
 ~~~
 
 ## Execution procedure
-【コストマップ取得のためのコマンドリスト】  
+【Command list for cost map acquisition】  
 ~~~
-(別ターミナル：起動しなくてもいい)
+(Terminal: There is no problem if this is not done)
 roscore
 ---
-(別ターミナル：環境設定は代替可能のはず)
+(Another terminal: This is an example of an execution command. Environment settings can be replaced with others.)
 roslaunch turtlebot_gazebo turtlebot_world.launch
 ---
-(別ターミナル)
-source ~/Dropbox/SpCoNavi/costmap_global/devel/setup.bash
+(Another terminal)
+source ~/*/SpCoNavi/costmap_global/devel/setup.bash
 roslaunch fourth_robot_2dnav global_costmap.launch
 
-（mapファイル指定する場合）
+（If you specify a map yaml file.）
 roslaunch fourth_robot_2dnav global_costmap.launch map_file:=my_map.yaml
 ---
-(別ターミナル)
-cd ~/Dropbox/SpCoNavi/planning
-python costmap.py alg2wicWSLAG10lln008
+(Another terminal)
+cd ~/*/SpCoNavi/planning
+python costmap.py trialname
 ~~~
-'alg2wicWSLAG10lln008'の箇所には、SpCoSLAM実行時の'trialname'を指定してください。  
+'trialname' is the data folder name of the learning result in SpCoSLAM.  
+For example, trialname is 'alg2wicWSLAG10lln008' in 'data' folder.  
 
-【SpCoNaviのテスト実行コマンド】  
+
+【Command for test execution of SpCoNavi】  
 ~~~
 python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
 ~~~
-例：
+Example：
 ~~~
 python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
 ~~~
 
-【出力確率とパスの可視化の実行コマンド】
+【Command for visualization of a path trajectory and the emission probability on the map】
 ~~~
 python ./path_weight_visualizer.py trialname speech_num  
 ~~~
-例：
+Example：
 ~~~
 python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 ~~~
 
 ## Folder
- - `/costmap_global/`: Get 2d costmap
+ - `/costmap_global/`: To get 2d costmap
  - `/data/alg2wicWSLAG10lln008/navi/`: Sample output data
  - `/img/`: Image files for README.md
  - `/planning/`: Main codes for planning
+ - `/SIGVerse/`: SpCoNavi for SIGVerse simulator environment
  
 ---
 ## Reference
 [1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
-[2]: 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019. (Japanese)  
+[2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019.)    
+
+
 
 【Other repositories】  
  - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
@@ -94,3 +99,4 @@ python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 
 2019/02/21  Akira Taniguchi  
 2019/06/17  Akira Taniguchi (Update)  
+2019/07/08  Akira Taniguchi (Update)  
