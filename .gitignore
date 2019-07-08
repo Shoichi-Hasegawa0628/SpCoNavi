@@ -111,8 +111,6 @@ sankou/
 PythonRobotics-master/
 navigation/
 *.py~
-CoRL/dataset/
-CoRL/data/
-CoRL/test/
+CoRL/
 .lnk
 Spacial_Concept_Formation/
