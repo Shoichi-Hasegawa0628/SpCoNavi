@@ -44,11 +44,11 @@ roscore
 (Another terminal: This is an example of an execution command. Environment settings can be replaced with others.)
 roslaunch turtlebot_gazebo turtlebot_world.launch
 ---
-(Another terminal)
+(Another terminal: It needs catkin_make)
 source ~/*/SpCoNavi/costmap_global/devel/setup.bash
 roslaunch fourth_robot_2dnav global_costmap.launch
 
-（If you specify a map yaml file.）
+(If you specify a map yaml file.)
 roslaunch fourth_robot_2dnav global_costmap.launch map_file:=my_map.yaml
 ---
 (Another terminal)
@@ -64,18 +64,16 @@ For example, trialname is 'alg2wicWSLAG10lln008' in 'data' folder.
 python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
 ~~~
 Example：
-~~~
-python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
-~~~
+`python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0`  
+
 
 【Command for visualization of a path trajectory and the emission probability on the map】
 ~~~
 python ./path_weight_visualizer.py trialname speech_num  
 ~~~
 Example：
-~~~
-python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
-~~~
+`python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8`  
+
 
 ## Folder
  - `/costmap_global/`: To get 2d costmap
@@ -90,8 +88,7 @@ python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 [2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019.)    
 
 
-
-【Other repositories】  
+## Other repositories  
  - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
  - [SpCoSLAM](https://github.com/a-taniguchi/SpCoSLAM): Implementation of SpCoSLAM (Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping)   
  - [SpCoSLAM 2.0](https://github.com/a-taniguchi/SpCoSLAM2): An Improved and Scalable Online Learning of Spatial Concepts and Language Models with Mapping (New version of online learning algorithm)   
