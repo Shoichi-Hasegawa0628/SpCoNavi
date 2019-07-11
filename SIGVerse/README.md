@@ -12,27 +12,48 @@ SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Pro
 - Windows 10  
     - Unity 2018.4.0f1  
 
-## Preparation for execution (変更中…)  
+## Preparation for execution 
 ### Windows  
-SIGVerseのサイトに従い、UnityとSIGVerseProjectをセットアップ  
-サンプルのHSRのHsrTeleopを起動  
+Set up Unity and SIGVerseProject according to the wiki page of SIGVerse.
+Launch `HsrTeleop`, which is the sample project of HSR.
+(in `/sigverse_unity_project/SIGVerseProject/Assets/SIGVerse/SampleScenes/HSR/`)
 
 SIGverse wiki: http://www.sigverse.org/wiki/  
 SIGVerse github: https://github.com/SIGVerse  
 
-【部屋環境の変更】  
-SweetHome3D\_rooms: https://github.com/EmergentSystemLabStudent/SweetHome3D_rooms  
-(TBA)  
+【Use / change of room environment】  
+Load an unity project of your room environment. 
+
+If you use a virtual HSR robot model;  
+Incorporate the HSR model into the room environment from `HsrTeleop`.  
+
+You can use the room environments in `SweetHome3D_rooms`.   
+SweetHome3D\_rooms: https://github.com/EmergentSystemLabStudent/SweetHome3D_rooms   
 
 
 ### Ubuntu  
-【Command for preparation】  
+Set up SIGVerse and ROS according to the wiki page of SIGVerse.
+Launch Examples in Tutorial.
+
+If you observe an error in Mongo C ++ driver installation, please execute the following command;  
 ~~~
-sudo pip install numpy scipy matplotlib
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .. -DLIBMONGOC_DIR=/usr/local -DLIBBSON_DIR=/usr/local ..
 ~~~
 
-SIGVerseのサイトに従い、セットアップ  
-ROS Tutorialを順番に実行  
+Be careful to remember the following when running the examples;  
+~~~
+cd ~/catkin_ws/
+source devel/setup.bash
+~~~
+
+
+【Command for preparation】  
+~~~
+sudo apt install python-pip python3-pip
+sudo apt-get install python3-tk
+sudo pip install numpy scipy matplotlib
+sudo pip3 install numpy scipy matplotlib
+~~~
 
 
 ## Execution procedure
@@ -44,7 +65,7 @@ roscore
 (Another terminal: This is an example of an execution command. Environment settings can be replaced with others.)
 roslaunch turtlebot_gazebo turtlebot_world.launch
 ---
-(Another terminal)
+(Another terminal: It needs catkin_make in the /costmap_global/ folder before running the following commands.)
 source ~/*/SpCoNavi/costmap_global/devel/setup.bash
 roslaunch fourth_robot_2dnav global_costmap.launch
 
@@ -64,23 +85,20 @@ Command for test execution of SpCoNavi】
 python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
 ~~~
 Example：
-~~~
-python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0
-~~~
+`python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0`  
 
 【Command for visualization of a path trajectory and the emission probability on the map】
 ~~~
 python ./path_weight_visualizer.py trialname speech_num  
 ~~~
 Example：
-~~~
-python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
-~~~
+`python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8`  
 
 ## Folder  
-フォルダ構成は後ほど変更予定  
- - `/planning/`: Main codes for planning
- - TBA
+ - `/Supplement/HSR/': Supplemental files for virtual HSR robot
+ - `/data/`: Data folder including sample data
+ - `/learning/`: Codes for learning
+ - `/planning/`: Codes for planning
  
 ---
 ## Reference
@@ -88,11 +106,11 @@ python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 [2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019.)    
 
 
-【Other repositories】  
+##Other repositories  
  - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
  - [SpCoSLAM](https://github.com/a-taniguchi/SpCoSLAM): Implementation of SpCoSLAM (Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping)   
  - [SpCoSLAM 2.0](https://github.com/a-taniguchi/SpCoSLAM2): An Improved and Scalable Online Learning of Spatial Concepts and Language Models with Mapping (New version of online learning algorithm)   
  - [SpCoSLAM_evaluation](https://github.com/a-taniguchi/SpCoSLAM_evaluation): The codes for the evaluation or the visualization in our paper  
 
 2019/06/25  Akira Taniguchi  
-2019/07/08  Akira Taniguchi (Update)  
+2019/07/11  Akira Taniguchi (Update)  
