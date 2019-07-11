@@ -1,1 +1,1 @@
-The learning result files of spatial concepts are here, in `alg2wicWSLAG10lln008`.
+The learning result files of spatial concepts in `alg2wicWSLAG10lln008` of SpCoSLAM2 are here.
