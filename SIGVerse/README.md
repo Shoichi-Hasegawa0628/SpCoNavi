@@ -14,9 +14,9 @@ SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Pro
 
 ## Preparation for execution 
 ### Windows  
-Set up Unity and SIGVerseProject according to the wiki page of SIGVerse.
-Launch `HsrTeleop`, which is the sample project of HSR.
-(in `/sigverse_unity_project/SIGVerseProject/Assets/SIGVerse/SampleScenes/HSR/`)
+Set up Unity and SIGVerseProject according to the wiki page of SIGVerse.  
+Launch `HsrTeleop`, which is the sample project of HSR.  
+(in `/sigverse_unity_project/SIGVerseProject/Assets/SIGVerse/SampleScenes/HSR/`)  
 
 SIGverse wiki: http://www.sigverse.org/wiki/  
 SIGVerse github: https://github.com/SIGVerse  
@@ -32,8 +32,8 @@ SweetHome3D\_rooms: https://github.com/EmergentSystemLabStudent/SweetHome3D_room
 
 
 ### Ubuntu  
-Set up SIGVerse and ROS according to the wiki page of SIGVerse.
-Launch Examples in Tutorial.
+Set up SIGVerse and ROS according to the wiki page of SIGVerse.  
+Launch Examples in Tutorial.  
 
 If you observe an error in Mongo C ++ driver installation, please execute the following command;  
 ~~~
@@ -95,7 +95,7 @@ Example：
 `python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8`  
 
 ## Folder  
- - `/Supplement/HSR/': Supplemental files for virtual HSR robot
+ - `/Supplement/HSR/`: Supplemental files for virtual HSR robot
  - `/data/`: Data folder including sample data
  - `/learning/`: Codes for learning
  - `/planning/`: Codes for planning
