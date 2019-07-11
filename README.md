@@ -19,13 +19,17 @@ In the experiment, places instructed by the speech command of the user showed hi
 - Speech recognition system: Julius dictation-kit-v4.4 GMM-HMM/DNN-HMM (N-best output)  
 
 ## Preparation for execution  
+【Spatial concept learning】  
+SpCoNavi needs the learning data files by SpCoSLAM or other spatial concept formation methods.  
+It is assumed that a reasonably accurate map of the environment, spatial concepts, and lexicon, will have already been acquired. 
+This assumption implies that SpCoSLAM has already been in operation in the environment and each model parameter for the learning result from the last time-step has been fixed.   
+
 【Command for preparation】  
 ~~~
 sudo pip install numpy scipy matplotlib numba
 ~~~
 
-【Notes】  
-If you get the following warning statement at runtime, please install or update `colorama` with pip.  
+Notes: If you get the following warning statement at runtime, please install or update `colorama` with pip.  
 ~~~
 /usr/local/lib/python2.7/dist-packages/numba/errors.py:104: UserWarning: Insufficiently recent colorama version found. Numba requires colorama >= 0.3.9
   warnings.warn(msg)
@@ -34,6 +38,8 @@ If you get the following warning statement at runtime, please install or update 
 ~~~
 sudo pip install colorama
 ~~~
+
+If you get an error about `numba`, comment out the relevant part about `numba` in the navigation code and use it.  
 
 ## Execution procedure
 【Command list for cost map acquisition】  
