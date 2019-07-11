@@ -50,7 +50,7 @@ roscore
 (Another terminal: This is an example of an execution command. Environment settings can be replaced with others.)
 roslaunch turtlebot_gazebo turtlebot_world.launch
 ---
-(Another terminal: It needs catkin_make)
+(Another terminal: It needs catkin_make in the /costmap_global/ folder before running the following commands.)
 source ~/*/SpCoNavi/costmap_global/devel/setup.bash
 roslaunch fourth_robot_2dnav global_costmap.launch
 
