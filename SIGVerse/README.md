@@ -113,20 +113,20 @@ cd ./learning/
 python ./SpCoNavi0.1_SIGVerse.py trialname iteration sample init_position_num speech_num
 ~~~
 Example：
-`python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0`  
+`python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 7`  
 
 【Command for visualization of a path trajectory and the emission probability on the map】
 ~~~
-python ./path_weight_visualizer_step_SIGVerse.py trialname speech_num  
+python ./path_weight_visualizer_step_SIGVerse.py trialname init_position_num speech_num  
 ~~~
 Example：
-`python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0`  
+`python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7`  
 
 【Option: Command for A star algorithms】  
 This code only works with Python 3.  
 ~~~
-python3 ./Astar_SpCo.py 3LDK_01 s3LDK_01 1 0 0 0
-python3 ./Astar_Database.py 3LDK_01 s3LDK_01 1 0 0 0
+python3 ./Astar_SpCo.py 3LDK_01 s3LDK_01 1 0 0 7 100 100
+python3 ./Astar_Database.py 3LDK_01 s3LDK_01 1 0 0 7 100 100
 ~~~
 
 
@@ -149,4 +149,4 @@ python3 ./Astar_Database.py 3LDK_01 s3LDK_01 1 0 0 0
  - [SpCoSLAM_evaluation](https://github.com/a-taniguchi/SpCoSLAM_evaluation): The codes for the evaluation or the visualization in our paper  
 
 2019/06/25  Akira Taniguchi  
-2019/07/11  Akira Taniguchi (Update)  
+2019/07/12  Akira Taniguchi (Update)  
