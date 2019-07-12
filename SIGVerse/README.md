@@ -87,11 +87,11 @@ cd ~/*/SpCoNavi/planning
 python costmap_SIGVerse.py trialname
 rosrun map_server map_saver -f ../SIGVerse/data/trialname/navi/trialname
 ~~~
-'trialname' is the data folder name of the learning result in SpCoSLAM.  
-For example, trialname is '3LDK_01' in 'data' folder.  
+`trialname` is the data folder name of the learning result in SpCoSLAM.  
+For example, trialname is `3LDK_01` in `data` folder.  
 
-【Command for learning of spatial concepts】
-In the home environment, you need to have a training data set (robot positions, words, and images).
+【Command for learning of spatial concepts】  
+In the home environment, you need to have a training data set (robot positions, words, and images).  
 ~~~
 cd ~/*/SpCoNavi/SIGVerse/learning/
 python ./learn4_3SpCoA_GT.py 3LDK_01
