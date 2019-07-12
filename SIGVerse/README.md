@@ -55,44 +55,80 @@ sudo pip install numpy scipy matplotlib
 sudo pip3 install numpy scipy matplotlib
 ~~~
 
+(Option: For version update)  
+~~~
+sudo pip install numpy --upgrade
+sudo pip install scipy --upgrade
+sudo pip2 install scipy --ignore-installed
+~~~
+
 
 ## Execution procedure
 【Command list for cost map acquisition】  
 ~~~
-(Terminal: There is no problem if this is not done)
-roscore
+(Terminal: the movement of HSR by keyboard operation and running rviz)
+roslaunch sigverse_hsr_teleop_key teleop_key_with_rviz.launch
 ---
-(Another terminal: This is an example of an execution command. Environment settings can be replaced with others.)
-roslaunch turtlebot_gazebo turtlebot_world.launch
+(Windows)
+<< Unity start >>
+---
+(Another terminal: run gmapping. Including the parameters setting to command, i.e., resolution and map size.)
+rosrun gmapping slam_gmapping scan:=/hsrb/base_scan _xmin:=-10.0 _ymin:=-10.0 _xmax:=10.0 _ymax:=10.0 _delta:=0.1
 ---
 (Another terminal: It needs catkin_make in the /costmap_global/ folder before running the following commands.)
 source ~/*/SpCoNavi/costmap_global/devel/setup.bash
-roslaunch fourth_robot_2dnav global_costmap.launch
+roslaunch fourth_robot_2dnav global_costmap_SIGVerse.launch
 
 （If you specify a map yaml file.）
-roslaunch fourth_robot_2dnav global_costmap.launch map_file:=my_map.yaml
+roslaunch fourth_robot_2dnav global_costmap_SIGVerse.launch map_file:=my_map.yaml
 ---
-(Another terminal)
+(Another terminal: Save the map and the cost map)
 cd ~/*/SpCoNavi/planning
-python costmap.py trialname
+python costmap_SIGVerse.py trialname
+rosrun map_server map_saver -f ../SIGVerse/data/trialname/navi/trialname
 ~~~
 'trialname' is the data folder name of the learning result in SpCoSLAM.  
-For example, trialname is 'alg2wicWSLAG10lln008' in 'data' folder.  
+For example, trialname is '3LDK_01' in 'data' folder.  
 
-
-Command for test execution of SpCoNavi】  
+【Command for learning of spatial concepts】
+In the home environment, you need to have a training data set (robot positions, words, and images).
 ~~~
-python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
+cd ~/*/SpCoNavi/SIGVerse/learning/
+python ./learn4_3SpCoA_GT.py 3LDK_01
+~~~
+
+【Visulalization of the learning result】  
+~~~
+roscore
+rosrun map_server map_server ~/*/SpCoNavi/SIGVerse/data/3LDK_01/navi/3LDK_01.yaml
+python ./new_place_drawy 3LDK_01 1 0
+rviz -d ./saveSpCoMAP_online_SIGVere.rviz 
+~~~
+
+
+【Command for test execution of SpCoNavi】  
+Setting parameters and PATH in `__init.py__`  
+~~~
+cd ./learning/
+python ./SpCoNavi0.1_SIGVerse.py trialname iteration sample init_position_num speech_num
 ~~~
 Example：
-`python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0`  
+`python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0`  
 
 【Command for visualization of a path trajectory and the emission probability on the map】
 ~~~
-python ./path_weight_visualizer.py trialname speech_num  
+python ./path_weight_visualizer_step_SIGVerse.py trialname speech_num  
 ~~~
 Example：
-`python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8`  
+`python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0`  
+
+【Option: Command for A star algorithms】  
+This code only works with Python 3.  
+~~~
+python3 ./Astar_SpCo.py 3LDK_01 s3LDK_01 1 0 0 0
+python3 ./Astar_Database.py 3LDK_01 s3LDK_01 1 0 0 0
+~~~
+
 
 ## Folder  
  - `/Supplement/HSR/`: Supplemental files for virtual HSR robot
