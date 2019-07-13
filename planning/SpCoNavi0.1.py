@@ -538,7 +538,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #Index_2D #絶対座標系にする
     MoveIndex_list_n_list = MoveIndex_list_n.tolist()
 
-　　count_t = 0
+    count_t = 0
     for c in prange(len(MoveIndex_list_n_list)): #prangeの方がxrangeより速い
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない

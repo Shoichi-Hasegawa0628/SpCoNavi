@@ -9,21 +9,20 @@ outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbo
 #Navigation folder (他の出力ファイルも同フォルダ)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 
-#地図のyamlファイルと同じ値にする
-resolution = 0.1 #0.050000
-origin =  np.array([-10.000000, -10.000000]) #, 0.000000] #np.array([-30.000000, -20.000000]) #, 0.000000]
+#Same value to map yaml file
+resolution = 0.1   #0.050000
+origin =  np.array([-10.000000, -10.000000]) #np.array([x,y]) #np.array([-30.000000, -20.000000])
 
+word_increment = 10     #Increment number of word observation data (BoWs)
 
-word_increment = 10
-
-####################パラメータ####################
-kyouji_count = 50 #100 #教示数をカウントする
-M = 2000   #パーティクルの数(学習の条件と同じ：300、旧モデルと同じ：300)
+#################### Parameters ####################
+#kyouji_count = 50 #100 #教示数をカウントする
+#M = 2000   #パーティクルの数(学習の条件と同じ：300、旧モデルと同じ：300)
 #LAG = 100 + 1  ##(平滑化のラグ数 + 1)個の要素を持つラグ配列の要素数
 
-#外壁座標
+#limit of map size
 #WallX = 1600
-#WallY = 1152#
+#WallY = 1152
 WallXmin = -10
 WallXmax = 10
 WallYmin = 10

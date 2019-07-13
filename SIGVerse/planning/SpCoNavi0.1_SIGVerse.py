@@ -2,61 +2,12 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse
-# Akira Taniguchi 2019/06/24-2019/07/05
+# Akira Taniguchi 2019/06/24-2019/07/13
 ###########################################################
 
-##########---遂行タスク---##########
-##ファイル読み込みパスの指定の変更
-
-##########---作業終了タスク---##########
-##文字コードをsjisのままにした
-##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
-##配列はlistかnumpy.arrayかを注意
-##地図が大きいとメモリを大量に消費する・処理が重くなる恐れがある
-##状態遷移確率(動作モデル)は確定モデルで近似計算する
-##range() -> xrange()
-##numbaのjitで高速化（？）and並列化（？）
-##PathはROSの座標系と2次元配列上のインデックスの両方を保存する
-##ViterbiPathの計算でlogを使う：PathWeightMapは確率で計算・保存、Transitionはlogで計算・保存する
-##事前計算できるものはできるだけファイル読み込みする形にもできるようにした
-###(単語辞書生成、単語認識結果(N-best)、事前計算可能な確率値、Transition(T_horizonごとに保持)、・・・)
-##Viterbiの計算処理をTransitionをそのまま使わないように変更した（ムダが多く、メモリ消費・処理時間がかかる要因）
-##Viterbiのupdate関数を一部numpy化(高速化)
-#sum_i_GaussMultiがnp.arrayになっていなかった(?)⇒np.array化したが計算上変わらないはず (2019/02/17)⇒np.arrayにすると、numbaがエラーを吐くため元に戻した．
-
 ### NEW for SIGVerse ###
-##移動量と累積報酬（log likelihood）を保存するようにする
-##numbaの使用を廃止
-
-###未確認・未使用
-#pi_2_pi
-#Prob_Triangular_distribution_pdf
-#Motion_Model_Odometry
-#Motion_Model_Odometry_No_theta
-
-###確認済み
-#ReadParameters
-#ReadSpeech
-#SpeechRecognition
-#WordDictionaryUpdate2
-#SavePath
-#SaveProbMap
-#ReadMap
-#ReadCostMap
-#PathPlanner
-#ViterbiPath
-
-##########---保留---##########
-#テスト実行・デバッグ
-#ムダの除去・さらなる高速化
-#状態遷移確率(動作モデル)を確率モデルで計算する実装
-#状態数の削減のための近似手法の実装
-#並列処理
-
-#SendPath
-#SendProbMap
-#PathDistance
-#PostProbXt
+## Save path length and log likelihood
+## Remove using numba
 
 ##############################################
 import os
@@ -72,9 +23,8 @@ from scipy.stats import multivariate_normal,multinomial #,t,invwishart,rv_discre
 from math import pi as PI
 from math import cos,sin,sqrt,exp,log,degrees,radians,atan2 #,gamma,lgamma,fabs,fsum
 from __init__ import *
-from JuliusNbest_dec_SIGVerse import *
+#from JuliusNbest_dec_SIGVerse import *
 from submodules import *
-#from numba import jit, njit, xrange
 from scipy.io import mmwrite, mmread
 from scipy.sparse import lil_matrix, csr_matrix
 from itertools import izip
@@ -235,9 +185,10 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
     return Otb_B
 
 #角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
-def pi_2_pi(angle):
-    return (angle + PI) % (2 * PI) - PI
+#def pi_2_pi(angle):
+#    return (angle + PI) % (2 * PI) - PI
 
+"""
 #三角分布の確率密度関数
 def Prob_Triangular_distribution_pdf(a,b):
     prob = max( 0, ( 1 / (sqrt(6)*b) ) - ( abs(a) / (6*(b**2)) ) )
@@ -298,6 +249,7 @@ def Motion_Model_Original(xt,ut,xt_1):
     px = Motion_Model_Prob( xt[0] - (xt_1[0]+ut[0]), odom_alpha3*dist )
     py = Motion_Model_Prob( xt[1] - (xt_1[1]+ut[1]), odom_alpha3*dist )
     return px*py
+"""
 
 #ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
@@ -868,6 +820,7 @@ def SavePathDistance_temp(Distance,temp):
     np.savetxt( output, np.array([Distance]), delimiter=",")
     print "Save Distance: " + output
 
+"""
 ##単語辞書読み込み書き込み追加
 def WordDictionaryUpdate2(step, filename, W_list):
   LIST = []
@@ -980,7 +933,7 @@ def WordDictionaryUpdate2(step, filename, W_list):
                 fp.write('\n')
                 c = c+1
   fp.close()
-
+"""
 
 ########################################
 if __name__ == '__main__': 

@@ -11,7 +11,7 @@ from matplotlib.colors import LogNorm
 #import pandas as pd
 from __init__ import *
 from submodules import *
-##実行コマンド例：
+##Command: 
 ##python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 
 

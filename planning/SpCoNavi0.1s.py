@@ -1,59 +1,9 @@
 #coding:utf-8
 
 ###########################################################
-# SpCoNavi: Spatial Concept-based Path-Planning Program (開発中：StのN-bestを別々に計算する版)
-# Akira Taniguchi 2018/12/13-2019/3/28
+# SpCoNavi: Spatial Concept-based Path-Planning Program
+# Akira Taniguchi 2018/12/13-2019/3/28-2019/07/13
 ###########################################################
-
-##########---遂行タスク---##########
-#テスト実行・デバッグ
-#ムダの除去・さらなる高速化
-
-
-
-##########---作業終了タスク---##########
-##文字コードをsjisのままにした
-##現状、Xtは2次元(x,y)として計算(角度(方向)θは考慮しない)
-##配列はlistかnumpy.arrayかを注意
-##地図が大きいとメモリを大量に消費する・処理が重くなる恐れがある
-##状態遷移確率(動作モデル)は確定モデルで近似計算する
-##range() -> xrange()
-##numbaのjitで高速化（？）and並列化（？）
-##PathはROSの座標系と2次元配列上のインデックスの両方を保存する
-##ViterbiPathの計算でlogを使う：PathWeightMapは確率で計算・保存、Transitionはlogで計算・保存する
-##事前計算できるものはできるだけファイル読み込みする形にもできるようにした
-###(単語辞書生成、単語認識結果(N-best)、事前計算可能な確率値、Transition(T_horizonごとに保持)、・・・)
-##Viterbiの計算処理をTransitionをそのまま使わないように変更した（ムダが多く、メモリ消費・処理時間がかかる要因）
-##Viterbiのupdate関数を一部numpy化(高速化)
-#sum_i_GaussMultiがnp.arrayになっていなかった(?)⇒np.array化したが計算上変わらないはず (2019/02/17)⇒np.arrayにすると、numbaがエラーを吐くため元に戻した．
-
-###未確認・未使用
-#pi_2_pi
-#Prob_Triangular_distribution_pdf
-#Motion_Model_Odometry
-#Motion_Model_Odometry_No_theta
-
-###確認済み
-#ReadParameters
-#ReadSpeech
-#SpeechRecognition
-#WordDictionaryUpdate2
-#SavePath
-#SaveProbMap
-#ReadMap
-#ReadCostMap
-#PathPlanner
-#ViterbiPath
-
-##########---保留---##########
-#状態遷移確率(動作モデル)を確率モデルで計算する実装
-#状態数の削減のための近似手法の実装
-#並列処理
-
-#SendPath
-#SendProbMap
-#PathDistance
-#PostProbXt
 
 ##############################################
 import os
@@ -191,8 +141,45 @@ def ReadSpeech(num):
     speech_file = files[num]
     return speech_file
 
+
 #音声データを受け取り、音声認識を行う⇒文字列配列を渡す・保存
 def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
+    ##学習した単語辞書を用いて音声認識し、BoWを得る
+    St = RecogNbest( speech_file, step, trialname )
+    #print St
+    Otb_B = [0 for i in xrange(len(W_index))] #[[] for j in xrange(len(St))]
+    for j in xrange(len(St)):
+      for i in xrange(5):
+              St[j] = St[j].replace("<s>", "")
+              St[j] = St[j].replace("</s>", "")
+              St[j] = St[j].replace(" <s> ", "")
+              St[j] = St[j].replace("<sp>", "")
+              St[j] = St[j].replace(" </s>", "")
+              St[j] = St[j].replace("  ", " ") 
+              St[j] = St[j].replace("\n", "")   
+      print j,St[j]
+      Otb = St[j].split(" ")
+
+      for j2 in xrange(len(Otb)):
+          #print n,j,len(Otb_Samp[r][n])
+          for i in xrange(len(W_index)):
+            #print W_index[i].decode('sjis'),Otb[j]
+            if (W_index[i].decode('sjis') == Otb[j2] ):  #'utf8'
+              Otb_B[i] = Otb_B[i] + 1
+              #print W_index[i].decode('sjis'),Otb[j]
+    print Otb_B
+
+    # 認識結果をファイル保存
+    f = open( outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_St.csv" , "w") # , "sjis" )
+    for i in xrange(len(St)):
+        f.write(St[i].encode('sjis'))
+        f.write('\n')
+    f.close()
+
+    return Otb_B
+
+#音声データを受け取り、音声認識を行う⇒文字列配列を渡す・保存
+def SpeechRecognition_separate(speech_file, W_index, step, trialname, outputfile):
     ##学習した単語辞書を用いて音声認識し、BoWを得る
     St = RecogNbest( speech_file, step, trialname )
     #print St
@@ -227,6 +214,8 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
     f.close()
 
     return Otb_B_N
+
+
 
 #角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
 def pi_2_pi(angle):
@@ -402,10 +391,12 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "MAP[length][width]:",map_length,map_width
 
     #事前計算できるものはしておく
-    Sum_C_Multi_nbest = [ sum([multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c]) for c in xrange(L)]) for n in xrange(N_best)]
-    LookupTable_ProbCt = np.array([ sum([ (multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c])/Sum_C_Multi_nbest[n]) for n in xrange(N_best)]) * Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
-    #LookupTable_ProbCt = np.array([ sum([ (multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c])) for n in xrange(N_best)]) * Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
-    
+    if (St_separate == 1):
+        Sum_C_Multi_nbest = [ sum([multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c]) for c in xrange(L)]) for n in xrange(N_best)]
+        LookupTable_ProbCt = np.array([ sum([ (multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c])/Sum_C_Multi_nbest[n]) for n in xrange(N_best)]) * Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+    else:
+        LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
+
     ###SaveLookupTable(LookupTable_ProbCt, outputfile)
     ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #事前計算結果をファイル読み込み(計算する場合と大差ないかも)
 
@@ -553,7 +544,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     if (count_t == 0): #遷移確率がすべて0．移動できないということを意味する．
       print("[ERROR] All transition is approx_log_zero.")
     elif (count_t == 1): #遷移確率がひとつだけある．移動可能な座標が一択．
-      print("[WARNING] One transition is zero.", n, m) #なぜかこれがでる．問題ないのか調査中。n==mのときになっている
+      print("[WARNING] One transition is zero.", n, m) #これが出ても問題ない。
     
     #trans = Transition #np.array(Transition)
     arr = cost + Transition #trans
@@ -976,7 +967,10 @@ if __name__ == '__main__':
       fp.close()
 
     #音声認識
-    S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputfile)
+    if (St_separate == 1):
+      S_Nbest = SpeechRecognition_separate(speech_file, W_index, step, trialname, outputfile)
+    else:
+      S_Nbest = SpeechRecognition(speech_file, W_index, step, trialname, outputfile)
 
     if (SAVE_time == 1):
       #音声認識終了時刻（PP開始時刻）を保持
