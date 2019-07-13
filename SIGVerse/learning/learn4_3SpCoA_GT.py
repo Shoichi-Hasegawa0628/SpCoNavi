@@ -1,101 +1,16 @@
 #coding:utf-8
 
 ##############################################
-##場所概念モデル
-##SpCoNavi (on SIGVerse)のための学習用
+##Spatial concept formation model (SpCoA without lexical acquisition)
+##For SpCoNavi (on SIGVerse)
+##Learning algorithm is Gibbs sampling.
 ##############################################
-
-
-#---遂行タスクI(TAMD)---#
-
-##↓別プログラムとして作成中
-#相互推定のイテレーションごとに選ばれた学習結果の評価値（ARI、コーパスPAR、単語PAR）、（事後確率値）を出力
-##単語PARはp(O_best|x_t)と正解を比較。x_tは正しいデータの平均値とする。
-
-#↑のプログラムをインポートする
-
-#---作業終了タスク（TAMD）---#
-#sig_initパラメータを＿init＿.pyへ
-#単語分割結果の読み込みの処理を修正
-###pygameをインポート
-#相互推定のイテレーションごとに位置分布の描画、保存
-#データファイルを__init__.pyで指定するようにした
-#パラメータ合わせる
-#Turtlebotのデータに対応させる
-#プログラムの整理（ちょっとだけ、無駄な計算や引数宣言の消去）
-#sum()がnp.arrayの場合np.sumの方が高速(?)のため変更
-#単語辞書が日本語音節表記でも音素ローマ字表記でも対応可能
-#位置分布のμの値を保存するときに余計なものが混入していた（"_*"）のを修正済み
-
-#---作業終了タスク---#
-###正規化処理、0ワリ回避処理のコード短縮
-###2次元ガウス分布の関数化、共分散をnumpy形式の行列計算に変更(時間があれば再確認)
-#通常のMCLを平滑化MCLにする(結果確認済)
-### Julius機能を消去。教示モードは動作をしながら教示時刻のみを保存する。(要確認)
-#range()をxrange()に全て変更。xrange()の方が計算効率が良いらしい。
-##ラグ値(LAG,lagu)、普通のMCL(ラグ値=0)の平滑化結果の出力を一つだけ(LAG)にする
-##動作モデルと計測モデルの関数化->計測モデルの簡素化
-###教示フェーズとMCLフェーズをわける
-###センサ値、制御値を保存する
-###保存したデータから平滑化MCLを動作させる
-##全ての処理終了後に平滑化自己位置推定の結果をファイル出力(csv)
-##認識発話単語集合をファイルへ出力
-#パーティクル初期化の方法を変更(リスト内包表記いちいちしない)->いちいちリスト内表記！
-##発話認識文(単語)データを読み込む
-#<s>,<sp>,</s>を除く処理
-#角度からラジアンへ変換する関数radian()はmathにあるためそちらに変更
-##stick_breaking関数を見つけたので入れてみた
-#多項分布の確率質量関数pmfを計算する関数を発見したので導入
-##位置分布の描画用処理、viewerに送る位置分布サンプリング点群itiを設定
-#robot初期状態を表す(x_init,y_init,radians(d_init))を作った
-#motion_modelの関数名をsample_motion_modelへ変更。
-#パーティクル数Mと位置分布平均Myuの引数名区別。Myuの初期化法修正
-#0ワリ対処関数yudoupにyudo_sum==0の場合の例外処理を加えた。
-###sampleではないmotion_modelを実装
-#角度処理関数kakudoはPIの小数点精度問題があったため、より精度のよい修正版のkakudo2を作成。
-#####XDt_true(真の角度値)とXDtが一致しない件について調査(角度が一周してることが判明)
-######SBP,weak limit approximationについての確認、SBP他、初期化方法の修正
-#myu0->m0,VV0->V0に修正
-##動かさずにサンプル散らす関数sample_not_motion_modelを作った(挙動の確認する必要がある)
-##最終学習結果の出力：初期値(*_init.csv)およびイテレーションごとにファイル出力
-###データののっている要素のみをプリントする（データなしは表示しないようにしたが、ファイル出力するときは全部出す）
-#パーティクルの平均を求める部分のコード短縮（ある程度できた）
-#各サンプリングにおいて、データのない番号のものはどうする？：消す、表示しない、番号を前倒しにするか等
-###各サンプリングにおいて、正しく正規化処理が行われているかチェック->たぶんOK
-#####motion_modelの角度の例外処理->一応とりあえずやった
-###ギブスサンプリングの収束判定条件は？(イテレートを何回するか)->とりあえず100回
-###初期パラメータの値はどうするか？->とりあえずそこそこな感じにチューニングした
-###どの要素をどの順番でサンプリングするか？->現状でとりあえずOK
-
-#---保留---#
-#計算速度の効率化は後で。
-#いらないものは消す->少しは消した
-##motionmodelで、パーティクルごとにおくるのではなく、群一気に行列としておくってnumpyで行列演算したほうが早いのでは？
-##↑センサーモデルも同様？
-#NormalInverseWishartDistribution関数のプログラムを見つけた。正確かどうか、どうなってるのか、要調査。
-#余裕があれば場所概念ごとに色分けして位置分布を描画する(場所概念ごとの混合ガウス)
-#Xtとμが遠いとg2の値がアンダーフローする可能性がある(logで計算すればよい？)問題があれば修正。
-#ガウス分布を計算する関数をlogにする
-#センサ値をintにせずにそのまま利用すればセンサ関係の尤度の値の計算精度があがるかも？
-###動作モデルがガウスなので計算で求められるかもしれない件の数式導出
-
-
-##ギブスサンプリング##
-#W～ディリクレ＝マルチ*ディリクレ  L個：実装できたかな？
-#μ、Σ～ガウス*ガウスウィシャート  K個：旧モデルの流用でok
-#π～ディリクレ＝マルチ*GEM  1個：一応できた？GEM分布の事後分布の計算方法要確認
-#Φ～ディリクレ＝マルチ*GEM  L個：同上
-#Ct～多項値P(O|Wc)*多項値P(i|φc)*多項P(c|π)  N個：できた？
-#it～ガウス値N(x|μk,Σk)*多項P(k|φc)  N個：できた？
-#xt(no t)～計測モデル値*動作モデル値*動作モデルパーティクル (EndStep-N)個：概ねできた？
-#xt(on t)～計測モデル値*動作モデル値*itの式(混合ガウス値)*動作モデルパーティクル N個：同上
 
 import glob
 import codecs
 import re
 import os
 import sys
-#import pygame
 import random
 import string
 import numpy as np
@@ -106,11 +21,13 @@ from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2
 from __init__ import *
 from submodules import *
 
+"""
 def gaussian(x,myu,sig):
     ###1次元ガウス分布
     gauss = (1.0 / sqrt(2.0*PI*sig*sig)) * exp(-1.0*(float((x-myu)*(x-myu))/(2.0*sig*sig)))
     return gauss
-    
+"""
+
 def gaussian2d(Xx,Xy,myux,myuy,sigma):
     ###ガウス分布(2次元)
     sqrt_inb = float(1) / ( 2.0 * PI * sqrt( np.linalg.det(sigma)) )
@@ -119,25 +36,8 @@ def gaussian2d(Xx,Xy,myux,myuy,sigma):
     gauss2d = (sqrt_inb) * exp( float(-1/2) * dist )
     return gauss2d
     
-def yudoup(yudo,yudo_sum): #float( 10 ** (-200) )
-    if yudo_sum == 0 :  #エラー処理
-        yudo = [0.1 for j in xrange(len(yudo))]
-        yudo_sum = sum(yudo)
-        print "yudo_sum is 0"
-    if yudo_sum < 10**(-15) : #0.000000000000001: #+0000000000
-        for j in xrange(len(yudo)):
-          yudo[j] = yudo[j] * 10.0**12 #100000000000 #+00000
-        yudo_sum = yudo_sum * 10.0**12 #100000000000 #+00000
-        yudo,yudo_sum = yudoup(yudo,yudo_sum)
-        print "yudoup!"
-    return yudo,yudo_sum
-
-def fill_param(param, default):   ##パラメータをNone の場合のみデフォルト値に差し替える関数
-    if (param == None): return default
-    else: return param
-
-def invwishartrand_prec(nu,W):
-    return inv(wishartrand(nu,W))
+#def invwishartrand_prec(nu,W):
+#    return inv(wishartrand(nu,W))
 
 def invwishartrand(nu, W):
     return inv(wishartrand(nu, inv(W)))
@@ -156,13 +56,6 @@ def wishartrand(nu, W):
             else:
                 foo[i,j]  = np.random.normal(0,1)
     return np.dot(chol, np.dot(foo, np.dot(foo.T, chol.T)))
-
-#http://nbviewer.ipython.org/github/fonnesbeck/Bios366/blob/master/notebooks/Section5_2-Dirichlet-Processes.ipynb
-def stick_breaking(alpha, k):
-    betas = np.random.beta(1, alpha, k)
-    remaining_pieces = np.append(1, np.cumprod(1 - betas[:-1]))
-    p = betas * remaining_pieces
-    return p/p.sum()
 
 #http://stackoverflow.com/questions/13903922/multinomial-pmf-in-python-scipy-numpy
 class Multinomial(object):
@@ -198,9 +91,8 @@ class Multinomial(object):
       raise ValueError("Can only compute the factorial of positive ints")
     return sum(log(n) for n in range(1,num+1))
 
-def MI_binary(b,W,pi,c):  #Mutual information(二値版):word_index、W、π、Ct
-    #相互情報量の計算
-    POC = W[c][b] * pi[c] #Multinomial(W[c]).pmf(B) * pi[c]   #場所の名前の多項分布と場所概念の多項分布の積
+def MI_binary(b,W,pi,c):  #Mutual information (binary variable): word_index、W、π、Ct
+    POC = W[c][b] * pi[c] #Multinomial(W[c]).pmf(B) * pi[c]  
     PO = sum([W[ct][b] * pi[ct] for ct in xrange(L)]) #Multinomial(W[ct]).pmf(B)
     PC = pi[c]
     POb = 1.0 - PO
@@ -209,7 +101,7 @@ def MI_binary(b,W,pi,c):  #Mutual information(二値版):word_index、W、π、C
     POCb = PO - POC
     PObC = PC - POC
     
-    # 相互情報量の定義の各項を計算
+    # Calculate each term for MI 
     temp1 = POC * log(POC/(PO*PC), 2)
     temp2 = POCb * log(POCb/(PO*PCb), 2)
     temp3 = PObC * log(PObC/(POb*PC), 2)
@@ -217,25 +109,23 @@ def MI_binary(b,W,pi,c):  #Mutual information(二値版):word_index、W、π、C
     score = temp1 + temp2 + temp3 + temp4
     return score
 
-def Mutual_Info(W,pi):  #Mutual information:W、π 
+def Mutual_Info(W,pi):  #Mutual information: W、π 
     MI = 0
     for c in xrange(len(pi)):
       PC = pi[c]
       for j in xrange(len(W[c])):
         #B = [int(i==j) for i in xrange(len(W[c]))]
         PO = fsum([W[ct][j] * pi[ct] for ct in xrange(len(pi))])  #Multinomial(W[ct]).pmf(B)
-        POC = W[c][j] * pi[c]   #場所の名前の多項分布と場所概念の多項分布の積
+        POC = W[c][j] * pi[c]   
         
-        
-        # 相互情報量の定義の各項を計算
+        # Calculate each term for MI
         MI = MI + POC * ( log((POC/(PO*PC)), 2) )
     
     return MI
 
-
 def position_data_read_pass(directory,DATA_NUM):
     all_position=[] 
-    hosei = 1 #1.5 # 04だけ*2, 06は-1, 10は*1.5
+    hosei = 1  # 04 is *2, 06 is -1, 10 is *1.5.
 
     for i in range(DATA_NUM):
             #if  (i in test_num)==False:
@@ -251,7 +141,6 @@ def position_data_read_pass(directory,DATA_NUM):
                   itigyoume = 0
             all_position.append(position)
     
-    #座標系の返還
     #Xt = (np.array(all_position) + origin[0] ) / resolution #* 10
     return np.array(all_position)
 
@@ -293,8 +182,8 @@ def Name_data_read(directory,word_increment,DATA_NUM):
     return np.array(name_data_set)
 """
 
-# Simulation
-def simulate(iteration,filename):
+# Gibbs sampling
+def Gibbs_Sampling(iteration,filename):
     ##発話認識文(単語)データを読み込む
     ##空白またはカンマで区切られた単語を行ごとに読み込むことを想定する
     sample_num = 1  #取得するサンプル数
@@ -1246,7 +1135,7 @@ if __name__ == '__main__':
             p.close()
       print "ITERATION:",i+1," latticelm complete!"
       """
-      simulate(i+1,trialname)          ##場所概念の学習
+      Gibbs_Sampling(i+1,trialname)          ##場所概念の学習
       
       print "ITERATION:",i+1," Learning complete!"
       #sougo(i+1)             ##相互情報量計算+##単語辞書登録

@@ -1,7 +1,7 @@
 #coding:utf-8
 
 ###########################################################
-# SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse(開発中)
+# SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse
 # Akira Taniguchi 2019/06/24-2019/07/05
 ###########################################################
 

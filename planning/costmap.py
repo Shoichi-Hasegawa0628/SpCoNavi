@@ -1,8 +1,8 @@
 #coding:utf-8
 #Akira Taniguchi 2018/12/13-2019/01/16
-#コストマップを読み込む⇒ファイル書き込み
-#ROS対応：マップとコストマップのトピックを受け取り、ファイル書き込み
-#参考：spco_mapping-master/src/learning.py 
+#Read costmap -> Write output files
+#Using ROS: receive ROS topics of map and costmap
+#Reference：spco_mapping-master/src/learning.py 
 
 import sys
 import numpy as np
@@ -15,7 +15,7 @@ from submodules import *
 class CostMap(object):
 
     def do_mkdir(self):
-        #学習済みパラメータフォルダ名を要求
+        # Request folder name of the learned model parameters 
         self.trialname = sys.argv[1]
         #print trialname
         #trialname = raw_input("trialname?(folder) >")
@@ -31,7 +31,7 @@ class CostMap(object):
         self.MapData = np.array([self.map.data[i:i+self.map.info.width] for i in range(0, len(self.map.data), self.map.info.width)])
         print "get map data."
         
-        # ファイル保存
+        # Save file
         np.savetxt(self.outputfile + "map.csv", self.MapData, delimiter=",")
         print "save map."
         print self.outputfile + "map.csv"
@@ -43,7 +43,7 @@ class CostMap(object):
         self.CostmapData = np.array([self.costmap.data[i:i+self.costmap.info.width] for i in range(0, len(self.costmap.data), self.costmap.info.width)])
         print "get costmap data."
         
-        # ファイル保存
+        # Save file
         np.savetxt(self.outputfile + "costmap.csv", self.CostmapData, delimiter=",")
         print "save costmap."
         print self.outputfile + "costmap.csv"
@@ -60,7 +60,7 @@ class CostMap(object):
 
 ########################################
 if __name__ == '__main__':
-    
+    print "Ctrl-C is the end of process."
     rospy.init_node('CostMap', anonymous=True)
     hoge = CostMap()
     rospy.spin()

@@ -3,7 +3,7 @@
 #Akira Taniguchi 2018/12/13-2019/03/10-2019/06/27-
 import numpy as np
 
-##実行コマンド
+##Command
 #python ./SpCoNavi0.1_SIGVerse.py trialname iteration sample init_position_num speech_num
 #python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0
 
@@ -11,8 +11,9 @@ import numpy as np
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
-Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75]] #x,yが逆（Astarの指定座標と同じ）
-Goal_Word = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室"]
+Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75]] #(y,x). not (x,y).（Same as coordinates in Astar_*.py）
+Goal_Word = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室"] # In Japanese
+#Goal_Word = ["Entrance","Living room","Dining room","Kitchen","Bath room","Washroom","Toilet","Bedroom"]
 #0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,7:寝室,
 
 #Same values as /learning/__init.py__
