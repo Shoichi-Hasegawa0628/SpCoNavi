@@ -175,7 +175,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
               #print W_index[i].decode('sjis'),Otb[j]
     print Otb_B
 
-    # 認識結果をファイル保存
+    # Save file for recognition result
     f = open( outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_St.csv" , "w") # , "sjis" )
     for i in xrange(len(St)):
         f.write(St[i].encode('sjis'))
@@ -184,11 +184,11 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
 
     return Otb_B
 
-#角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
-#def pi_2_pi(angle):
-#    return (angle + PI) % (2 * PI) - PI
-
 """
+#角度を[-π,π]に変換(参考：https://github.com/AtsushiSakai/PythonRobotics)
+def pi_2_pi(angle):
+    return (angle + PI) % (2 * PI) - PI
+
 #三角分布の確率密度関数
 def Prob_Triangular_distribution_pdf(a,b):
     prob = max( 0, ( 1 / (sqrt(6)*b) ) - ( abs(a) / (6*(b**2)) ) )

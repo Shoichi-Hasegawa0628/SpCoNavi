@@ -20,7 +20,7 @@ lmfolder         = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language mo
 
 #Navigation folder (Other output files are also same folder)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
-#SpCoSLAMのフォルダ形式に従うようにしている
+# follow folder format of learning result in spatial concept (SpCoSLAM)
 #"/navi_s/"は、StのN-bestを別々に計算する版
 #"/navi_s2/"は、StのN-bestを別々に計算する版+URの分母の割り算省略版
 
@@ -41,14 +41,14 @@ X_candidates = [[340, 590]]  #Index coordinates on 2 dimension list (VR340)
 #When starting from the mid-flow (value of t to read trellis, from the beginning: 0)
 T_restart = 0         #If T_horizon changes, it can not be used at present because the number of states changes in the dimension reduction process. If you do not save trellis, you run from the beginning.
 
-SAVE_time    = 1      #計算時間を保存するかどうか(保存する:1、保存しない:0)
-SAVE_X_init  = 0      #初期値をファイル保存するか (このファイルで指定する場合は事前にわかっているので不要) 
-SAVE_T_temp  = 10     #途中のパスを一時ファイル保存する(途中のTの値ごと)
-SAVE_Trellis = 0      #Viterbi Path推定時のトレリスを保存するか(保存する:1、保存しない:0)
+SAVE_time    = 1      #Save computational time (Save:1, Not save:0)
+SAVE_X_init  = 0      #Save initial value (Save:1, Not save:0) 
+SAVE_T_temp  = 10     #Step interval to save the path temporarily (each SAVE_T_temp value on the way)
+SAVE_Trellis = 0      #Save trellis for Viterbi Path estimation (Save:1, Not save:0) 
 
 UPDATE_PostProbMap = 1 #If the file exists already, calculate PostProbMap: (1) 
 
-#近似手法の選択(Proposed(JSAI2019版):0, samplingCtit:1(未実装), xの次元削減とか...(未実装), 近似せずに厳格に計算:-1)
+#Select approximated methods (Proposed method (ver. JSAI2019):0, sampling_Ct_it:1 (Unimplemented), dimension reduction of state x, and so on...(Unimplemented), no approximation:-1 (Unimplemented))
 Approx = 0  
 #現状、N-best近似しない版は別のプログラム (SpCoNavi0.1s.py) ->統合
 St_separate = 0   #N-best BoWs: All:0, separate:1 

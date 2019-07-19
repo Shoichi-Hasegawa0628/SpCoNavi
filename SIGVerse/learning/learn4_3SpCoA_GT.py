@@ -4,6 +4,7 @@
 ##Spatial concept formation model (SpCoA without lexical acquisition)
 ##For SpCoNavi (on SIGVerse)
 ##Learning algorithm is Gibbs sampling.
+##Akira Taniguchi -2019/07/18
 ##############################################
 
 import glob
@@ -184,11 +185,9 @@ def Name_data_read(directory,word_increment,DATA_NUM):
 
 # Gibbs sampling
 def Gibbs_Sampling(iteration,filename):
-    ##発話認識文(単語)データを読み込む
-    ##空白またはカンマで区切られた単語を行ごとに読み込むことを想定する
-    sample_num = 1  #取得するサンプル数
-    #N = 0      #データ個数用
-    #Otb = [[] for sample in xrange(sample_num)]   #音声言語情報：教示データ
+    sample_num = 1  #the sample number
+    #N = 0      #the number of data
+    #Otb = [[] for sample in xrange(sample_num)]   #word information
 
     inputfile = inputfolder_SIG  + trialname
     filename  = outputfolder_SIG + trialname
@@ -215,18 +214,15 @@ def Gibbs_Sampling(iteration,filename):
     #name = Name_data_read(inputfile,word_increment,DATA_NUM)
     
     for sample in xrange(sample_num):
-      #NN = 0
       N = 0
       Otb = []
       #テキストファイルを読み込み
-      #for line in open(filename + '/out_gmm_' + str(iteration) + '/' + str(sample) + '_samp.100', 'r'):   ##*_samp.100を順番に読み込む
       for word_data_num in range(DATA_NUM):
         f = open(inputfile + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
         line = f.read()
-        #print line
         itemList = line[:-1].split(' ')
         
-        #<s>,<sp>,</s>を除く処理：単語に区切られていた場合
+        #remove <s>,<sp>,</s>: if its were segmented to words.
         for b in xrange(5):
           if ("<s><s>" in itemList):
             itemList.pop(itemList.index("<s><s>"))
@@ -244,7 +240,7 @@ def Gibbs_Sampling(iteration,filename):
             itemList.pop(itemList.index("<sp></s>"))
           if ("" in itemList):
             itemList.pop(itemList.index(""))
-        #<s>,<sp>,</s>を除く処理：単語中に存在している場合
+        #remove <s>,<sp>,</s>: if its exist in words.
         for j in xrange(len(itemList)):
           itemList[j] = itemList[j].replace("<s><s>", "")
           itemList[j] = itemList[j].replace("<s>", "")
@@ -256,18 +252,14 @@ def Gibbs_Sampling(iteration,filename):
         
         #Otb[sample] = Otb[sample] + [itemList]
         Otb = Otb + [itemList]
-        #if sample == 0:  #最初だけデータ数Nを数える
         N = N + 1  #count
-        #else:
-        #  Otb[] = Otb[NN] + itemList
-        #  NN = NN + 1
         
         #for j in xrange(len(itemList)):
         #    print "%s " % (str(itemList[j])),
         #print ""  #改行用
       
       
-      ##場所の名前の多項分布のインデックス用
+      ##For index of multinominal distribution of place names
       W_index = []
       for n in xrange(N):
         for j in xrange(len(Otb[n])):
@@ -280,7 +272,7 @@ def Gibbs_Sampling(iteration,filename):
         print "\""+ str(i) + ":" + str(W_index[i]) + "\",",
       print "]"
       
-      ##時刻tデータごとにBOW化(?)する、ベクトルとする
+      ##Vectorize: Bag-of-Words for each time-step n (=t)
       Otb_B = [ [0 for i in xrange(len(W_index))] for n in xrange(N) ]
       
       
@@ -296,40 +288,14 @@ def Gibbs_Sampling(iteration,filename):
          print "DATA_NUM" + str(DATA_NUM) + ":KYOUJI error!! N:" + str(N)  ##教示フェーズの教示数と読み込んだ発話文データ数が違う場合
          #exit()
       
-      #TN = [i for i in xrange(N)]#[0,1,2,3,4,5]  #テスト用
-      
-      ##教示位置をプロットするための処理
-      #x_temp = []
-      #y_temp = []
-      #for t in xrange(len(TN)):
-      #  x_temp = x_temp + [Xt[int(TN[t])][0]]  #設定は実際の教示時刻に対応できるようになっている。
-      #  y_temp = y_temp + [Xt[int(TN[t])][1]]  #以前の設定のままで、動かせるようにしている。
-      """
-      EndStep = 0
-      if (data_name != 'test000'):
-        i = 0
-        Xt = []
-        #Xt = [(0.0,0.0) for n in xrange(len(HTW)) ]
-        TN = []
-        for line3 in open('./../sample/' + data_name, 'r'):
-          itemList3 = line3[:-1].split(',')
-          Xt = Xt + [(float(itemList3[0]), float(itemList3[1]))]
-          TN = TN + [i]
-          print TN
-          i = i + 1
-        
-        #Xt = Xt_temp
-        EndStep = len(Xt)-1
-      """
       Xt = pose
       TN = [i for i in range(DATA_NUM)]
       
       
-  ######################################################################
-  ####                   ↓場所概念学習フェーズ↓                   ####
-  ######################################################################
-      #TN[N]：教示時刻(step)集合
-      
+  #############################################################################
+  ####                 ↓Learning phase of spatial concept↓                 ####
+  #############################################################################
+      #TN[N]: teaching time-step
       #Otb_B[N][W_index]：時刻tごとの発話文をBOWにしたものの集合
       
       ##各パラメータ初期化処理
@@ -819,14 +785,12 @@ def Gibbs_Sampling(iteration,filename):
           fp_x.close()
         """
       
-      
-  ######################################################################
-  ####                   ↑場所概念学習フェーズ↑                   ####
-  ######################################################################
-      
+  #############################################################################
+  ####                 ↑Learning phase of spatial concept↑                 ####
+  ############################################################################# 
       
       loop = 1
-      ########  ↓ファイル出力フェーズ↓  ########
+      ########  ↓File output↓  ########
       if loop == 1:
         print "--------------------"
         #最終学習結果を出力
@@ -1051,35 +1015,9 @@ def Gibbs_Sampling(iteration,filename):
         #fp.close()
 
       
-      ########  ↑ファイル出力フェーズ↑  ########
+      ########  ↑File output↑  ########
       
-      """
-      ##学習後の描画用処理
-      iti = []    #位置分布からサンプリングした点(x,y)を保存する
-      #Plot = 500  #プロット数
-      
-      K_yes = 0
-      ###全てのパーティクルに対し
-      for j in range(K) : 
-        yes = 0
-        for t in xrange(N):  #jが推定された位置分布のindexにあるか判定
-          if j == It[t]:
-            yes = 0 #1
-        if yes == 1:
-          K_yes = K_yes + 1
-          for i in xrange(Plot):
-            if (data_name != "test000"):
-              S_temp = [[ S[j][0][0]/(0.05*0.05) , S[j][0][1]/(0.05*0.05) ] , [ S[j][1][0]/(0.05*0.05) , S[j][1][1]/(0.05*0.05) ]]
-              x1,y1 = np.random.multivariate_normal( [(Myu[j][0][0][0]+37.8)/0.05, (Myu[j][1][0][0]+34.6)/0.05] , S_temp , 1).T
-            else:
-              x1,y1 = np.random.multivariate_normal([Myu[j][0][0][0],Myu[j][1][0][0]],S[j],1).T
-            #print x1,y1
-            iti = iti + [[x1,y1]]
-      
-      #iti = iti + [[K_yes,Plot]]  #最後の要素[[位置分布の数],[位置分布ごとのプロット数]]
-      #print iti
-      filename2 = str(iteration) + "_" + str(sample)
-      """
+     
       
 if __name__ == '__main__':
     import sys
@@ -1087,7 +1025,6 @@ if __name__ == '__main__':
     from __init__ import *
     #from JuliusLattice_dec import *
     #import time
-    
     
     trialname = sys.argv[1]
     print trialname
@@ -1098,9 +1035,6 @@ if __name__ == '__main__':
     #iteration_time = [0.0 for i in range(ITERATION)]
     filename = outputfolder_SIG + trialname
     Makedir( filename )
-    #Makedir( "data/" + filename + "/lattice" )
-    
-    #p0 = os.popen( "PATH=$PATH:../../latticelm" )  #パスを通す-＞通らなかった
     
     for i in xrange(ITERATION):
       print "--------------------------------------------------"
@@ -1109,7 +1043,6 @@ if __name__ == '__main__':
       
       #Julius_lattice(i,filename)    ##音声認識、ラティス形式出力、opemFST形式へ変換
       #p = os.popen( "python JuliusLattice_gmm.py " + str(i+1) +  " " + filename )
-      
       
       
       #while (os.path.exists("./data/" + filename + "/fst_gmm_" + str(i+1) + "/" + str(kyouji_count-1).zfill(3) +".fst" ) != True):
