@@ -21,8 +21,8 @@ lmfolder         = "/mnt/hgfs/D/Dropbox/SpCoSLAM/learning/lang_m/"  #Language mo
 #Navigation folder (Other output files are also same folder)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 # follow folder format of learning result in spatial concept (SpCoSLAM)
-#"/navi_s/"は、StのN-bestを別々に計算する版
-#"/navi_s2/"は、StのN-bestを別々に計算する版+URの分母の割り算省略版
+#"/navi_s/"は, StのN-bestを別々に計算する版
+#"/navi_s2/"は, StのN-bestを別々に計算する版+URの分母の割り算省略版
 
 #Cost map folder
 costmap_folder = navigation_folder
@@ -50,42 +50,42 @@ UPDATE_PostProbMap = 1 #If the file exists already, calculate PostProbMap: (1)
 
 #Select approximated methods (Proposed method (ver. JSAI2019):0, sampling_Ct_it:1 (Unimplemented), dimension reduction of state x, and so on...(Unimplemented), no approximation:-1 (Unimplemented))
 Approx = 0  
-#現状、N-best近似しない版は別のプログラム (SpCoNavi0.1s.py) ->統合
+#Separated N-best approximation
 St_separate = 0   #N-best BoWs: All:0, separate:1 
 
-#状態遷移のダイナミクス(動作モデル)の仮定(確定的:0, 確率的:1, 近似:2(未実装))
+#Dynamics of state transition (motion model): (Deterministic:0, Probabilistic:1, Approximation:2(Unimplemented))
 #Dynamics = 0
 
 cmd_vel = 1  #Movement amount of robot (ROS: cmd_vel [m/s], [rad/s]) [default:1 (int)]
 MotionModelDist = "Gauss"  #"Gauss": Gaussian distribution, "Triangular": Triangular distribution
 
-#オドメトリ動作モデルパラメータ(AMCL or gmappingと同じ値にする): 未使用
-odom_alpha1 = 0.2  #(ダブル、デフォルト: 0.2) ロボットの動きの回転移動からオドメトリの回転移動のノイズ
-odom_alpha2 = 0.2  #(ダブル、デフォルト: 0.2) ロボットの動きの平行移動からオドメトリの回転移動のノイズ
-odom_alpha3 = 0.2  #(ダブル、デフォルト: 0.2) ロボットの動きの平行移動からオドメトリの平行移動のノイズ
-odom_alpha4 = 0.2  #(ダブル、デフォルト: 0.2) ロボットの動きの回転移動からオドメトリの平行移動のノイズ
+#Odometry motion model parameters (Same values to AMCL or gmapping): unused
+odom_alpha1 = 0.2  #(double, default: 0.2) ロボットの動きの回転移動からオドメトリの回転移動のノイズ
+odom_alpha2 = 0.2  #(double, default: 0.2) ロボットの動きの平行移動からオドメトリの回転移動のノイズ
+odom_alpha3 = 0.2  #(double, default: 0.2) ロボットの動きの平行移動からオドメトリの平行移動のノイズ
+odom_alpha4 = 0.2  #(double, default: 0.2) ロボットの動きの回転移動からオドメトリの平行移動のノイズ
 #srr = 0.1 #(float, default: 0.1) #オドメトリの誤差．平行移動に起因する平行移動の誤差．
 #srt = 0.2 #(float, default: 0.2) #オドメトリの誤差．回転移動に起因する平行移動の誤差．
 #str = 0.1 #(float, default: 0.1) #オドメトリの誤差．平行移動に起因する回転移動の誤差．
 #stt = 0.2 #(float, default: 0.2) #オドメトリの誤差．回転移動に起因する回転移動の誤差．
 
-#ROSのトピック名
+#ROS topic name
 MAP_TOPIC     = "/map"
 COSTMAP_TOPIC = "/move_base/global_costmap/costmap"
-#PATH_TOPIC = "/spconavi/path" #未実装
+#PATH_TOPIC = "/spconavi/path" #Unimplemented
 
-#地図のyamlファイルと同じ値にする
+#Same value to map yaml file
 resolution = 0.050000
-origin =  np.array([-30.000000, -20.000000]) #, 0.000000]
+origin =  np.array([-30.000000, -20.000000]) #, 0.000000] #np.array([x,y])
 
-#地図のサイズの縦横(length and width)があらかじめ分かる場合はこちらに記載しても良いかも
+#map size (length and width)
 #map_length = 0
 #map_width  = 0
 
 #Julius parameters
 JuliusVer      = "v4.4"   #"v.4.3.1"
 HMMtype        = "DNN"    #"GMM"
-lattice_weight = "AMavg"  #"exp" #音響尤度(対数尤度: "AMavg"、尤度: "exp")
+lattice_weight = "AMavg"  #"exp" #acoustic likelihood (log likelihood: "AMavg", likelihood: "exp")
 wight_scale    = -1.0
 #WDs = "0"   #DNN版の単語辞書の音素を*_Sだけにする("S"), BIE or Sにする("S"以外)
 ##In other parameters, please see "main.jconf" in Julius folder
@@ -101,9 +101,9 @@ else:
   lang_init = 'syllableGMM.htkdic' 
   # 'trueword_syllable.htkdic' #'phonemes.htkdic' # 初期の単語辞書(./lang_mフォルダ内)
 
-dimx = 2           #The number of dimensions of xt (x,y)
-margin = 10*0.05   #地図のグリッドと位置の値の関係が不明のため(0.05m/grid)*margin(grid)=0.05*margin(m)
-approx_log_zero = np.log(10.0**(-300))   #ほぼlog(0)の微小値
+#dimx = 2           #The number of dimensions of xt (x,y)
+#margin = 10*0.05   #地図のグリッドと位置の値の関係が不明のため(0.05m/grid)*margin(grid)=0.05*margin(m)
+approx_log_zero = np.log(10.0**(-300))   #approximated value of log(0)
 
 
 ####################Particle Class (structure)####################
@@ -120,9 +120,9 @@ class Particle:
 
 """
 ####################Option setting (NOT USE)####################
-wic = 1         #1:wic重みつき(理論的にはこちらがより正しい)、0:wic重みなし(Orignal paper of SpCoSLAM)
-UseFT = 1       #画像特徴を使う場合(１)、使わない場合(０)
-UseLM = 1       #言語モデルを更新する場合(１)、しない場合(０)[Without update language modelのため無関係]
+wic = 1         #1:wic重みつき(理論的にはこちらがより正しい), 0:wic重みなし(Orignal paper of SpCoSLAM)
+UseFT = 1       #画像特徴を使う場合(１), 使わない場合(０)
+UseLM = 1       #言語モデルを更新する場合(１), しない場合(０)[Without update language modelのため無関係]
 
 #NbestNum = N_best      #N of N-best (N<=10)
 #N_best_number = N_best #N of N-best (N<=10) for PRR
