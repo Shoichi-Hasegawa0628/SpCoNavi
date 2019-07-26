@@ -67,10 +67,10 @@ For example, trialname is `alg2wicWSLAG10lln008` in `data` folder.
 
 【Command for test execution of SpCoNavi】  
 ~~~
-python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
+python ./SpCoNavi0.1s.py trialname particle_num init_position_num speech_num  
 ~~~
 Example: 
-`python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0`  
+`python ./SpCoNavi0.1s.py alg2wicWSLAG10lln008 0 0 0`  
 
 
 【Command for visualization of a path trajectory and the emission probability on the map】

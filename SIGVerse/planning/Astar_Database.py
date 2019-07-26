@@ -43,21 +43,21 @@ def stay(pos):
 def Manhattan_distance(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
-#マップを読み込む⇒確率値に変換⇒2次元配列に格納
+#Read the map data⇒確率値に変換⇒2-dimension配列に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print("Read map: " + outputfile + "map.csv")
     return gridmap
 
-#コストマップを読み込む⇒確率値に変換⇒2次元配列に格納
+#Read the cost map data⇒確率値に変換⇒2-dimension配列に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.loadtxt(outputfile + "costmap.csv", delimiter=",")
     print("Read costmap: " + outputfile + "contmap.csv")
     return costmap
 
-#パス計算のために使用した確率値コストマップをファイル読み込みする
+#Load the probability cost map used for path calculation
 def ReadCostMapProb(outputfile):
     # 結果をファイル読み込み
     output = outputfile + "CostMapProb.csv"
@@ -65,7 +65,7 @@ def ReadCostMapProb(outputfile):
     print("Read CostMapProb: " + output)
     return CostMapProb
 
-#パス計算のために使用した確率値マップをファイル読み込みする
+#Load the probability value map used for path calculation
 def ReadProbMap(outputfile):
     # 結果をファイル読み込み
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
@@ -110,13 +110,13 @@ def SaveLogLikelihood(outputname, LogLikelihood,flag,flag2):
     np.savetxt( output_likelihood, LogLikelihood, delimiter=",")
     print("Save LogLikekihood: " + output_likelihood)
 
-#ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
+#ROSの地図座標系をPython内の2-dimension配列のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
     Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     return Index
 
-#Python内の2次元配列のインデックス番号からROSの地図座標系への変換
+#Python内の2-dimension配列のインデックス番号からROSの地図座標系への変換
 def Array_index_To_Map_coordinates(Index):
     Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
@@ -142,7 +142,7 @@ def SavePathDistance_temp(Distance,temp):
     np.savetxt( output, np.array([Distance]), delimiter=",")
     print("Save Distance: " + output)
 
-#場所概念の学習済みパラメータを読み込む
+#Read the parameters of learned spatial concepts
 def ReadParameters(iteration, sample, filename, trialname):
     #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     #r = iteration
@@ -170,13 +170,13 @@ def ReadParameters(iteration, sample, filename, trialname):
                 W_index = W_index + [itemList[j]]
         i = i + 1
     
-    #####パラメータW、μ、Σ、φ、πを入力する#####
-    Mu    = [ np.array([ 0.0, 0.0 ]) for i in range(K) ]  #[ np.array([[ 0.0 ],[ 0.0 ]]) for i in range(K) ]      #位置分布の平均(x,y)[K]
-    Sig   = [ np.array([ [0.0, 0.0],[0.0, 0.0] ]) for i in range(K) ]      #位置分布の共分散(2×2次元)[K]
-    W     = [ [0.0 for j in range(len(W_index))] for c in range(L) ]  #場所の名前(多項分布：W_index次元)[L]
+    #####パラメータW, μ, Σ, φ, πを入力する#####
+    Mu    = [ np.array([ 0.0, 0.0 ]) for i in range(K) ]  #[ np.array([[ 0.0 ],[ 0.0 ]]) for i in range(K) ]      #the position distribution (Gaussian)の平均(x,y)[K]
+    Sig   = [ np.array([ [0.0, 0.0],[0.0, 0.0] ]) for i in range(K) ]      #the position distribution (Gaussian)の共分散(2×2-dimension)[K]
+    W     = [ [0.0 for j in range(len(W_index))] for c in range(L) ]  #the name of place(multinomial distribution: W_index-dimension)[L]
     #theta = [ [0.0 for j in range(DimImg)] for c in range(L) ] 
-    Pi    = [ 0.0 for c in range(L)]     #場所概念のindexの多項分布(L次元)
-    Phi_l = [ [0.0 for i in range(K)] for c in range(L) ]  #位置分布のindexの多項分布(K次元)[L]
+    Pi    = [ 0.0 for c in range(L)]     #index of spatial conceptのmultinomial distribution(L-dimension)
+    Phi_l = [ [0.0 for i in range(K)] for c in range(L) ]  #index of position distributionのmultinomial distribution(K-dimension)[L]
       
     i = 0
     ##Mu is read from the file
@@ -266,12 +266,12 @@ def Location_from_speech(Otb_B, THETA):
   #THETAを展開
   W, W_index, Myu, S, pi, phi_l, K, L = THETA
 
-  ##全ての位置分布の平均ベクトルを候補とする
+  ##全てのthe position distribution (Gaussian)の平均ベクトルを候補とする
   Xp = []
   
   for j in range(K):
     #x1,y1 = np.random.multivariate_normal([Myu[j][0][0],Myu[j][1][0]],S[j],1).T
-    #位置分布の平均値と位置分布からサンプリングした99点の１位置分布に対して合計100点をxtの候補とした
+    #the position distribution (Gaussian)の平均値とthe position distribution (Gaussian)からサンプリングした99点の１the position distribution (Gaussian)に対して合計100点をxtの候補とした
     #for i in range(9):    
     #  x1,y1 = np.mean(np.array([ np.random.multivariate_normal([Myu[j][0][0],Myu[j][1][0]],S[j],1).T ]),0)
     #  Xp = Xp + [[x1,y1]]
@@ -281,7 +281,7 @@ def Location_from_speech(Otb_B, THETA):
     
   pox = [0.0 for i in range(len(Xp))]
 
-  ##位置データごとに
+  ##位置dataごとに
   for xdata in range(len(Xp)):      
         ###提案手法による尤度計算####################
         #Ot_index = 0
@@ -292,12 +292,12 @@ def Location_from_speech(Otb_B, THETA):
         temp = [0.0 for c in range(L)]
         #print Otb_B
         for c in range(L) :
-            ##場所の名前、多項分布の計算
+            ##the name of place, multinomial distributionの計算
             #W_temp = multinomial(W[c])
             #temp[c] = W_temp.pmf(Otb_B)
             temp[c] = multinomial.pmf(Otb_B, sum(Otb_B), W[c]) * pi[c]
             #temp[c] = W[c][otb]
-            ##場所概念の多項分布、piの計算
+            ##場所概念のmultinomial distribution, piの計算
             #temp[c] = temp[c]
             
             ##itでサメーション
@@ -312,7 +312,7 @@ def Location_from_speech(Otb_B, THETA):
                         g2 = 0.0
                         print "gauss 0"
                 else : 
-                    g2 = gaussian2d(Xp[xdata][0],Xp[xdata][1],Myu[it][0],Myu[it][1],S[it])  #2次元Gaussian distributionを計算
+                    g2 = gaussian2d(Xp[xdata][0],Xp[xdata][1],Myu[it][0],Myu[it][1],S[it])  #2-dimensionGaussian distributionを計算
                 """
                 g2 = multivariate_normal.pdf(Xp[xdata], mean=Myu[it], cov=S[it])
                 it_sum = it_sum + g2 * phi_l[c][it]
@@ -340,7 +340,7 @@ def Location_from_speech(Otb_B, THETA):
 #################################################
 print("[START] A star algorithm.")
 
-#地図データの入った部屋環境フォルダ名（学習済みパラメータフォルダ名）を要求
+#地図dataの入った部屋環境フォルダ名（学習済みパラメータフォルダ名）を要求
 trialname = sys.argv[1]
 
 #マップファイル名を要求
@@ -461,7 +461,7 @@ for word_data_num in range(DATA_NUM):
     itemList = line[:-1].split(' ')
     
     """
-    #<s>,<sp>,</s>を除く処理：単語に区切られていた場合
+    #<s>,<sp>,</s>を除く処理: 単語に区切られていた場合
     for b in range(5):
         if ("<s><s>" in itemList):
         itemList.pop(itemList.index("<s><s>"))
@@ -479,7 +479,7 @@ for word_data_num in range(DATA_NUM):
         itemList.pop(itemList.index("<sp></s>"))
         if ("" in itemList):
         itemList.pop(itemList.index(""))
-    #<s>,<sp>,</s>を除く処理：単語中に存在している場合
+    #<s>,<sp>,</s>を除く処理: 単語中に存在している場合
     for j in range(len(itemList)):
         itemList[j] = itemList[j].replace("<s><s>", "")
         itemList[j] = itemList[j].replace("<s>", "")
@@ -492,13 +492,13 @@ for word_data_num in range(DATA_NUM):
 
     #Otb[sample] = Otb[sample] + [itemList]
     Otb_train = Otb_train + [itemList]
-    #if sample == 0:  #最初だけデータ数Nを数える
+    #if sample == 0:  #最初だけdata数Nを数える
     N = N + 1  #count
     #else:
     #  Otb[] = Otb[NN] + itemList
     #  NN = NN + 1
 
-##場所の名前の多項分布のインデックス用
+##the name of placeのmultinomial distributionのインデックス用
 W_index = []
 for n in range(N):
     for j in range(len(Otb_train[n])):
@@ -511,7 +511,7 @@ for n in range(N):
 #print "\""+ str(i) + ":" + str(W_index[i]) + "\",",
 #print "]"
 
-##時刻tデータごとにBOW化(?)する、ベクトルとする
+##時刻tdataごとにBOW化(?)する, ベクトルとする
 Otb_B_train = [ [0 for i in range(len(W_index))] for n in range(N) ]
 
 
@@ -523,7 +523,7 @@ for n in range(N):
     #print Otb_B
 
 candidate_num = []
-#命令発話に含まれる単語を含むデータを取得
+#命令発話に含まれる単語を含むdataを取得
 for n in range(N):
     for w in range(len(Otb_B)):
         if (Otb_B[w] >= 1):
@@ -626,7 +626,7 @@ while open_list:
             ko = (q[1]), (q[0])
             #print(ko)
 
-#最適経路の決定：ゴールから親ノード（どこから来たか）を順次たどっていく
+#最適経路の決定: ゴールから親ノード（どこから来たか）を順次たどっていく
 #i = len(OYA)
 #for oyako in reversed(OYA):
 print(ko,goal)
@@ -663,10 +663,10 @@ Path_ROS = Path_inv #使わないので暫定的な措置
 SavePath(start, [goal[1], goal[0]], Path_inv, Path_ROS, outputname)
 
 
-#出力確率のマップの読み込み
+#Read the emission probability file 
 PathWeightMap = ReadProbMap(outputfile)
 
-#パスの対数尤度を保存する
+#Save the log-likelihood of the path
 #PathWeightMapとPathからlog likelihoodの値を再計算する
 LogLikelihood_step = np.zeros(T_horizon)
 LogLikelihood_sum = np.zeros(T_horizon)

@@ -14,14 +14,14 @@ from submodules import *
 #Example: python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7
 
 
-#Read the map data⇒確率値に変換⇒2次元配列に格納
+#Read the map data⇒確率値に変換⇒2-dimension配列に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print "Read map: " + outputfile + "map.csv"
     return gridmap
 
-#パス計算のために使用した確率値マップをファイル読み込みする
+#Load the probability value map used for path calculation
 def ReadProbMap(outputfile):
     # Read the result file
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
@@ -29,13 +29,13 @@ def ReadProbMap(outputfile):
     print "Read PathWeightMap: " + output
     return PathWeightMap
 
-#ROSの地図座標系をPython内の2次元配列のインデックス番号に対応付ける
+#ROSの地図座標系をPython内の2-dimension配列のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
     Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     return Index
 
-#Python内の2次元配列のインデックス番号からROSの地図座標系への変換
+#Python内の2-dimension配列のインデックス番号からROSの地図座標系への変換
 def Array_index_To_Map_coordinates(Index):
     Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
@@ -56,10 +56,10 @@ if __name__ == '__main__':
     #print trialname
     #trialname = raw_input("trialname?(folder) >")
 
-    #ロボット初期位置の候補番号を要求
+    #Request the index number of the robot initial position
     init_position_num = sys.argv[2] #0
 
-    #音声命令のファイル番号を要求   
+    #Request the file number of the speech instruction   
     speech_num = sys.argv[3] #0
   
     ##FullPath of folder
@@ -78,23 +78,22 @@ if __name__ == '__main__':
 
     temp = T_horizon #400
     for temp in range(SAVE_T_temp,T_horizon+SAVE_T_temp,SAVE_T_temp):
-      #if (1):
-      #地図のファイルを読み込む
+      #Read the map file
       gridmap = ReadMap(outputfile)
 
-      #PathWeightMapを読み込む
+      #Read the PathWeightMap file
       PathWeightMap = ReadProbMap(outputfile)
 
-      #パスを読み込む
+      #Read the Path file
       Path = ReadPath(outputname,temp)
       #Makedir( outputfile + "step" )
       print Path
     
-      #MAPの縦横(length and width)のセルの長さを計る
+      #length and width of the MAP cells
       map_length = len(gridmap)  #len(costmap)
       map_width  = len(gridmap[0])  #len(costmap[0])
 
-      #パスの２次元配列を作成
+      #パスの２-dimension配列を作成
       PathMap = np.array([[np.inf for j in xrange(map_width)] for i in xrange(map_length)])
       
       for i in xrange(map_length):
@@ -117,7 +116,7 @@ if __name__ == '__main__':
       gridmap = gridmap[x_min:x_max, y_min:y_max]
       """
 
-      #MAPの縦横(length and width)のセルの長さを計る
+      #length and width of the MAP cells
       map_length = len(gridmap)  #len(costmap)
       map_width  = len(gridmap[0])  #len(costmap[0])
       print "MAP[length][width]:",map_length,map_width
@@ -140,9 +139,7 @@ if __name__ == '__main__':
       plt.imshow(PathMap, origin='lower', cmap='autumn', interpolation='none') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
 
 
-      #地図をカラー画像として保存
-      #output = outputfile + "N"+str(N_best)+"G"+str(speech_num)
-      #plt.savefig(outputname + '_Path_Weight.eps', dpi=300)#, transparent=True
+      #Save path trajectory and the emission probability in the map as a color image
       plt.savefig(outputfile + "step/" + conditions + '_Path_Weight' +  str(temp).zfill(3) + '.png', dpi=300)#, transparent=True
       plt.savefig(outputfile + "step/" + conditions + '_Path_Weight' +  str(temp).zfill(3) + '.pdf', dpi=300, transparent=True)#, transparent=True
       plt.clf()

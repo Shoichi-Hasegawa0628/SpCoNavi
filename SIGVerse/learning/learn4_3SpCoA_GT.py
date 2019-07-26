@@ -24,7 +24,7 @@ from __init__ import *
 from submodules import *
 
 def gaussian2d(Xx,Xy,myux,myuy,sigma):
-    ###Gaussian distribution(2次元)
+    ###Gaussian distribution(2-dimension)
     sqrt_inb = float(1) / ( 2.0 * PI * sqrt( np.linalg.det(sigma)) )
     xy_myu = np.array( [ [float(Xx - myux)],[float(Xy - myuy)] ] )
     dist = np.dot(np.transpose(xy_myu),np.linalg.solve(sigma,xy_myu))
@@ -87,7 +87,7 @@ class Multinomial(object):
     return sum(log(n) for n in range(1,num+1))
 
 """
-def MI_binary(b,W,pi,c):  #Mutual information (binary variable): word_index、W、π、Ct
+def MI_binary(b,W,pi,c):  #Mutual information (binary variable): word_index, W, π, Ct
     POC = W[c][b] * pi[c] #Multinomial(W[c]).pmf(B) * pi[c]  
     PO = sum([W[ct][b] * pi[ct] for ct in xrange(L)]) #Multinomial(W[ct]).pmf(B)
     PC = pi[c]
@@ -105,7 +105,7 @@ def MI_binary(b,W,pi,c):  #Mutual information (binary variable): word_index、W�
     score = temp1 + temp2 + temp3 + temp4
     return score
 
-def Mutual_Info(W,pi):  #Mutual information: W、π 
+def Mutual_Info(W,pi):  #Mutual information: W, π 
     MI = 0
     for c in xrange(len(pi)):
       PC = pi[c]
@@ -281,7 +281,7 @@ def Gibbs_Sampling(iteration,filename):
       
       #N = DATA_NUM
       if N != DATA_NUM:
-         print "DATA_NUM" + str(DATA_NUM) + ":KYOUJI error!! N:" + str(N)  ##教示フェーズの教示数と読み込んだ発話文データ数が違う場合
+         print "DATA_NUM" + str(DATA_NUM) + ":KYOUJI error!! N:" + str(N)  ##教示フェーズの教示数と読み込んだ発話文data数が違う場合
          #exit()
       
       Xt = pose
@@ -292,18 +292,18 @@ def Gibbs_Sampling(iteration,filename):
   ####                 ↓Learning phase of spatial concept↓                 ####
   #############################################################################
       #TN[N]: teaching time-step
-      #Otb_B[N][W_index]：時刻tごとの発話文をBOWにしたものの集合
+      #Otb_B[N][W_index]: 時刻tごとの発話文をBOWにしたものの集合
       
       ##Initialization of all parameters
       print u"Initialize Parameters..."
-      Ct = [ int(n/15) for n in xrange(N)] #[0,0,1,1,2,3] random.uniform(0,L)    #index of spatial concepts [N]
-      It = [ int(n/15) for n in xrange(N)] #[1,1,2,2,3,2] random.uniform(0,K)    #index of position distributions [N]
+      Ct = [ int(random.uniform(0,L)) for n in xrange(N)] #[ int(n/15) for n in xrange(N)]    #index of spatial concepts [N]
+      It = [ int(random.uniform(0,K)) for n in xrange(N)] #[ int(n/15) for n in xrange(N)]    #index of position distributions [N]
       ##領域範囲内に一様乱数
-      Myu   = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
-      S     = [ np.array([ [sig_init, 0.0],[0.0, sig_init] ]) for i in xrange(K) ]      #位置分布の共分散(2×2次元)[K]
-      W     = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #場所の名前(多項分布：W_index次元)[L]
-      pi    = stick_breaking(gamma, L)#[ 0 for c in xrange(L)]     #場所概念のindexの多項分布(L次元)
-      phi_l = [ stick_breaking(alpha, K) for c in xrange(L) ]#[ [0 for i in xrange(K)] for c in xrange(L) ]  #位置分布のindexの多項分布(K次元)[L]
+      Myu   = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #the position distribution (Gaussian)の平均(x,y)[K]
+      S     = [ np.array([ [sig_init, 0.0],[0.0, sig_init] ]) for i in xrange(K) ]      #the position distribution (Gaussian)の共分散(2×2-dimension)[K]
+      W     = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #the name of place(multinomial distribution: W_index-dimension)[L]
+      pi    = stick_breaking(gamma, L) #[ 0 for c in xrange(L)]     #index of spatial conceptのmultinomial distribution(L-dimension)
+      phi_l = [ stick_breaking(alpha, K) for c in xrange(L) ] #[ [0 for i in xrange(K)] for c in xrange(L) ]  #index of position distributionのmultinomial distribution(K-dimension)[L]
       
       
       print Myu
@@ -313,12 +313,12 @@ def Gibbs_Sampling(iteration,filename):
       print phi_l
       
       ###Copy initial values
-      Ct_init = [Ct[n] for n in xrange(N)]
-      It_init = [It[n] for n in xrange(N)]
-      Myu_init = [Myu[i] for i in xrange(K)]
-      S_init = [ np.array([ [S[i][0][0], S[i][0][1]],[S[i][1][0], S[i][1][1]] ]) for i in xrange(K) ]
-      W_init = [W[c] for c in xrange(L)]
-      pi_init = [pi[c] for c in xrange(L)]
+      Ct_init    = [Ct[n] for n in xrange(N)]
+      It_init    = [It[n] for n in xrange(N)]
+      Myu_init   = [Myu[i] for i in xrange(K)]
+      S_init     = [ np.array([ [S[i][0][0], S[i][0][1]],[S[i][1][0], S[i][1][1]] ]) for i in xrange(K) ]
+      W_init     = [W[c] for c in xrange(L)]
+      pi_init    = [pi[c] for c in xrange(L)]
       phi_l_init = [phi_l[c] for c in xrange(L)]
       
       
@@ -328,41 +328,39 @@ def Gibbs_Sampling(iteration,filename):
       for iter in xrange(num_iter):   #Iteration of Gibbs sampling
         print 'Iter.'+repr(iter+1)+'\n'
         
-        ########## ↓ ##### W(場所の名前：多項分布)のサンプリング ##### ↓ ##########
-        ##ディリクレ多項からディリクレ事後分布を計算しサンプリングする
-        ##ディリクレサンプリング関数へ入れ込む配列を作ればよい
-        ##ディリクレ事前分布をサンプリングする必要はない->共役
+        ########## ↓ ##### W(the name of place: multinomial distribution) is samplied ##### ↓ ##########
+        ##Dirichlet multinomial distributionからDirichlet Posterior distributionを計算しSampingする
         print u"Sampling Wc..."
         
-        temp = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #集めて加算するための配列:パラメータで初期化しておけばよい
-        #Ctがcであるときのデータを集める
+        temp = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #集めて加算するための配列:paramtersで初期化しておけばよい
+        #Ctがcであるときのdataを集める
         for c in xrange(L) :   #ctごとにL個分計算
           nc = 0
-          ##事後分布のためのパラメータ計算
+          ##Posterior distributionのためのparamters計算
           if c in Ct : 
             for t in xrange(N) : 
               if Ct[t] == c : 
-                #データを集めるたびに値を加算
+                #dataを集めるたびに値を加算
                 for j in xrange(len(W_index)):    #ベクトル加算？頻度
                   temp[c][j] = temp[c][j] + Otb_B[t][j]
-                nc = nc + 1  #データが何回加算されたか
+                nc = nc + 1  #dataが何回加算されたか
               
-          if (nc != 0):  #データなしのcは表示しない
+          if (nc != 0):  #dataなしのcは表示しない
             print "%d n:%d %s" % (c,nc,temp[c])
           
-          #加算したデータとパラメータから事後分布を計算しサンプリング
+          #加算したdataとparamtersからPosterior distributionを計算しSamping
           sumn = sum(np.random.dirichlet(temp[c],1000)) #fsumではダメ
           W[c] = sumn / sum(sumn)
           #print W[c]
         
-        ########## ↑ ##### W(場所の名前：多項分布)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### W(the name of place: multinomial distribution) is samplied ##### ↑ ##########
         
-        ########## ↓ ##### μΣ(位置分布：Gaussian distributionの平均、共分散行列)のサンプリング ##### ↓ ##########
+        ########## ↓ ##### μΣ(the position distribution (Gaussian): Gaussian distributionの平均, 共分散行列) is samplied ##### ↓ ##########
         print u"Sampling myu_i,Sigma_i..."
         np.random.seed()
         nk = [0 for j in xrange(K)]
         for j in xrange(K) : 
-          ###jについて、Ctが同じものを集める
+          ###jについて, Ctが同じものを集める
           #n = 0
           
           xt = []
@@ -374,11 +372,11 @@ def Gibbs_Sampling(iteration,filename):
                 nk[j] = nk[j] + 1
           
           m_ML = np.array([[0.0],[0.0]])
-          if nk[j] != 0 :        ##0ワリ回避
+          if nk[j] != 0 :        ##Avoid divide by zero
             m_ML = sum(xt) / float(nk[j]) #fsumではダメ
             print "n:%d m_ML.T:%s" % (nk[j],str(m_ML.T))
           
-          ##ハイパーパラメータ更新
+          ##ハイパーparamters更新
           kappaN = kappa0 + nk[j]
           mN = ( (kappa0*m0) + (nk[j]*m_ML) ) / kappaN
           nuN = nu0 + nk[j]
@@ -388,12 +386,12 @@ def Gibbs_Sampling(iteration,filename):
             dist_sum = dist_sum + np.dot((xt[k] - m_ML),(xt[k] - m_ML).T)
           VN = V0 + dist_sum + ( float(kappa0*nk[j])/(kappa0+nk[j]) ) * np.dot((m_ML - m0),(m_ML - m0).T)
           
-          #if nk[j] == 0 :        ##0ワリ回避
+          #if nk[j] == 0 :        ##Avoid divide by zero
           #  #nuN = nu0# + 1  ##nu0=nuN=1だと何故かエラーのため
           #  #kappaN = kappaN# + 1
           #  mN = np.array([[ int( random.uniform(1,WallX-1) ) ],[ int( random.uniform(1,WallY-1) ) ]])   ###領域内に一様
           
-          ##3.1##Σを逆ウィシャートからサンプリング
+          ##3.1##ΣをInv-WishartからSamping
           samp_sig_rand = np.array([ invwishartrand(nuN,VN) for i in xrange(100)])    ######
           samp_sig = np.mean(samp_sig_rand,0)
           #print samp_sig
@@ -401,7 +399,7 @@ def Gibbs_Sampling(iteration,filename):
           if np.linalg.det(samp_sig) < -0.0:
             samp_sig = np.mean(np.array([ invwishartrand(nuN,VN)]),0)
           
-          ##3.2##μを多変量ガウスからサンプリング
+          ##3.2##μをGaussianからSamping
           #print mN.T,mN[0][0],mN[1][0]
           x1,y1 = np.random.multivariate_normal([mN[0][0],mN[1][0]],samp_sig / kappaN,1).T
           #print x1,y1
@@ -411,19 +409,19 @@ def Gibbs_Sampling(iteration,filename):
           
         
         for j in xrange(K) : 
-          if (nk[j] != 0):  #データなしは表示しない
+          if (nk[j] != 0):  #dataなしは表示しない
             print 'myu'+str(j)+':'+str(Myu[j].T),
         print ''
         
         for j in xrange(K):
-          if (nk[j] != 0):  #データなしは表示しない
+          if (nk[j] != 0):  #dataなしは表示しない
             print 'sig'+str(j)+':'+str(S[j])
           
         
-        ########## ↑ ##### μΣ(位置分布：Gaussian distributionの平均、共分散行列)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### μΣ(the position distribution (Gaussian): Gaussian distributionの平均, 共分散行列) is samplied ##### ↑ ##########
         
         
-       ########## ↓ ##### π(場所概念のindexの多項分布)のサンプリング ##### ↓ ##########
+       ########## ↓ ##### π(index of spatial conceptのmultinomial distribution) is samplied ##### ↓ ##########
         print u"Sampling PI..."
         
         temp = np.ones(L) * (gamma / float(L)) #np.array([ gamma / float(L) for c in xrange(L) ])   #よくわからないので一応定義
@@ -431,48 +429,48 @@ def Gibbs_Sampling(iteration,filename):
           temp[c] = temp[c] + Ct.count(c)
 
         #print temp
-        #加算したデータとパラメータから事後分布を計算しサンプリング
+        #加算したdataとparamtersからPosterior distributionを計算しSamping
         sumn = sum(np.random.dirichlet(temp,1000)) #fsumではダメ
         pi = sumn / np.sum(sumn)
         print pi
         
-        ########## ↑ ##### π(場所概念のindexの多項分布)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### π(index of spatial conceptのmultinomial distribution) is samplied ##### ↑ ##########
         
         
-        ########## ↓ ##### φ(位置分布のindexの多項分布)のサンプリング ##### ↓ ##########
+        ########## ↓ ##### φ(index of position distributionのmultinomial distribution) is samplied ##### ↓ ##########
         print u"Sampling PHI_c..."
 
         for c in xrange(L):  #L個分
           temp = np.ones(K) * (alpha / float(K)) #np.array([ alpha / float(K) for k in xrange(K) ])   #よくわからないので一応定義
-          #Ctとcが一致するデータを集める
+          #Ctとcが一致するdataを集める
           if c in Ct :
             for t in xrange(N):
-              if Ct[t] == c:  #Ctとcが一致したデータで
+              if Ct[t] == c:  #Ctとcが一致したdataで
                 for k in xrange(K):  #index kごとに
-                  if It[t] == k :      #データとindex番号が一致したとき
-                    temp[k] = temp[k] + 1  #集めたデータを元に位置分布のindexごとに加算
+                  if It[t] == k :      #dataとindex番号が一致したとき
+                    temp[k] = temp[k] + 1  #集めたdataを元にindex of position distributionごとに加算
           
-          #加算したデータとパラメータから事後分布を計算しサンプリング
+          #加算したdataとparamtersからPosterior distributionを計算しSamping
           sumn = sum(np.random.dirichlet(temp,1000)) #fsumではダメ
           phi_l[c] = sumn / np.sum(sumn)
           
           if c in Ct:
             print c,phi_l[c]
           
-        ########## ↑ ##### φ(位置分布のindexの多項分布)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### φ(index of position distributionのmultinomial distribution) is samplied ##### ↑ ##########
         
-        ########## ↓ ##### it(位置分布のindex)のサンプリング ##### ↓ ##########
+        ########## ↓ ##### it(index of position distribution) is samplied ##### ↓ ##########
         print u"Sampling it..."
         
-        #itと同じtのCtの値c番目のφc  の要素kごとに事後多項分布の値を計算
+        #itと同じtのCtの値c番目のφc  の要素kごとに事後multinomial distributionの値を計算
         temp = np.zeros(K)
-        for t in xrange(N):    #時刻tごとのデータ
+        for t in xrange(N):    #時刻tごとのdata
           phi_c = phi_l[int(Ct[t])]
           
           for k in xrange(K):
             #it=k番目のμΣについてのGaussian distributionをitと同じtのxtから計算
             xt_To = TN[t]
-            g2 = gaussian2d(Xt[xt_To][0],Xt[xt_To][1],Myu[k][0],Myu[k][1],S[k])  #2次元Gaussian distributionを計算
+            g2 = gaussian2d(Xt[xt_To][0],Xt[xt_To][1],Myu[k][0],Myu[k][1],S[k])  #2-dimensionGaussian distributionを計算
             
             temp[k] = g2 * phi_c[k]
             #print g2,phi_c[k]  ###Xtとμが遠いとg2の値がアンダーフローする可能性がある
@@ -486,19 +484,16 @@ def Gibbs_Sampling(iteration,filename):
         
         print It
         
-        #多項分布からのサンプリング(1点)
-        #http://docs.scipy.org/doc/numpy/reference/generated/numpy.random.multinomial.html#numpy.random.multinomial
-        #Mult_samp = np.random.multinomial(1,[確率の配列])
-        ########## ↑ ##### it(位置分布のindex)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### it(index of position distribution) is samplied ##### ↑ ##########
         
         
-        ########## ↓ ##### Ct(場所概念のindex)のサンプリング ##### ↓ ##########
+        ########## ↓ ##### Ct(index of spatial concept) is samplied ##### ↓ ##########
         print u"Sampling Ct..."
         #Ct～多項値P(Ot|Wc)*多項値P(it|φc)*多項P(c|π)  N個
         
         temp = np.zeros(L)
-        for t in xrange(N):    #時刻tごとのデータ
-          for c in xrange(L):  #場所概念のindexの多項分布それぞれについて
+        for t in xrange(N):    #時刻tごとのdata
+          for c in xrange(L):  #index of spatial conceptのmultinomial distributionそれぞれについて
             W_temp = Multinomial(W[c])
             #print pi[c], phi_temp.pmf(It_B[t]), W_temp.pmf(Otb_B[t])
             temp[c] = pi[c] * phi_l[c][It[t]] * W_temp.pmf(Otb_B[t])    # phi_temp.pmf(It_B[t])各要素について計算
@@ -512,15 +507,15 @@ def Gibbs_Sampling(iteration,filename):
           Ct[t] = np.where(Ct_B == 1)[0][0] #Ct_B.index(1)
           
         print Ct
-        ########## ↑ ##### Ct(場所概念のindex)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### Ct(index of spatial concept) is samplied ##### ↑ ##########
         
         
         """
         loop = 0
         if loop == 1:
-          #サンプリングごとに各パラメータ値を出力
+          #Sampingごとに各paramters値をoutput
           fp = open('./data/' + filename + '/' + filename +'_samp'+ repr(iter)+'.csv', 'w')
-          fp.write('sampling_data,'+repr(iter)+'\n')  #num_iter = 10  #イテレーション回数
+          fp.write('sampling_data,'+repr(iter)+'\n')  #num_iter = 10  #The number of iterations
           fp.write('Ct\n')
           for i in xrange(N):
             fp.write(repr(i)+',')
@@ -561,7 +556,7 @@ def Gibbs_Sampling(iteration,filename):
       ########  ↓File output↓  ########
       if loop == 1:
         print "--------------------"
-        #最終学習結果を出力
+        #最終学習結果をoutput
         print u"\n- <COMPLETED> Learning of Location Concepts ver. NEW MODEL. -"
         print 'Sample: ' + str(sample)
         print 'Ct: ' + str(Ct)
@@ -579,10 +574,10 @@ def Gibbs_Sampling(iteration,filename):
         
         print "--------------------"
         
-        #サンプリングごとに各パラメータ値を出力
+        #Sampingごとに各paramters値をoutput
         if loop == 1:
           fp = open( filename + '/' + trialname +'_kekka_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
-          fp.write('sampling_data,'+repr(iter+1)+'\n')  #num_iter = 10  #イテレーション回数
+          fp.write('sampling_data,'+repr(iter+1)+'\n')  #num_iter = 10  #The number of iterations
           fp.write('Ct\n')
           for i in xrange(N):
             fp.write(repr(i)+',')
@@ -637,11 +632,10 @@ def Gibbs_Sampling(iteration,filename):
           #fp_x.close()
         
         
-        
-        
-        #各パラメータ値、初期値を出力
+
+        #All parameters and initial values are output
         fp_init = open( filename + '/' + trialname + '_init_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
-        fp_init.write('init_data\n')  #num_iter = 10  #イテレーション回数
+        fp_init.write('init_data\n')  #num_iter = 10  #The number of iterations
         fp_init.write('L,'+repr(L)+'\n')
         fp_init.write('K,'+repr(K)+'\n')
         fp_init.write('alpha,'+repr(alpha)+'\n')
@@ -701,7 +695,7 @@ def Gibbs_Sampling(iteration,filename):
         fp_init.close()
         
         
-        ##認識発話単語集合をファイルへ出力
+        ##Output the set of recognition results of words to file
         #filename_ot = raw_input("Otb:filename?(.csv) >")  #ファイル名を個別に指定する場合
         filename_ot = trialname
         fp = open(filename + '/' + filename_ot + '_ot_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
@@ -721,7 +715,7 @@ def Gibbs_Sampling(iteration,filename):
         print 'File Output Successful!(filename:'+filename+ "_" +str(iteration) + "_" + str(sample) + ')\n'
       
       
-      ##パラメータそれぞれをそれぞれのファイルとしてはく
+      ##paramtersそれぞれをそれぞれのファイルとしてはく
       if loop == 1:
         fp = open( filename + '/' + trialname + '_Myu_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
         for k in xrange(K):
@@ -795,7 +789,7 @@ if __name__ == '__main__':
 
       #start_iter_time = time.time()
       
-      #Julius_lattice(i,filename)    ##speech recognition、ラティス形式出力、opemFST形式へ変換
+      #Julius_lattice(i,filename)    ##speech recognition, ラティス形式output, opemFST形式へ変換
       #p = os.popen( "python JuliusLattice_gmm.py " + str(i+1) +  " " + filename )
       
       #while (os.path.exists("./data/" + filename + "/fst_gmm_" + str(i+1) + "/" + str(kyouji_count-1).zfill(3) +".fst" ) != True):
@@ -804,7 +798,7 @@ if __name__ == '__main__':
       #print "ITERATION:",i+1," Julius complete!"
 
       #for sample in xrange(sample_num):
-      sample = 0  ##latticelmのパラメータ通りだけサンプルする
+      sample = 0  ##latticelmのparamters通りだけサンプルする
       for p1 in xrange(len(knownn)):
         for p2 in xrange(len(unkn)):
           if sample < sample_num:
