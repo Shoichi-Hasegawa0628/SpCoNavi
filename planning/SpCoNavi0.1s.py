@@ -26,14 +26,14 @@ from scipy.io import mmwrite, mmread
 from scipy.sparse import lil_matrix, csr_matrix
 from itertools import izip
 
-#マップを読み込む⇒確率値に変換⇒2次元配列に格納
+#Read the map data⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print "Read map: " + outputfile + "map.csv"
     return gridmap
 
-#コストマップを読み込む⇒確率値に変換⇒2次元配列に格納
+#Read the cost map data⇒確率値に変換⇒2次元配列に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.loadtxt(outputfile + "costmap.csv", delimiter=",")
@@ -169,7 +169,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
               #print W_index[i].decode('sjis'),Otb[j]
     print Otb_B
 
-    # 認識結果をファイル保存
+    # Save the recognition result to the file
     f = open( outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_St.csv" , "w") # , "sjis" )
     for i in xrange(len(St)):
         f.write(St[i].encode('sjis'))
@@ -206,7 +206,7 @@ def SpeechRecognition_separate(speech_file, W_index, step, trialname, outputfile
               #print W_index[i].decode('sjis'),Otb[n]
     print Otb_B_N
 
-    # 認識結果をファイル保存
+    # Save the recognition result to the file
     f = open( outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_St.csv" , "w") # , "sjis" )
     for i in xrange(N_best):
         f.write(St[i].encode('sjis'))
@@ -271,7 +271,7 @@ def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
 
     return p2  #p1*p2*p3
 
-#動作モデル(独自) #角度は考慮せず、移動先位置に応じて確率が決まる(ガウス分布)
+#動作モデル(独自) #角度は考慮せず、移動先位置に応じて確率が決まる(Gaussian distribution)
 def Motion_Model_Original(xt,ut,xt_1):
     xt = np.array(xt)
     #ut = np.array(ut)
@@ -645,9 +645,9 @@ def SavePath(X_init, Path, Path_ROS, outputname):
       # ロボット初期位置をファイル保存(ROS)
       np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
 
-    # 結果をファイル保存(index)
+    # Save the result to the file　(index)
     np.savetxt(outputname + "_Path.csv", Path, delimiter=",")
-    # 結果をファイル保存(ROS)
+    # Save the result to the file　(ROS)
     np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
     print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
 
@@ -664,28 +664,28 @@ def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero, Bug_re
     Path_ROS = Array_index_To_Map_coordinates(Path_2D_index_original) #
 
     #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
-    # 結果をファイル保存(index)
+    # Save the result to the file　(index)
     np.savetxt(outputname + "_Path" + str(temp) + ".csv", Path_2D_index_original, delimiter=",")
-    # 結果をファイル保存(ROS)
+    # Save the result to the file　(ROS)
     np.savetxt(outputname + "_Path_ROS" + str(temp) + ".csv", Path_ROS, delimiter=",")
     print "Save Path: " + outputname + "_Path" + str(temp) + ".csv and _Path_ROS" + str(temp) + ".csv"
 
 def SaveTrellis(trellis, outputname, temp):
     print "SaveTrellis"
-    # 結果をファイル保存
+    # Save the result to the file　
     np.save(outputname + "_trellis" + str(temp) + ".npy", trellis) #, delimiter=",")
     print "Save trellis: " + outputname + "_trellis" + str(temp) + ".npy"
 
 def ReadTrellis(outputname, temp):
     print "ReadTrellis"
-    # 結果をファイル保存
+    # Save the result to the file　
     trellis = np.load(outputname + "_trellis" + str(temp) + ".npy") #, delimiter=",")
     print "Read trellis: " + outputname + "_trellis" + str(temp) + ".npy"
     return trellis
 
 #パス計算のために使用したLookupTable_ProbCtをファイル保存する
 def SaveLookupTable(LookupTable_ProbCt, outputfile):
-    # 結果をファイル保存
+    # Save the result to the file　
     output = outputfile + "LookupTable_ProbCt.csv"
     np.savetxt( output, LookupTable_ProbCt, delimiter=",")
     print "Save LookupTable_ProbCt: " + output
@@ -701,7 +701,7 @@ def ReadLookupTable(outputfile):
 
 #パス計算のために使用した確率値コストマップをファイル保存する
 def SaveCostMapProb(CostMapProb, outputfile):
-    # 結果をファイル保存
+    # Save the result to the file　
     output = outputfile + "CostMapProb.csv"
     np.savetxt( output, CostMapProb, delimiter=",")
     print "Save CostMapProb: " + output
@@ -719,7 +719,7 @@ def ReadCostMapProb(outputfile):
 
 #パス計算のために使用した確率値マップをファイル保存する
 def SaveProbMap(PathWeightMap, outputfile):
-    # 結果をファイル保存
+    # Save the result to the file　
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
     np.savetxt( output, PathWeightMap, delimiter=",")
     print "Save PathWeightMap: " + output
@@ -733,7 +733,7 @@ def ReadProbMap(outputfile):
     return PathWeightMap
 
 def SaveTransition(Transition, outputfile):
-    # 結果をファイル保存
+    # Save the result to the file　
     output_transition = outputfile + "T"+str(T_horizon) + "_Transition_log.csv"
     #np.savetxt(outputfile + "_Transition_log.csv", Transition, delimiter=",")
     f = open( output_transition , "w")
@@ -762,7 +762,7 @@ def ReadTransition(state_num, outputfile):
     return Transition
 
 def SaveTransition_sparse(Transition, outputfile):
-    # 結果をファイル保存(.mtx形式)
+    # Save the result to the file　(.mtx形式)
     output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse"
     mmwrite(output_transition, Transition)
 
@@ -894,7 +894,7 @@ def WordDictionaryUpdate2(step, filename, W_list):
 ########################################
 if __name__ == '__main__': 
     print "[START] SpCoNavi."
-    #学習済みパラメータフォルダ名を要求
+    #Request a folder name for learned parameters.
     trialname = sys.argv[1]
     #print trialname
     #trialname = raw_input("trialname?(folder) >")
@@ -931,11 +931,11 @@ if __name__ == '__main__':
     Makedir( outputfile )
     #Makedir( outputname )
 
-    #学習済みパラメータの読み込み  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
+    #Read the files of learned parameters  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     THETA = ReadParameters(particle_num, filename)
     W_index = THETA[1]
     
-    ##単語辞書登録
+    ##Make the word dictionary
     if (os.path.isfile(filename + '/WDnavi.htkdic') == False):  #すでに単語辞書ファイルがあれば作成しない
       WordDictionaryUpdate2(step, filename, W_index)   
     else:
@@ -980,7 +980,7 @@ if __name__ == '__main__':
       fp.write(str(time_recog)+"\n")
       fp.close()
 
-    #パスプランニング
+    #Path-Planning
     Path, Path_ROS, PathWeightMap = PathPlanner(S_Nbest, X_candidates[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
 

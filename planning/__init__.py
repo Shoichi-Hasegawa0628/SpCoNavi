@@ -1,6 +1,6 @@
 #coding:utf-8
 #The file for setting parameters
-#Akira Taniguchi 2018/12/13-2019/03/10-
+#Akira Taniguchi 2018/12/13-2019/03/10-2019/07/25
 import numpy as np
 
 ##Command
@@ -60,14 +60,11 @@ cmd_vel = 1  #Movement amount of robot (ROS: cmd_vel [m/s], [rad/s]) [default:1 
 MotionModelDist = "Gauss"  #"Gauss": Gaussian distribution, "Triangular": Triangular distribution
 
 #Odometry motion model parameters (Same values to AMCL or gmapping): unused
-odom_alpha1 = 0.2  #(double, default: 0.2) ロボットの動きの回転移動からオドメトリの回転移動のノイズ
-odom_alpha2 = 0.2  #(double, default: 0.2) ロボットの動きの平行移動からオドメトリの回転移動のノイズ
-odom_alpha3 = 0.2  #(double, default: 0.2) ロボットの動きの平行移動からオドメトリの平行移動のノイズ
-odom_alpha4 = 0.2  #(double, default: 0.2) ロボットの動きの回転移動からオドメトリの平行移動のノイズ
-#srr = 0.1 #(float, default: 0.1) #オドメトリの誤差．平行移動に起因する平行移動の誤差．
-#srt = 0.2 #(float, default: 0.2) #オドメトリの誤差．回転移動に起因する平行移動の誤差．
-#str = 0.1 #(float, default: 0.1) #オドメトリの誤差．平行移動に起因する回転移動の誤差．
-#stt = 0.2 #(float, default: 0.2) #オドメトリの誤差．回転移動に起因する回転移動の誤差．
+odom_alpha1 = 0.2  #(double, default: 0.2) Specifies the expected noise in odometry's rotation estimate from the rotational component of the robot's motion.  #stt = 0.2 #(float, default: 0.2) #オドメトリの誤差．回転移動に起因する回転移動の誤差．
+odom_alpha2 = 0.2  #(double, default: 0.2) Specifies the expected noise in odometry's rotation estimate from translational component of the robot's motion.  #str = 0.1 #(float, default: 0.1) #オドメトリの誤差．平行移動に起因する回転移動の誤差．
+odom_alpha3 = 0.2  #(double, default: 0.2) Specifies the expected noise in odometry's translation estimate from the translational component of the robot's motion.  #srr = 0.1 #(float, default: 0.1) #オドメトリの誤差．平行移動に起因する平行移動の誤差．
+odom_alpha4 = 0.2  #(double, default: 0.2) Specifies the expected noise in odometry's translation estimate from the rotational component of the robot's motion.  #srt = 0.2 #(float, default: 0.2) #オドメトリの誤差．回転移動に起因する平行移動の誤差．
+
 
 #ROS topic name
 MAP_TOPIC     = "/map"
@@ -99,10 +96,10 @@ if (HMMtype == "DNN"):
   lang_init = 'syllableDNN.htkdic' 
 else:
   lang_init = 'syllableGMM.htkdic' 
-  # 'trueword_syllable.htkdic' #'phonemes.htkdic' # 初期の単語辞書(./lang_mフォルダ内)
+  # 'trueword_syllable.htkdic' #'phonemes.htkdic' # Initial word dictionary (in ./lang_m/ folder)
 
 #dimx = 2           #The number of dimensions of xt (x,y)
-#margin = 10*0.05   #地図のグリッドと位置の値の関係が不明のため(0.05m/grid)*margin(grid)=0.05*margin(m)
+#margin = 10*0.05   #margin value for place area in gird map (0.05m/grid)*margin(grid)=0.05*margin(m)
 approx_log_zero = np.log(10.0**(-300))   #approximated value of log(0)
 
 

@@ -4,13 +4,14 @@
 ##Spatial concept formation model (SpCoA without lexical acquisition)
 ##For SpCoNavi (on SIGVerse)
 ##Learning algorithm is Gibbs sampling.
-##Akira Taniguchi -2019/07/18
+##Akira Taniguchi -2019/07/25
 ##############################################
 
 import glob
 import codecs
 import re
 import os
+import os.path
 import sys
 import random
 import string
@@ -22,15 +23,8 @@ from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2
 from __init__ import *
 from submodules import *
 
-"""
-def gaussian(x,myu,sig):
-    ###1次元ガウス分布
-    gauss = (1.0 / sqrt(2.0*PI*sig*sig)) * exp(-1.0*(float((x-myu)*(x-myu))/(2.0*sig*sig)))
-    return gauss
-"""
-
 def gaussian2d(Xx,Xy,myux,myuy,sigma):
-    ###ガウス分布(2次元)
+    ###Gaussian distribution(2次元)
     sqrt_inb = float(1) / ( 2.0 * PI * sqrt( np.linalg.det(sigma)) )
     xy_myu = np.array( [ [float(Xx - myux)],[float(Xy - myuy)] ] )
     dist = np.dot(np.transpose(xy_myu),np.linalg.solve(sigma,xy_myu))
@@ -92,6 +86,7 @@ class Multinomial(object):
       raise ValueError("Can only compute the factorial of positive ints")
     return sum(log(n) for n in range(1,num+1))
 
+"""
 def MI_binary(b,W,pi,c):  #Mutual information (binary variable): word_index、W、π、Ct
     POC = W[c][b] * pi[c] #Multinomial(W[c]).pmf(B) * pi[c]  
     PO = sum([W[ct][b] * pi[ct] for ct in xrange(L)]) #Multinomial(W[ct]).pmf(B)
@@ -123,6 +118,7 @@ def Mutual_Info(W,pi):  #Mutual information: W、π
         MI = MI + POC * ( log((POC/(PO*PC)), 2) )
     
     return MI
+"""
 
 def position_data_read_pass(directory,DATA_NUM):
     all_position=[] 
@@ -216,7 +212,7 @@ def Gibbs_Sampling(iteration,filename):
     for sample in xrange(sample_num):
       N = 0
       Otb = []
-      #テキストファイルを読み込み
+      #Read text file
       for word_data_num in range(DATA_NUM):
         f = open(inputfile + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
         line = f.read()
@@ -298,19 +294,15 @@ def Gibbs_Sampling(iteration,filename):
       #TN[N]: teaching time-step
       #Otb_B[N][W_index]：時刻tごとの発話文をBOWにしたものの集合
       
-      ##各パラメータ初期化処理
+      ##Initialization of all parameters
       print u"Initialize Parameters..."
-      #xtは既にある、ct,it,Myu,S,Wは事前分布からサンプリングにする？(要相談)
-      Ct = [ int(n/15) for n in xrange(N)] #[0,0,1,1,2,3] random.uniform(0,L)    #物体概念のindex[N]
-      It = [ int(n/15) for n in xrange(N)]#[1,1,2,2,3,2] random.uniform(0,K)    #位置分布のindex[N]
+      Ct = [ int(n/15) for n in xrange(N)] #[0,0,1,1,2,3] random.uniform(0,L)    #index of spatial concepts [N]
+      It = [ int(n/15) for n in xrange(N)] #[1,1,2,2,3,2] random.uniform(0,K)    #index of position distributions [N]
       ##領域範囲内に一様乱数
-      #if (data_name == "test000"):
-      Myu = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
-      #else:
-      #  Myu = [ np.array([[ random.uniform(-37.8+5,-37.8+80-10) ],[ random.uniform(-34.6+5,-34.6+57.6-10) ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
-      S = [ np.array([ [sig_init, 0.0],[0.0, sig_init] ]) for i in xrange(K) ]      #位置分布の共分散(2×2次元)[K]
-      W = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #場所の名前(多項分布：W_index次元)[L]
-      pi = stick_breaking(gamma, L)#[ 0 for c in xrange(L)]     #場所概念のindexの多項分布(L次元)
+      Myu   = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
+      S     = [ np.array([ [sig_init, 0.0],[0.0, sig_init] ]) for i in xrange(K) ]      #位置分布の共分散(2×2次元)[K]
+      W     = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #場所の名前(多項分布：W_index次元)[L]
+      pi    = stick_breaking(gamma, L)#[ 0 for c in xrange(L)]     #場所概念のindexの多項分布(L次元)
       phi_l = [ stick_breaking(alpha, K) for c in xrange(L) ]#[ [0 for i in xrange(K)] for c in xrange(L) ]  #位置分布のindexの多項分布(K次元)[L]
       
       
@@ -320,7 +312,7 @@ def Gibbs_Sampling(iteration,filename):
       print pi
       print phi_l
       
-      ###初期値を保存(このやり方でないと値が変わってしまう)
+      ###Copy initial values
       Ct_init = [Ct[n] for n in xrange(N)]
       It_init = [It[n] for n in xrange(N)]
       Myu_init = [Myu[i] for i in xrange(K)]
@@ -330,17 +322,11 @@ def Gibbs_Sampling(iteration,filename):
       phi_l_init = [phi_l[c] for c in xrange(L)]
       
       
-      
-      
-      ##場所概念の学習
-      #関数にとばす->のは後にする
+      ##Start learning of spatial concepts
       print u"- <START> Learning of Location Concepts ver. NEW MODEL. -"
       
-      for iter in xrange(num_iter):   #イテレーションを行う
+      for iter in xrange(num_iter):   #Iteration of Gibbs sampling
         print 'Iter.'+repr(iter+1)+'\n'
-        
-        
-
         
         ########## ↓ ##### W(場所の名前：多項分布)のサンプリング ##### ↓ ##########
         ##ディリクレ多項からディリクレ事後分布を計算しサンプリングする
@@ -348,14 +334,9 @@ def Gibbs_Sampling(iteration,filename):
         ##ディリクレ事前分布をサンプリングする必要はない->共役
         print u"Sampling Wc..."
         
-        #data = [Otb_B[1],Otb_B[3],Otb_B[7],Otb_B[8]]  #仮データ
-        
-        #temp = np.ones((len(W_index),L))*beta0 #
         temp = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #集めて加算するための配列:パラメータで初期化しておけばよい
-        #temp = [ np.ones(len(W_index))*beta0 for c in xrange(L)]
         #Ctがcであるときのデータを集める
         for c in xrange(L) :   #ctごとにL個分計算
-          #temp = np.ones(len(W_index))*beta0
           nc = 0
           ##事後分布のためのパラメータ計算
           if c in Ct : 
@@ -374,19 +355,10 @@ def Gibbs_Sampling(iteration,filename):
           W[c] = sumn / sum(sumn)
           #print W[c]
         
-        #Dir_0 = np.random.dirichlet(np.ones(L)*jp)
-        #print Dir_0
-        
-        #ロバストなサンプリング結果を得るために
-        #sumn = sum(np.random.dirichlet([0.1,0.2,0.5,0.1,0.1],10000))
-        #multi = sumn / fsum(sumn)
-        
         ########## ↑ ##### W(場所の名前：多項分布)のサンプリング ##### ↑ ##########
         
-        ########## ↓ ##### μΣ(位置分布：ガウス分布の平均、共分散行列)のサンプリング ##### ↓ ##########
+        ########## ↓ ##### μΣ(位置分布：Gaussian distributionの平均、共分散行列)のサンプリング ##### ↓ ##########
         print u"Sampling myu_i,Sigma_i..."
-        #myuC = [ np.zeros((2,1)) for k in xrange(K) ] #np.array([[ 0.0 ],[ 0.0 ]])
-        #sigmaC = [ np.zeros((2,2)) for k in xrange(K) ] #np.array([ [0,0],[0,0] ])
         np.random.seed()
         nk = [0 for j in xrange(K)]
         for j in xrange(K) : 
@@ -406,8 +378,6 @@ def Gibbs_Sampling(iteration,filename):
             m_ML = sum(xt) / float(nk[j]) #fsumではダメ
             print "n:%d m_ML.T:%s" % (nk[j],str(m_ML.T))
           
-          #m0 = np.array([[0],[0]])   ##m0を元に戻す
-          
           ##ハイパーパラメータ更新
           kappaN = kappa0 + nk[j]
           mN = ( (kappa0*m0) + (nk[j]*m_ML) ) / kappaN
@@ -424,7 +394,6 @@ def Gibbs_Sampling(iteration,filename):
           #  mN = np.array([[ int( random.uniform(1,WallX-1) ) ],[ int( random.uniform(1,WallY-1) ) ]])   ###領域内に一様
           
           ##3.1##Σを逆ウィシャートからサンプリング
-          
           samp_sig_rand = np.array([ invwishartrand(nuN,VN) for i in xrange(100)])    ######
           samp_sig = np.mean(samp_sig_rand,0)
           #print samp_sig
@@ -450,40 +419,17 @@ def Gibbs_Sampling(iteration,filename):
           if (nk[j] != 0):  #データなしは表示しない
             print 'sig'+str(j)+':'+str(S[j])
           
-          
-        """
-        #データのあるKのみをプリントする？(未実装)
-        print "myu1:%s myu2:%s myu3:%s myu4:%s myu5:%s" % (str(myuC[0].T), str(myuC[1].T), str(myuC[2].T),str(myuC[3].T), str(myuC[4].T))
-        print "sig1:\n%s \nsig2:\n%s \nsig3:\n%s" % (str(sigmaC[0]), str(sigmaC[1]), str(sigmaC[2]))
-        """
-        #Myu = myuC
-        #S = sigmaC
         
-        ########## ↑ ##### μΣ(位置分布：ガウス分布の平均、共分散行列)のサンプリング ##### ↑ ##########
+        ########## ↑ ##### μΣ(位置分布：Gaussian distributionの平均、共分散行列)のサンプリング ##### ↑ ##########
         
         
        ########## ↓ ##### π(場所概念のindexの多項分布)のサンプリング ##### ↓ ##########
         print u"Sampling PI..."
         
-        #GEM = stick_breaking(gamma, L)
-        #print GEM
-        
         temp = np.ones(L) * (gamma / float(L)) #np.array([ gamma / float(L) for c in xrange(L) ])   #よくわからないので一応定義
         for c in xrange(L):
           temp[c] = temp[c] + Ct.count(c)
-        #for t in xrange(N):    #Ct全データに対して
-        #  for c in xrange(L):  #index cごとに
-        #    if Ct[t] == c :      #データとindex番号が一致したとき
-        #      temp[c] = temp[c] + 1
-        #print temp  #確認済み
-        
-        #とりあえずGEMをパラメータとして加算してみる->桁落ちが発生していて意味があるのかわからない->パラメータ値を上げてみる&tempを正規化して足し合わせてみる(やめた)
-        #print fsum(GEM),fsum(temp)
-        #temp = temp / fsum(temp)
-        #temp =  temp + GEM
-        
-        #持橋さんのスライドのやり方の方が正しい？ibis2008-npbayes-tutorial.pdf
-        
+
         #print temp
         #加算したデータとパラメータから事後分布を計算しサンプリング
         sumn = sum(np.random.dirichlet(temp,1000)) #fsumではダメ
@@ -495,10 +441,7 @@ def Gibbs_Sampling(iteration,filename):
         
         ########## ↓ ##### φ(位置分布のindexの多項分布)のサンプリング ##### ↓ ##########
         print u"Sampling PHI_c..."
-        
-        #GEM = [ stick_breaking(alpha, K) for c in xrange(L) ]
-        #print GEM
-        
+
         for c in xrange(L):  #L個分
           temp = np.ones(K) * (alpha / float(K)) #np.array([ alpha / float(K) for k in xrange(K) ])   #よくわからないので一応定義
           #Ctとcが一致するデータを集める
@@ -508,12 +451,6 @@ def Gibbs_Sampling(iteration,filename):
                 for k in xrange(K):  #index kごとに
                   if It[t] == k :      #データとindex番号が一致したとき
                     temp[k] = temp[k] + 1  #集めたデータを元に位置分布のindexごとに加算
-            
-          
-          #ここからは一個分の事後GEM分布計算(πのとき)と同様
-          #print fsum(GEM[c]),fsum(temp)
-          #temp = temp / fsum(temp)
-          #temp =  temp + GEM[c]
           
           #加算したデータとパラメータから事後分布を計算しサンプリング
           sumn = sum(np.random.dirichlet(temp,1000)) #fsumではダメ
@@ -522,44 +459,30 @@ def Gibbs_Sampling(iteration,filename):
           if c in Ct:
             print c,phi_l[c]
           
-          
         ########## ↑ ##### φ(位置分布のindexの多項分布)のサンプリング ##### ↑ ##########
         
         ########## ↓ ##### it(位置分布のindex)のサンプリング ##### ↓ ##########
         print u"Sampling it..."
         
-        #It_B = [0 for k in xrange(K)] #[ [0 for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
         #itと同じtのCtの値c番目のφc  の要素kごとに事後多項分布の値を計算
         temp = np.zeros(K)
         for t in xrange(N):    #時刻tごとのデータ
           phi_c = phi_l[int(Ct[t])]
-          #np.array([ 0.0 for k in xrange(K) ])   #多項分布のパラメータ
           
           for k in xrange(K):
-            #phi_temp = Multinomial(phi_c)
-            #phi_temp.pmf([kのとき1のベクトル]) #パラメータと値は一致するのでphi_c[k]のままで良い
-            
-            #it=k番目のμΣについてのガウス分布をitと同じtのxtから計算
+            #it=k番目のμΣについてのGaussian distributionをitと同じtのxtから計算
             xt_To = TN[t]
-            g2 = gaussian2d(Xt[xt_To][0],Xt[xt_To][1],Myu[k][0],Myu[k][1],S[k])  #2次元ガウス分布を計算
+            g2 = gaussian2d(Xt[xt_To][0],Xt[xt_To][1],Myu[k][0],Myu[k][1],S[k])  #2次元Gaussian distributionを計算
             
             temp[k] = g2 * phi_c[k]
             #print g2,phi_c[k]  ###Xtとμが遠いとg2の値がアンダーフローする可能性がある
             
           temp = temp / np.sum(temp)  #正規化
-          #print temp
-          #Mult_samp = np.random.multinomial(1,temp)
           
           #print Mult_samp
           It_B = np.random.multinomial(1,temp) #Mult_samp [t]
           #print It_B[t]
           It[t] = np.where(It_B == 1)[0][0] #It_B.index(1)
-          #for k in xrange(K):
-          #  if (It_B[k] == 1):
-          #    It[t] = k
-          #    #print k
-          
-        #gaussian2d(Xx,Xy,myux,myuy,sigma)
         
         print It
         
@@ -573,179 +496,24 @@ def Gibbs_Sampling(iteration,filename):
         print u"Sampling Ct..."
         #Ct～多項値P(Ot|Wc)*多項値P(it|φc)*多項P(c|π)  N個
         
-        #It_B = [ [int(k == It[n]) for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
-        #Ct_B = [0 for c in xrange(L)] #[ [0 for c in xrange(L)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][l]
-        
         temp = np.zeros(L)
         for t in xrange(N):    #時刻tごとのデータ
-          #for k in xrange(K):
-          #  if (k == It[t]):
-          #    It_B[t][k] = 1
-          
-          #print It_B[t] #ok
-          
-          #np.array([ 0.0 for c in xrange(L) ])   #多項分布のパラメータ
           for c in xrange(L):  #場所概念のindexの多項分布それぞれについて
-            #phi_temp = Multinomial(phi_l[c])
             W_temp = Multinomial(W[c])
             #print pi[c], phi_temp.pmf(It_B[t]), W_temp.pmf(Otb_B[t])
             temp[c] = pi[c] * phi_l[c][It[t]] * W_temp.pmf(Otb_B[t])    # phi_temp.pmf(It_B[t])各要素について計算
           
           temp = temp / np.sum(temp)  #正規化
           #print temp
-          #Mult_samp = np.random.multinomial(1,temp)
-          
-          #print Mult_samp
+
           Ct_B = np.random.multinomial(1,temp) #Mult_samp
           #print Ct_B[t]
           
           Ct[t] = np.where(Ct_B == 1)[0][0] #Ct_B.index(1)
-          #for c in xrange(L):
-          #  if (Ct_B[c] == 1):
-          #    Ct[t] = c
-          #    #print c
           
         print Ct
         ########## ↑ ##### Ct(場所概念のindex)のサンプリング ##### ↑ ##########
         
-        """
-        ########## ↓ ##### xt(教示時刻で場合分け)のサンプリング ##### ↓ ##########
-        print u"Sampling xt..."
-        robot.input ((0,0))
-        robot.move  (0, 0)
-        
-        
-        #It_B = [ [0 for k in xrange(K)] for n in xrange(N) ]   #多項分布のための出現回数ベクトル[t][k]
-        #
-        #for t in xrange(N):    #時刻tごとのデータ
-        #  for k in xrange(K):
-        #    if (k == It[t]):
-        #      It_B[t][k] = 1
-        
-        #It_1 = [ [(i==j)*1 for i in xrange(L)] for j in xrange(L)]   #i==jの要素が1．それ以外は0のベクトル
-        
-        #for t in xrange(EndStep):
-        t = -1#EndStep-1
-        while (t >= 0):
-          ##t in Toかどうか関係ない部分の処理
-          Xx_temp,Xy_temp,Xd_temp = [],[],[]
-          yudo = []
-          
-          input1,input2 = Ut[t][0],Ut[t][1]
-          robot.input ((input1,input2))
-          robot.move  (d_trans, d_rot)
-          d_trans = input2 * robot.bias_turn      #
-          d_rot = radians(robot.bias_go) * input1  #
-          #print t
-          if (t+1 < EndStep):
-            d_trans2 = Ut[t+1][1] * robot.bias_turn      #
-            d_rot2 = radians(robot.bias_go) * Ut[t+1][0]  #
-          
-          for i in xrange(M):   ##全てのパーティクルに対し
-            #動作モデルによりt-1からtの予測分布をサンプリング
-            #動作モデル(表5.6)##↓###################################################ok
-            if (t == 0):
-              #xd,yd,sitad = sample_motion_model(d_rot,d_trans,para,Xinit[0],Xinit[1],Xinit[2]) #初期値を与えてよいのか？
-              #xd,yd,sitad = Xt[t][0],Xt[t][1],XDt[t]  #最初の推定結果をそのまま用いる場合
-              xd,yd,sitad = sample_not_motion_model(d_rot,d_trans,para_s,Xt[t][0],Xt[t][1],XDt[t]) #動かさずに粒子を散らすだけ
-            else:
-              xd,yd,sitad = sample_motion_model(d_rot,d_trans,para_s,Xt[t-1][0],Xt[t-1][1],XDt[t-1])
-            Xx_temp = Xx_temp + [xd]
-            Xy_temp = Xy_temp + [yd]
-            Xd_temp = Xd_temp + [sitad]
-            #動作モデル##↑###################################################
-            
-            #計測モデルを計算
-            #尤度(重み)計算##↓###########################################
-            #ロボットの姿勢、センサー値(地図)、パーティクルのセンサー値(計測)
-            #各パーティクルにロボット飛ばす->センサー値を取得 をパーティクルごとに繰り返す
-            yudo = yudo + [sensor_model(robot,xd,yd,sitad,sig_hit2,Zt[t])]
-            #尤度(重み)計算##↑###########################################
-            
-            
-          ###一回正規化してから尤度かけるようにしてみる
-          #正規化処理
-          #yudo_sum = fsum(yudo)
-          #yudo,yudo_sum = yudoup(yudo,yudo_sum)     ####とても小さな浮動小数値をある程度まで大きくなるまで桁をあげる
-          ###0ワリ対処処理
-          #yudo_max = max(yudo)  #最大尤度のパーティクルを探す
-          #yudo_summax = float(yudo_sum) / yudo_max
-          #for j in xrange(M):
-          #  yudo[j] = float(float(yudo[j])/yudo_max) / yudo_summax
-          #  
-          #  
-          #for i in xrange(M):   ##全てのパーティクルに対し
-            
-            
-            #動作モデル(t+1)尤度計算
-            if (t+1 < EndStep):
-              #print yudo[i],motion_model(d_rot2,d_trans2,para,Xt[t+1][0],Xt[t+1][1],XDt[t+1],xd,yd,sitad)
-              yudo[i] = yudo[i] * motion_model(d_rot2,d_trans2,para_s,Xt[t+1][0],Xt[t+1][1],XDt[t+1],xd,yd,sitad)
-            
-            #tによって場合分け処理
-            for n in xrange(N):
-              if TN[n] == t:  #t in To
-                #ガウス×多項 / Σ(ガウス×多項)-> ガウス / Σ(ガウス×多項)
-                GM_sum = 0.0
-                #print t
-                #分母：混合ガウス部分の計算
-                #phi_temp = Multinomial(phi_l[Ct[n]])
-                for j in xrange(K):  #it=jごとのすべての位置分布において
-                  ##パーティクルごとに計算する必要がある、パーティクルごとに値をもっていないといけない？
-                  
-                  g2 = gaussian2d(xd,yd,Myu[j][0],Myu[j][1],S[j])  #2次元ガウス分布を計算
-                  GM_sum = GM_sum + g2 * phi_l[Ct[n]][j]    #各要素について計算
-                  #phi_temp.pmf( It_1[j] )
-                  
-                  ##
-                if (GM_sum != 0):
-                  yudo[i] = yudo[i] * gaussian2d(xd,yd,Myu[It[n]][0],Myu[It[n]][1],S[It[n]]) / GM_sum
-                #print yudo[i]
-            
-            
-          ##推定状態確認用
-          #MAINCLOCK.tick(FPS)
-          events = pygame.event.get()
-          for event in events:
-                if event.type == KEYDOWN:
-                    if event.key  == K_ESCAPE: exit()
-          robot.set_position(Xt_true[t][0],Xt_true[t][1],XDt_true[t])
-          robot.input ((0,0))
-          robot.move  (0, 0)
-          viewer.show(world,[[0,0]],M,Xx_temp,Xy_temp)
-          
-          
-          #正規化処理
-          yudo_sum = fsum(yudo)
-          yudo,yudo_sum = yudoup(yudo,yudo_sum)     ####とても小さな浮動小数値をある程度まで大きくなるまで桁をあげる
-          ###0ワリ対処処理
-          yudo_max = max(yudo)  #最大尤度のパーティクルを探す
-          yudo_summax = float(yudo_sum) / yudo_max
-          for j in xrange(M):
-            yudo[j] = float(float(yudo[j])/yudo_max) / yudo_summax
-          
-          #リサンプリング処理(一点のみ)
-          ###確率サイコロ
-          rand_c = random.random()        # Random float x, 0.0 <= x < 1.0
-          #print rand_c
-          pc_num = 0.0
-          for i in xrange(M) : 
-            pc_num = pc_num + yudo[i]
-            if pc_num >= rand_c : 
-              print t,int(Xt[t][0]),int(Xt[t][1]),int(degrees(XDt[t]))  #変更反映前のXtの確認用
-              Xt[t] = (Xx_temp[i],Xy_temp[i])  #タプルの要素ごとに代入はできないため、タプルとして一気に代入
-              XDt[t] = Xd_temp[i]
-              rand_c = 1.1
-          
-          print t,int(Xt[t][0]),int(Xt[t][1]),int(degrees(XDt[t]))
-          print t,int(Xt_true[t][0]),int(Xt_true[t][1]),degrees(XDt_true[t]),degrees(XDt_true[t])-360
-          
-          t = t-1
-          
-          #if t == -1:  ##動作確認用の無限ループ
-          #    t = EndStep-1
-        ########## ↑ ##### xt(教示時刻で場合分け)のサンプリング ##### ↑ ##########
-        """
         
         """
         loop = 0
@@ -932,21 +700,6 @@ def Gibbs_Sampling(iteration,filename):
         
         fp_init.close()
         
-        ##自己位置推定結果をファイルへ出力
-        #filename_xt = raw_input("Xt:filename?(.csv) >")  #ファイル名を個別に指定する場合
-        #filename_xt = filename
-        #fp = open( filename + '/' + filename_xt + '_xt_'+str(iteration) + "_" + str(sample) + '.csv', 'w')
-        #fp2 = open('./data/' + filename_xt + '_xt_true.csv', 'w')
-        #fp3 = open('./data/' + filename_xt + '_xt_heikatsu.csv', 'w')
-        #fp.write(Xt)
-        #for t in xrange(EndStep) : 
-        #    fp.write(repr(Xt[t][0]) + ', ' + repr(Xt[t][1]) + '\n')
-        #    #fp2.write(repr(Xt_true[t][0]) + ', ' + repr(Xt_true[t][1]) + '\n')
-        #    #fp2.write(repr(Xt_heikatsu[t][0]) + ', ' + repr(Xt_heikatsu[t][1]) + '\n')
-        #fp.writelines(repr(Xt))
-        #fp.close()
-        #fp2.close()
-        #fp3.close()
         
         ##認識発話単語集合をファイルへ出力
         #filename_ot = raw_input("Otb:filename?(.csv) >")  #ファイル名を個別に指定する場合
@@ -1014,42 +767,42 @@ def Gibbs_Sampling(iteration,filename):
         #  fp.write(W_index[w]+",")
         #fp.close()
 
-      
       ########  ↑File output↑  ########
       
      
-      
 if __name__ == '__main__':
-    import sys
-    import os.path
-    from __init__ import *
-    #from JuliusLattice_dec import *
-    #import time
     
     trialname = sys.argv[1]
     print trialname
     
-    #出力ファイル名を要求
+    #Request a file name for output
     #filename = raw_input("trialname?(folder) >")
     #start_time = time.time()
     #iteration_time = [0.0 for i in range(ITERATION)]
     filename = outputfolder_SIG + trialname
     Makedir( filename )
+
+    print "--------------------------------------------------"
+    print "ITERATION:",1
+    Gibbs_Sampling(1,trialname)          ##Learning of spatial concepts
+    print "ITERATION:",1," Learning complete!"
     
+
+    """
     for i in xrange(ITERATION):
       print "--------------------------------------------------"
       print "ITERATION:",i+1
+
       #start_iter_time = time.time()
       
-      #Julius_lattice(i,filename)    ##音声認識、ラティス形式出力、opemFST形式へ変換
+      #Julius_lattice(i,filename)    ##speech recognition、ラティス形式出力、opemFST形式へ変換
       #p = os.popen( "python JuliusLattice_gmm.py " + str(i+1) +  " " + filename )
-      
       
       #while (os.path.exists("./data/" + filename + "/fst_gmm_" + str(i+1) + "/" + str(kyouji_count-1).zfill(3) +".fst" ) != True):
       #  print "./data/" + filename + "/fst_gmm_" + str(i+1) + "/" + str(kyouji_count-1).zfill(3) + ".fst",os.path.exists("./data/" + filename + "/fst_gmm_" + str(i+1).zfill(3) + "/" + str(kyouji_count-1) +".fst" ),"wait(60s)... or ERROR?"
       #  time.sleep(60.0) #sleep(秒指定)
       #print "ITERATION:",i+1," Julius complete!"
-      """
+
       #for sample in xrange(sample_num):
       sample = 0  ##latticelmのパラメータ通りだけサンプルする
       for p1 in xrange(len(knownn)):
@@ -1067,28 +820,31 @@ if __name__ == '__main__':
             sample = sample + 1
             p.close()
       print "ITERATION:",i+1," latticelm complete!"
-      """
-      Gibbs_Sampling(i+1,trialname)          ##場所概念の学習
+
+      #Gibbs_Sampling(i+1,trialname)          ##Learning of spatial concepts
       
-      print "ITERATION:",i+1," Learning complete!"
-      #sougo(i+1)             ##相互情報量計算+##単語辞書登録
+      #print "ITERATION:",i+1," Learning complete!"
+      #sougo(i+1)             ##相互情報量計算+##Make the word dictionary
       #print "ITERATION:",i+1," Language Model update!"
-      #Language_model_update(i+1)  ##単語辞書登録
+      #Language_model_update(i+1)  ##Make the word dictionary
       #end_iter_time = time.time()
       #iteration_time[i] = end_iter_time - start_iter_time
-    
+   
     ##ループ後処理
     
     #p0.close()
     #end_time = time.time()
     #time_cost = end_time - start_time
-    """
+
     fp = open('./data/' + filename + '/time.txt', 'w')
     fp.write(str(time_cost)+"\n")
     fp.write(str(start_time)+","+str(end_time)+"\n")
     for i in range(ITERATION):
       fp.write(str(i+1)+","+str(iteration_time[i])+"\n")
     """
-
+    #import sys
+    #import os.path
+    #from __init__ import *
+    ##from JuliusLattice_dec import *
+    ##import time
 ########################################
-

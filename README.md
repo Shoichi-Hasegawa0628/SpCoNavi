@@ -61,15 +61,15 @@ roslaunch fourth_robot_2dnav global_costmap.launch map_file:=my_map.yaml
 cd ~/*/SpCoNavi/planning
 python costmap.py trialname
 ~~~
-'trialname' is the data folder name of the learning result in SpCoSLAM.  
-For example, trialname is 'alg2wicWSLAG10lln008' in 'data' folder.  
+`trialname` is the data folder name of the learning result in SpCoSLAM.  
+For example, trialname is `alg2wicWSLAG10lln008` in `data` folder.  
 
 
 【Command for test execution of SpCoNavi】  
 ~~~
 python ./SpCoNavi0.1.py trialname particle_num init_position_num speech_num  
 ~~~
-Example：
+Example: 
 `python ./SpCoNavi0.1.py alg2wicWSLAG10lln008 0 0 0`  
 
 
@@ -77,7 +77,7 @@ Example：
 ~~~
 python ./path_weight_visualizer.py trialname speech_num  
 ~~~
-Example：
+Example: 
 `python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8`  
 
 

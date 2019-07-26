@@ -6,8 +6,8 @@ SpCoNavi: Spatial Concept-Based Navigation from Human Speech Instructions by Pro
 ## Execution environment  
 - Ubuntu 16.04 (on VMware)  
     - Python 2.7.12 and 3.5.2  
-        - Python2: numpy 1.16.4, scipy 1.2.2, maplotlib 1.5.1  
-        - Python3: numpy 1.16.4, scipy 1.3.0, maplotlib 3.0.3  
+        -  Python2: numpy 1.16.4, scipy 1.2.2, maplotlib 1.5.1   
+        - (Python3: numpy 1.16.4, scipy 1.3.0, maplotlib 3.0.3)  
     - ROS kinetic  
 - Windows 10  
     - Unity 2018.4.0f1  
@@ -107,19 +107,19 @@ rviz -d ./saveSpCoMAP_online_SIGVere.rviz
 
 
 【Command for test execution of SpCoNavi】  
-Setting parameters and PATH in `__init.py__`  
+Setting parameters and PATH in `__init__.py`  
 ~~~
 cd ./learning/
 python ./SpCoNavi0.1_SIGVerse.py trialname iteration sample init_position_num speech_num
 ~~~
-Example：
+Example: 
 `python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 7`  
 
 【Command for visualization of a path trajectory and the emission probability on the map】
 ~~~
 python ./path_weight_visualizer_step_SIGVerse.py trialname init_position_num speech_num  
 ~~~
-Example：
+Example: 
 `python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7`  
 
 【Option: Command for A star algorithms】  

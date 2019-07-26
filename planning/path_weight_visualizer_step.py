@@ -7,15 +7,13 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-#import seaborn as sns
-#import pandas as pd
 from __init__ import *
 from submodules import *
-##実行コマンド例：
+##Command: 
 ##python ./path_weight_visualizer.py alg2wicWSLAG10lln008 8
 
 
-#マップを読み込む⇒確率値に変換⇒2次元配列に格納
+#Read the map data⇒確率値に変換⇒2次元配列に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
@@ -24,7 +22,7 @@ def ReadMap(outputfile):
 
 #パス計算のために使用した確率値マップをファイル読み込みする
 def ReadProbMap(outputfile):
-    # 結果をファイル読み込み
+    # Read the result file
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
     PathWeightMap = np.loadtxt(output, delimiter=",")
     print "Read PathWeightMap: " + output
@@ -43,7 +41,7 @@ def Array_index_To_Map_coordinates(Index):
     return X
 
 def ReadPath(outputname,temp):
-    # 結果をファイル読み込み
+    # Read the result file
     output = outputname + "_Path" + str(temp) + ".csv"
     Path = np.loadtxt(output, delimiter=",")
     print "Read Path: " + output
@@ -52,7 +50,7 @@ def ReadPath(outputname,temp):
 
 ########################################
 if __name__ == '__main__': 
-    #学習済みパラメータフォルダ名を要求
+    #Request a folder name for learned parameters.
     trialname = sys.argv[1]
     #print trialname
     #trialname = raw_input("trialname?(folder) >")

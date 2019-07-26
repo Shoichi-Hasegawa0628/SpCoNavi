@@ -6,7 +6,7 @@
 # Spacial Thanks: Ryo Ozaki
 ###########################################################
 
-##実行コマンド
+##Command: 
 #python ./Astar_SpCo.py trialname mapname iteration sample init_position_num speech_num
 #python ./Astar_SpCo.py 3LDK_01 s1DK_01 1 0 0 0
 
@@ -160,7 +160,7 @@ def ReadParameters(iteration, sample, filename, trialname):
 
     W_index = []
     i = 0
-    #テキストファイルを読み込み
+    #Read text file
     for line in open(filename + "/" + trialname + '_w_index_' + str(iteration) + '_' + str(sample) + '.csv', 'r'): 
         itemList = line[:-1].split(',')
         if(i == 1):
@@ -178,7 +178,7 @@ def ReadParameters(iteration, sample, filename, trialname):
     Phi_l = [ [0.0 for i in range(K)] for c in range(L) ]  #位置分布のindexの多項分布(K次元)[L]
       
     i = 0
-    ##Muの読み込み
+    ##Mu is read from the file
     for line in open(filename + "/" + trialname + '_Myu_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         #Mu[i] = np.array([ float(itemList[0]) - origin[0] , float(itemList[1]) - origin[1] ]) / resolution
@@ -186,16 +186,16 @@ def ReadParameters(iteration, sample, filename, trialname):
         i = i + 1
       
     i = 0
-    ##Sigの読み込み
+    ##Sig is read from the file
     for line in open(filename + "/" + trialname + '_S_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         #Sig[i] = np.array([[ float(itemList[0])/ resolution, float(itemList[1]) ], [ float(itemList[2]), float(itemList[3])/ resolution ]]) #/ resolution
         Sig[i] = np.array([[ float(itemList[0]), float(itemList[1]) ], [ float(itemList[2]), float(itemList[3]) ]]) 
         i = i + 1
       
-    ##phiの読み込み
+    ##phi is read from the file
     c = 0
-    #テキストファイルを読み込み
+    #Read text file
     for line in open(filename + "/" + trialname + '_phi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in range(len(itemList)):
@@ -203,16 +203,16 @@ def ReadParameters(iteration, sample, filename, trialname):
               Phi_l[c][i] = float(itemList[i])
         c = c + 1
         
-    ##Piの読み込み
+    ##Pi is read from the file
     for line in open(filename + "/" + trialname + '_pi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in range(len(itemList)):
           if itemList[i] != '':
             Pi[i] = float(itemList[i])
       
-    ##Wの読み込み
+    ##W is read from the file
     c = 0
-    #テキストファイルを読み込み
+    #Read text file
     for line in open(filename + "/" + trialname + '_W_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in range(len(itemList)):
@@ -222,9 +222,9 @@ def ReadParameters(iteration, sample, filename, trialname):
         c = c + 1
 
     """
-    ##thetaの読み込み
+    ##theta is read from the file
     c = 0
-    #テキストファイルを読み込み
+    #Read text file
     for line in open(filename + 'theta' + str(r) + '.csv', 'r'):
         itemList = line[:-1].split(',')
         for i in range(len(itemList)):
@@ -289,7 +289,7 @@ def Location_from_speech(Otb_B, THETA):
                         g2 = 0.0
                         print "gauss 0"
                 else : 
-                    g2 = gaussian2d(Xp[xdata][0],Xp[xdata][1],Myu[it][0],Myu[it][1],S[it])  #2次元ガウス分布を計算
+                    g2 = gaussian2d(Xp[xdata][0],Xp[xdata][1],Myu[it][0],Myu[it][1],S[it])  #2次元Gaussian distributionを計算
                 """
                 g2 = multivariate_normal.pdf(Xp[xdata], mean=Myu[it], cov=S[it])
                 it_sum = it_sum + g2 * phi_l[c][it]
@@ -361,7 +361,7 @@ maze_file = outputfile + mapname + ".pgm"
 #height, width = maze.shape
 """
 ##########
-#PGMファイルの読み込み
+#Read the image PGM file
 #http://www.not-enough.org/abe/manual/api-aa09/fileio2.html
 infile = open(maze_file , 'rb') #sys.argv[1]
 
@@ -391,7 +391,7 @@ height, width = maze.shape
 action_functions = [right, left, up, down, stay] #, migiue, hidariue, migisita, hidarisita]
 cost_of_actions  = [    1,    1,  1,    1,    1] #, ,    1,        1,        1,          1]
 
-#学習済みパラメータの読み込み  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
+#Read the files of learned parameters  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
 THETA = ReadParameters(iteration, sample, filename, trialname)
 W_index = THETA[1]
 
@@ -399,7 +399,7 @@ W_index = THETA[1]
 Otb_B = [int(W_index[i] == Goal_Word[int(speech_num)]) * N_best for i in range(len(W_index))]
 print("BoW:", Otb_B)
 
-#パスプランニング
+#Path-Planning
 #Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
 goal = Location_from_speech(Otb_B, THETA) #(0,0)
