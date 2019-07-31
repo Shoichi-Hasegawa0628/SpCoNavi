@@ -19,8 +19,7 @@ import numpy as np
 import scipy as sp
 #from numpy.random import multinomial #,uniform #,dirichlet
 from scipy.stats import multivariate_normal,multinomial #,t,invwishart,rv_discrete
-#from numpy.linalg import inv, cholesky
-from math import pi as PI
+#from math import pi as PI
 from math import cos,sin,sqrt,exp,log,degrees,radians,atan2 #,gamma,lgamma,fabs,fsum
 from __init__ import *
 #from JuliusNbest_dec_SIGVerse import *
@@ -30,14 +29,14 @@ from scipy.sparse import lil_matrix, csr_matrix
 from itertools import izip
 import collections
 
-#Read the map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the map data⇒2-dimension array に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print "Read map: " + outputfile + "map.csv"
     return gridmap
 
-#Read the cost map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the cost map data⇒2-dimension array に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.loadtxt(outputfile + "costmap.csv", delimiter=",")
@@ -195,7 +194,7 @@ def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
 
     return p2  #p1*p2*p3
 
-#Motion model(独自) #角度は考慮せず, 移動先位置に応じて確率が決まる(Gaussian distribution)
+#Motion model (original) #角度は考慮せず, 移動先位置に応じて確率が決まる(Gaussian distribution)
 def Motion_Model_Original(xt,ut,xt_1):
     xt = np.array(xt)
     #ut = np.array(ut)
@@ -207,13 +206,13 @@ def Motion_Model_Original(xt,ut,xt_1):
     return px*py
 """
 
-#ROSの地図座標系をPython内の2-dimension配列のインデックス番号に対応付ける
+#ROSのmap 座標系をPython内の2-dimension array index 番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
     Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     return Index
 
-#Python内の2-dimension配列のインデックス番号からROSの地図座標系への変換
+#Python内の2-dimension array index 番号からROSのmap 座標系への変換
 def Array_index_To_Map_coordinates(Index):
     Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
@@ -232,7 +231,7 @@ def CostMapProb_jit(gridmap, costmap):
 #@jit(parallel=True)
 def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
-      X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
+      X_temp = Array_index_To_Map_coordinates(Index_temp)  #map と縦横の座標系の軸が合っているか要確認
       #print X_temp,Mu
       sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ] ##########np.array( ) !!! np.arrayにすると, numbaがエラーを吐く
       PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
@@ -253,19 +252,19 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #THETAを展開
     W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA
 
-    #ROSの座標系の現在位置を2-dimension配列のインデックスにする
+    #ROSの座標系の現在位置を2-dimension array index にする
     X_init_index = X_init ###TEST  #Map_coordinates_To_Array_index(X_init)
     print "Initial Xt:",X_init_index
 
     #length and width of the MAP cells
-    map_length = len(CostMapProb)  #len(costmap)
+    map_length = len(CostMapProb)     #len(costmap)
     map_width  = len(CostMapProb[0])  #len(costmap[0])
     print "MAP[length][width]:",map_length,map_width
 
-    #事前計算できるものはしておく
+    #Pre-calculation できるものはしておく
     LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
     ###SaveLookupTable(LookupTable_ProbCt, outputfile)
-    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #事前計算Read the result from the file(計算する場合と大差ないかも)
+    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #Read the result from the Pre-calculation file(計算する場合と大差ないかも)
 
 
     print "Please wait for PostProbMap"
@@ -284,7 +283,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     PathWeightMap_origin = PathWeightMap
 
 
-    #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２-dimension配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
+    #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２-dimension array から消す([(2*T_horizon)+1][(2*T_horizon)+1]の array になる)
     Bug_removal_savior = 0  #座標変換の際にバグを生まないようにするためのフラグ
     x_min = X_init_index[0] - T_horizon
     x_max = X_init_index[0] + T_horizon
@@ -305,19 +304,19 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       Bug_removal_savior = 1  #バグを生まない(1)
       #print X_init, X_init_index
 
-    #計算量削減のため状態数を減らす(状態空間をone-dimension配列にする⇒0の要素を除く)
+    #計算量削減のため状態数を減らす(状態空間をone-dimension array にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
     PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=0.0]
     state_num = len(PathWeight_one_NOzero)
     print "PathWeight_one_NOzero state_num:", state_num
 
-    #地図の2-dimension配列インデックスとone-dimension配列の対応を保持する
+    #map の2-dimension array インデックスとone-dimension array の対応を保持する
     IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
-    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう #実装上, np.arrayではなく2-dimension配列リストにしている
+    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう #実装上, np.arrayではなく2-dimension array リストにしている
     print "IndexMap_one_NOzero"
 
 
-    #one-dimension配列上の初期位置
+    #one-dimension array 上の初期位置
     if (X_init_index in IndexMap_one_NOzero):
       X_init_index_one = IndexMap_one_NOzero.index(X_init_index)
     else:
@@ -326,7 +325,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       X_init_index_one = 0
     print "Initial index", X_init_index_one
 
-    #移動先候補のインデックス座標のリスト(相対座標)
+    #移動先候補 index 座標のリスト(相対座標)
     MoveIndex_list = MovePosition_2D([0,0]) #.tolist()
     #MoveIndex_list = np.round(MovePosition(X_init_index)).astype(int)
     print "MoveIndex_list"
@@ -336,7 +335,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "Please wait for Transition"
     output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse.mtx" # + "_Transition_log.csv"
     if (os.path.isfile(output_transition) == False):  #すでにファイルがあれば作成しない
-      #IndexMap_one_NOzero内の2-dimension配列上のインデックスと一致した要素のみ確率1を持つようにする
+      #IndexMap_one_NOzero内の2-dimension array 上 index と一致した要素のみ確率1を持つようにする
       #Transition = Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
       Transition = Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
 
@@ -354,7 +353,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #Viterbi Algorithmを実行
     Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior) #, Transition_one_NOzero)
 
-    #one-dimension配列のインデックスを2-dimension配列のインデックスへ⇒ROSの座標系にする
+    #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
     Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
     if ( Bug_removal_savior == 0):
       Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
@@ -368,7 +367,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     return Path_2D_index_original, Path_ROS, PathWeightMap_origin, Path_one #, LogLikelihood_step, LogLikelihood_sum
 
 
-#移動位置の候補: 現在の位置(2-dimension配列のインデックス)の近傍8セル+現在位置1セル
+#移動位置の候補: 現在の位置(2-dimension array index )の近傍8セル+現在位置1セル
 def MovePosition_2D(Xt): 
   if (NANAME == 1):
     PostPosition_list = np.array([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,0], [0,1], [1,-1],[1,0],[1,1] ])*cmd_vel + np.array(Xt)
@@ -379,7 +378,6 @@ def MovePosition_2D(Xt):
 
 
 #Viterbi Path計算用関数(参考: https://qiita.com/kkdd/items/6cbd949d03bc56e33e8e)
-#@jit(parallel=True)
 def update(cost, trans, emiss):
     COST = 0 #COST, INDEX = range(2)  #0,1
     arr = [c[COST]+t for c, t in zip(cost, trans)]
@@ -388,7 +386,6 @@ def update(cost, trans, emiss):
     return max_arr + emiss, arr.index(max_arr)
 
 
-#@jit #jitはコードによってエラーが出る場合があるので注意
 def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition):
     #Transition = np.array([approx_log_zero for j in xrange(state_num)]) #emissのindex番号に応じて, これをつくる処理を入れる
     for i in xrange(len(Transition)):
@@ -403,7 +400,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     for c in xrange(len(MoveIndex_list_n_list)): #xrangeの方がxrangeより速い
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
-          Transition[m] = 0.0 #1 #このインデックスは状態から状態への遷移確率（地図のx,yではない）
+          Transition[m] = 0.0 #1 #Transition probability from state to state (index of this array is not x, y of map)
           count_t += 1
     
     #計算上おかしい場合はエラー表示を出す．
@@ -425,13 +422,12 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
 #    return [random.random() for j in xrange(n)]
 
 #ViterbiPathを計算してPath(軌道)を返す
-#@jit(parallel=True) #print関係(?)のエラーが出たので一時避難
 def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original, Bug_removal_savior): #, Transition):
     #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
     print "Start Viterbi Algorithm"
 
     INDEX = 1 #COST, INDEX = range(2)  #0,1
-    INITIAL = (approx_log_zero, X_init)  # (cost, index) #indexに初期値のone-dimension配列インデックスを入れる
+    INITIAL = (approx_log_zero, X_init)  # (cost, index) #indexに初期値のone-dimension array インデックスを入れる
     #print "Initial:",X_init
 
     cost = [INITIAL for i in xrange(len(PathWeight))] 
@@ -493,10 +489,10 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
             SaveLogLikelihood(LogLikelihood_step,0,i+1)
             SaveLogLikelihood(LogLikelihood_sum,1,i+1)
 
-            #パスの移動距離
+            #The moving distance of the path
             Distance = PathDistance(path_one)
     
-            #パスの移動距離を保存
+            #Save the moving distance of the path
             SavePathDistance_temp(Distance, i+1)
 
             if (SAVE_Trellis == 1):
@@ -526,13 +522,13 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
 #推定されたパスを（トピックかサービスで）送る
 #def SendPath(Path):
 
-#パスをファイル保存する（形式未定）
+#Save the path trajectory
 def SavePath(X_init, Path, Path_ROS, outputname):
     print "PathSave"
     if (SAVE_X_init == 1):
-      # ロボット初期位置をファイル保存(index)
+      # Save the robot initial position to the file (index)
       np.savetxt(outputname + "_X_init.csv", X_init, delimiter=",")
-      # ロボット初期位置をファイル保存(ROS)
+      # Save the robot initial position to the file (ROS)
       np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
 
     # Save the result to the file (index)
@@ -541,11 +537,11 @@ def SavePath(X_init, Path, Path_ROS, outputname):
     np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
     print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
 
-#パスをファイル保存する（形式未定）
+#Save the path trajectory
 def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero, Bug_removal_savior):
     print "PathSaveTemp"
 
-    #one-dimension配列のインデックスを2-dimension配列のインデックスへ⇒ROSの座標系にする
+    #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
     Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
     if ( Bug_removal_savior == 0):
       Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
@@ -667,7 +663,7 @@ def ReadTransition_sparse(state_num, outputfile):
     print "Read Transition: " + output_transition
     return Transition
 
-#各ステップごとのlog likelihoodの値を保存
+#Save the log likelihood for each time-step
 def SaveLogLikelihood(LogLikelihood,flag,flag2):
     # Save the result to the file 
     if (flag2 == 0):
@@ -684,20 +680,20 @@ def SaveLogLikelihood(LogLikelihood,flag,flag2):
     np.savetxt( output_likelihood, LogLikelihood, delimiter=",")
     print "Save LogLikekihood: " + output_likelihood
 
-#パスの移動距離を計算する
+#The moving distance of the pathを計算する
 def PathDistance(Path):
     Distance = len(collections.Counter(Path))
     print "Path Distance is ", Distance
     return Distance
 
-#パスの移動距離を保存
+#Save the moving distance of the path
 def SavePathDistance(Distance):
     # Save the result to the file 
     output = outputname + "_Distance.csv"
     np.savetxt( output, np.array([Distance]), delimiter=",")
     print "Save Distance: " + output
 
-#パスの移動距離を保存
+#Save the moving distance of the path
 def SavePathDistance_temp(Distance,temp):
     # Save the result to the file 
     output = outputname + "_Distance"+str(temp)+".csv"
@@ -783,21 +779,21 @@ if __name__ == '__main__':
       fp.write(str(time_pp)+"\n")
       fp.close()
 
-    #パスの移動距離
+    #The moving distance of the path
     Distance = PathDistance(Path_one)
     
-    #パスの移動距離を保存
+    #Save the moving distance of the path
     SavePathDistance(Distance)
 
-    #パスを送る
+    #Send the path
     #SendPath(Path)
-    #パスを保存
+    #Save the path
     SavePath(Start_Position[int(init_position_num)], Path, Path_ROS, outputname)
 
-    #確率値マップを送る
+    #Send the PathWeightMap
     #SendProbMap(PathWeightMap)
 
-    #確率値マップを保存(PathPlanner内部で実行)
+    #Save the PathWeightMap(PathPlanner内部で実行)
     #####SaveProbMap(PathWeightMap, outputname)
     
     #PathWeightMapとPathからlog likelihoodの値を再計算する

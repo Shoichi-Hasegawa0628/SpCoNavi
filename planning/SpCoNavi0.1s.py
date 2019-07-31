@@ -2,7 +2,7 @@
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program
-# Akira Taniguchi 2018/12/13-2019/3/28-2019/07/13
+# Akira Taniguchi 2018/12/13-2019/3/28-2019/07/25
 ###########################################################
 
 ##############################################
@@ -15,7 +15,6 @@ import numpy as np
 import scipy as sp
 #from numpy.random import multinomial #,uniform #,dirichlet
 from scipy.stats import multivariate_normal,multinomial #,t,invwishart,rv_discrete
-#from numpy.linalg import inv, cholesky
 from math import pi as PI
 from math import cos,sin,sqrt,exp,log,degrees,radians,atan2 #,gamma,lgamma,fabs,fsum
 from __init__ import *
@@ -26,14 +25,14 @@ from scipy.io import mmwrite, mmread
 from scipy.sparse import lil_matrix, csr_matrix
 from itertools import izip
 
-#Read the map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the map data⇒2-dimension array に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print "Read map: " + outputfile + "map.csv"
     return gridmap
 
-#Read the cost map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the cost map data⇒2-dimension array に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.loadtxt(outputfile + "costmap.csv", delimiter=",")
@@ -142,7 +141,7 @@ def ReadSpeech(num):
     return speech_file
 
 
-#音声データを受け取り, Speech Recognitionを行う⇒文字列配列を渡す・保存
+#音声データを受け取り, Speech Recognitionを行う⇒文字列 array を渡す・保存
 def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
     ##学習した単語辞書を用いてSpeech Recognitionし, BoWを得る
     St = RecogNbest( speech_file, step, trialname )
@@ -178,7 +177,7 @@ def SpeechRecognition(speech_file, W_index, step, trialname, outputfile):
 
     return Otb_B
 
-#音声データを受け取り, Speech Recognitionを行う⇒文字列配列を渡す・保存
+#音声データを受け取り, Speech Recognitionを行う⇒文字列 array を渡す・保存
 def SpeechRecognition_separate(speech_file, W_index, step, trialname, outputfile):
     ##学習した単語辞書を用いてSpeech Recognitionし, BoWを得る
     St = RecogNbest( speech_file, step, trialname )
@@ -271,7 +270,7 @@ def Motion_Model_Odometry_No_theta(xt,ut,xt_1):
 
     return p2  #p1*p2*p3
 
-#Motion model(独自) #角度は考慮せず, 移動先位置に応じて確率が決まる(Gaussian distribution)
+#Motion model (original) #角度は考慮せず, 移動先位置に応じて確率が決まる(Gaussian distribution)
 def Motion_Model_Original(xt,ut,xt_1):
     xt = np.array(xt)
     #ut = np.array(ut)
@@ -282,13 +281,13 @@ def Motion_Model_Original(xt,ut,xt_1):
     py = Motion_Model_Prob( xt[1] - (xt_1[1]+ut[1]), odom_alpha3*dist )
     return px*py
 
-#ROSの地図座標系をPython内の2-dimension配列のインデックス番号に対応付ける
+#ROSのmap 座標系をPython内の2-dimension array index 番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
     Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     return Index
 
-#Python内の2-dimension配列のインデックス番号からROSの地図座標系への変換
+#Python内の2-dimension array index 番号からROSのmap 座標系への変換
 def Array_index_To_Map_coordinates(Index):
     Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
@@ -312,7 +311,7 @@ def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_w
     for length in prange(map_length):
       for width in prange(map_width):
         if (CostMapProb[length][width] != 0.0): #(gridmap[length][width] != -1) and (gridmap[length][width] != 100):  #gridmap[][]が障害物(100)または未探索(-1)であれば計算を省く
-          X_temp = Array_index_To_Map_coordinates([width, length])  #地図と縦横の座標系の軸が合っているか要確認
+          X_temp = Array_index_To_Map_coordinates([width, length])  #map と縦横の座標系の軸が合っているか要確認
           #print X_temp,Mu
           sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ]
           #sum_c_ProbCtsum_i = np.sum( LookupTable_ProbCt * sum_i_GaussMulti )
@@ -322,7 +321,7 @@ def PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_w
 @jit(parallel=True)
 def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
-      X_temp = Array_index_To_Map_coordinates(Index_temp)  #地図と縦横の座標系の軸が合っているか要確認
+      X_temp = Array_index_To_Map_coordinates(Index_temp)  #map と縦横の座標系の軸が合っているか要確認
       #print X_temp,Mu
       sum_i_GaussMulti = [ np.sum([multivariate_normal.pdf(X_temp, mean=Mu[k], cov=Sig[k]) * Phi_l[c][k] for k in xrange(K)]) for c in xrange(L) ] ##########np.array( ) !!! np.arrayにすると, numbaがエラーを吐く
       PostProb = np.sum( LookupTable_ProbCt * sum_i_GaussMulti ) #sum_c_ProbCtsum_i
@@ -352,7 +351,7 @@ def Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
         #print c
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
-          Transition[n][m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
+          Transition[n][m] = 0.0 #1 #Transition probability from a state to another state (index of this array is not x, y of map)
         #  print n,m,c
     return Transition
 
@@ -368,7 +367,7 @@ def Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list):
       for c in xrange(len(MoveIndex_list_n_list)):
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero): #try:
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
-          Transition[n,m] = 1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
+          Transition[n,m] = 1 #Transition probability from a state to another state (index of this array is not x, y of map)
         #  print n,m,c
     #Transition_csr = Transition.tocsr()
     #print "Transformed sparse csr format OK"
@@ -380,16 +379,16 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #THETAを展開
     W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA
 
-    #ROSの座標系の現在位置を2-dimension配列のインデックスにする
+    #ROSの座標系の現在位置を2-dimension array index にする
     X_init_index = X_init ###TEST  #Map_coordinates_To_Array_index(X_init)
     print "Initial Xt:",X_init_index
 
     #length and width of the MAP cells
-    map_length = len(CostMapProb)  #len(costmap)
+    map_length = len(CostMapProb)     #len(costmap)
     map_width  = len(CostMapProb[0])  #len(costmap[0])
     print "MAP[length][width]:",map_length,map_width
 
-    #事前計算できるものはしておく
+    #Pre-calculation できるものはしておく
     if (St_separate == 1):
         Sum_C_Multi_nbest = [ sum([multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c]) for c in xrange(L)]) for n in xrange(N_best)]
         LookupTable_ProbCt = np.array([ sum([ (multinomial.pmf(S_Nbest[n], sum(S_Nbest[n]), W[c])/Sum_C_Multi_nbest[n]) for n in xrange(N_best)]) * Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
@@ -397,7 +396,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
         LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
 
     ###SaveLookupTable(LookupTable_ProbCt, outputfile)
-    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #事前計算Read the result from the file(計算する場合と大差ないかも)
+    ###LookupTable_ProbCt = ReadLookupTable(outputfile)  #Read the result from the Pre-calculation file(計算する場合と大差ないかも)
 
 
     print "Please wait for PostProbMap"
@@ -414,7 +413,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "[Done] PathWeightMap."
 
 
-    #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２-dimension配列から消す([(2*T_horizon)+1][(2*T_horizon)+1]の配列になる)
+    #[メモリ・処理の軽減]初期位置のセルからT_horizonよりも離れた位置のセルをすべて２-dimension array から消す([(2*T_horizon)+1][(2*T_horizon)+1]の array になる)
     Bug_removal_savior = 0  #座標変換の際にバグを生まないようにするためのフラグ
     x_min = X_init_index[0] - T_horizon
     x_max = X_init_index[0] + T_horizon
@@ -431,19 +430,19 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       Bug_removal_savior = 1  #バグを生まない(1)
       #print X_init, X_init_index
 
-    #計算量削減のため状態数を減らす(状態空間をone-dimension配列にする⇒0の要素を除く)
+    #計算量削減のため状態数を減らす(状態空間をone-dimension array にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
     PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=0.0]
     state_num = len(PathWeight_one_NOzero)
     print "PathWeight_one_NOzero state_num:", state_num
 
-    #地図の2-dimension配列インデックスとone-dimension配列の対応を保持する
+    #map の2-dimension array インデックスとone-dimension array の対応を保持する
     IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
-    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう #実装上, np.arrayではなく2-dimension配列リストにしている
+    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう #実装上, np.arrayではなく2-dimension array リストにしている
     print "IndexMap_one_NOzero"
 
 
-    #one-dimension配列上の初期位置
+    #one-dimension array 上の初期位置
     if (X_init_index in IndexMap_one_NOzero):
       X_init_index_one = IndexMap_one_NOzero.index(X_init_index)
     else:
@@ -452,7 +451,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       X_init_index_one = 0
     print "Initial index", X_init_index_one
 
-    #移動先候補のインデックス座標のリスト(相対座標)
+    #移動先候補 index 座標のリスト(相対座標)
     MoveIndex_list = MovePosition_2D([0,0]) #.tolist()
     #MoveIndex_list = np.round(MovePosition(X_init_index)).astype(int)
     print "MoveIndex_list"
@@ -462,7 +461,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     print "Please wait for Transition"
     output_transition = outputfile + "T"+str(T_horizon) + "_Transition_sparse.mtx" # + "_Transition_log.csv"
     if (os.path.isfile(output_transition) == False):  #すでにファイルがあれば作成しない
-      #IndexMap_one_NOzero内の2-dimension配列上のインデックスと一致した要素のみ確率1を持つようにする
+      #IndexMap_one_NOzero内の2-dimension array 上 index と一致した要素のみ確率1を持つようにする
       #Transition = Transition_log_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
       Transition = Transition_sparse_jit(state_num,IndexMap_one_NOzero,MoveIndex_list)
 
@@ -480,7 +479,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     #Viterbi Algorithmを実行
     Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior) #, Transition_one_NOzero)
 
-    #one-dimension配列のインデックスを2-dimension配列のインデックスへ⇒ROSの座標系にする
+    #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
     Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
     if ( Bug_removal_savior == 0):
       Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
@@ -494,7 +493,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
     return Path_2D_index_original, Path_ROS, PathWeightMap
 
 
-#移動位置の候補: 現在の位置(2-dimension配列のインデックス)の近傍8セル+現在位置1セル
+#移動位置の候補: 現在の位置(2-dimension array index )の近傍8セル+現在位置1セル
 def MovePosition_2D(Xt): 
     PostPosition_list = np.array([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,0], [0,1], [1,-1],[1,0],[1,1] ])*cmd_vel + np.array(Xt)
     return PostPosition_list
@@ -536,7 +535,7 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     for c in prange(len(MoveIndex_list_n_list)): #prangeの方がxrangeより速い
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
-          Transition[m] = 0.0 #1 #このインデックスは状態から状態への繊維確率（地図のx,yではない）
+          Transition[m] = 0.0 #1 #Transition probability from a state to another state (index of this array is not x, y of map)
           count_t += 1
     
     #計算上おかしい場合はエラー表示を出す．
@@ -564,7 +563,7 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
     print "Start Viterbi Algorithm"
 
     INDEX = 1 #COST, INDEX = range(2)  #0,1
-    INITIAL = (approx_log_zero, X_init)  # (cost, index) #indexに初期値のone-dimension配列インデックスを入れる
+    INITIAL = (approx_log_zero, X_init)  # (cost, index) #indexに初期値のone-dimension array インデックスを入れる
     #print "Initial:",X_init
 
     cost = [INITIAL for i in prange(len(PathWeight))] 
@@ -635,13 +634,13 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
 #推定されたパスを（トピックかサービスで）送る
 #def SendPath(Path):
 
-#パスをファイル保存する（形式未定）
+#Save the path trajectory
 def SavePath(X_init, Path, Path_ROS, outputname):
     print "PathSave"
     if (SAVE_X_init == 1):
-      # ロボット初期位置をファイル保存(index)
+      # Save the robot initial position to the file (index)
       np.savetxt(outputname + "_X_init.csv", X_init, delimiter=",")
-      # ロボット初期位置をファイル保存(ROS)
+      # Save the robot initial position to the file (ROS)
       np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
 
     # Save the result to the file (index)
@@ -650,11 +649,11 @@ def SavePath(X_init, Path, Path_ROS, outputname):
     np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
     print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
 
-#パスをファイル保存する（形式未定）
+#Save the path trajectory
 def SavePathTemp(X_init, Path_one, temp, outputname, IndexMap_one_NOzero, Bug_removal_savior):
     print "PathSaveTemp"
 
-    #one-dimension配列のインデックスを2-dimension配列のインデックスへ⇒ROSの座標系にする
+    #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
     Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
     if ( Bug_removal_savior == 0):
       Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon

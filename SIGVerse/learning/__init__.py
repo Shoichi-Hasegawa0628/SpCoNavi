@@ -12,7 +12,7 @@ navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder 
 
 #Same value to map yaml file
 resolution = 0.1   #0.050000
-origin =  np.array([-10.000000, -10.000000]) #np.array([x,y]) #np.array([-30.000000, -20.000000])
+origin     = np.array([-10.000000, -10.000000]) #np.array([x,y]) #np.array([-30.000000, -20.000000])
 
 word_increment = 10     #Increment number of word observation data (BoWs)
 

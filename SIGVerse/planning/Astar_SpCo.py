@@ -43,14 +43,14 @@ def stay(pos):
 def Manhattan_distance(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
-#Read the map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the map data⇒2-dimension array に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
     print("Read map: " + outputfile + "map.csv")
     return gridmap
 
-#Read the cost map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the cost map data⇒2-dimension array に格納
 def ReadCostMap(outputfile):
     #outputfolder + trialname + navigation_folder + contmap.csv
     costmap = np.loadtxt(outputfile + "costmap.csv", delimiter=",")
@@ -59,7 +59,7 @@ def ReadCostMap(outputfile):
 
 #Load the probability cost map used for path calculation
 def ReadCostMapProb(outputfile):
-    # 結果をファイル読み込み
+    # Read the result from the file
     output = outputfile + "CostMapProb.csv"
     CostMapProb = np.loadtxt(output, delimiter=",")
     print("Read CostMapProb: " + output)
@@ -67,14 +67,14 @@ def ReadCostMapProb(outputfile):
 
 #Load the probability value map used for path calculation
 def ReadProbMap(outputfile):
-    # 結果をファイル読み込み
+    # Read the result from the file
     output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
     PathWeightMap = np.loadtxt(output, delimiter=",")
     print( "Read PathWeightMap: " + output)
     return PathWeightMap
 
 
-#パスをファイル保存する（形式未定）
+#Save the path trajectory
 def SavePath(X_init, X_goal, Path, Path_ROS, outputname):
     print("PathSave")
     if (SAVE_X_init == 1):
@@ -85,16 +85,16 @@ def SavePath(X_init, X_goal, Path, Path_ROS, outputname):
       np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
       np.savetxt(outputname + "_X_goal_ROS.csv", Array_index_To_Map_coordinates(X_goal), delimiter=",")
 
-    # 結果をファイル保存(index)
+    # Save the result to the file (index)
     np.savetxt(outputname + "_Path.csv", Path, delimiter=",")
-    # 結果をファイル保存(ROS)
+    # Save the result to the file (ROS)
     np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
     print("Save Path: " + outputname + "_Path.csv and _Path_ROS.csv")
 
 
 #各ステップごとのlog likelihoodの値を保存
 def SaveLogLikelihood(outputname, LogLikelihood,flag,flag2):
-    # 結果をファイル保存
+    # Save the result to the file 
     if (flag2 == 0):
       if   (flag == 0):
         output_likelihood = outputname + "_Log_likelihood_step.csv"
@@ -109,13 +109,13 @@ def SaveLogLikelihood(outputname, LogLikelihood,flag,flag2):
     np.savetxt( output_likelihood, LogLikelihood, delimiter=",")
     print("Save LogLikekihood: " + output_likelihood)
 
-#ROSの地図座標系をPython内の2-dimension配列のインデックス番号に対応付ける
+#ROSの地図座標系をPython内の2-dimension array のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
     Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     return Index
 
-#Python内の2-dimension配列のインデックス番号からROSの地図座標系への変換
+#Python内の2-dimension array のインデックス番号からROSの地図座標系への変換
 def Array_index_To_Map_coordinates(Index):
     Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
@@ -129,14 +129,14 @@ def PathDistance(Path):
 
 #パスの移動距離を保存
 def SavePathDistance(Distance):
-    # 結果をファイル保存
+    # Save the result to the file 
     output = outputname + "_Distance.csv"
     np.savetxt( output, np.array([Distance]), delimiter=",")
     print("Save Distance: " + output)
 
 #パスの移動距離を保存
 def SavePathDistance_temp(Distance,temp):
-    # 結果をファイル保存
+    # Save the result to the file 
     output = outputname + "_Distance"+str(temp)+".csv"
     np.savetxt( output, np.array([Distance]), delimiter=",")
     print("Save Distance: " + output)

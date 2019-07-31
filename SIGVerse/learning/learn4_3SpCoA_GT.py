@@ -292,13 +292,12 @@ def Gibbs_Sampling(iteration,filename):
   ####                 ↓Learning phase of spatial concept↓                 ####
   #############################################################################
       #TN[N]: teaching time-step
-      #Otb_B[N][W_index]: 時刻tごとの発話文をBOWにしたものの集合
       
       ##Initialization of all parameters
       print u"Initialize Parameters..."
       Ct = [ int(random.uniform(0,L)) for n in xrange(N)] #[ int(n/15) for n in xrange(N)]    #index of spatial concepts [N]
       It = [ int(random.uniform(0,K)) for n in xrange(N)] #[ int(n/15) for n in xrange(N)]    #index of position distributions [N]
-      ##領域範囲内に一様乱数
+      ##Uniform random numbers within the range
       Myu   = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #the position distribution (Gaussian)の平均(x,y)[K]
       S     = [ np.array([ [sig_init, 0.0],[0.0, sig_init] ]) for i in xrange(K) ]      #the position distribution (Gaussian)の共分散(2×2-dimension)[K]
       W     = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #the name of place(multinomial distribution: W_index-dimension)[L]
@@ -332,7 +331,7 @@ def Gibbs_Sampling(iteration,filename):
         ##Dirichlet multinomial distributionからDirichlet Posterior distributionを計算しSampingする
         print u"Sampling Wc..."
         
-        temp = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #集めて加算するための配列:paramtersで初期化しておけばよい
+        temp = [ [beta0 for j in xrange(len(W_index))] for c in xrange(L) ]  #集めて加算するための array :paramtersで初期化しておけばよい
         #Ctがcであるときのdataを集める
         for c in xrange(L) :   #ctごとにL個分計算
           nc = 0
@@ -343,13 +342,13 @@ def Gibbs_Sampling(iteration,filename):
                 #dataを集めるたびに値を加算
                 for j in xrange(len(W_index)):    #ベクトル加算？頻度
                   temp[c][j] = temp[c][j] + Otb_B[t][j]
-                nc = nc + 1  #dataが何回加算されたか
+                nc = nc + 1  #counting the number of data
               
           if (nc != 0):  #dataなしのcは表示しない
             print "%d n:%d %s" % (c,nc,temp[c])
           
           #加算したdataとparamtersからPosterior distributionを計算しSamping
-          sumn = sum(np.random.dirichlet(temp[c],1000)) #fsumではダメ
+          sumn = sum(np.random.dirichlet(temp[c],1000)) #NO use fsum
           W[c] = sumn / sum(sumn)
           #print W[c]
         
@@ -373,10 +372,10 @@ def Gibbs_Sampling(iteration,filename):
           
           m_ML = np.array([[0.0],[0.0]])
           if nk[j] != 0 :        ##Avoid divide by zero
-            m_ML = sum(xt) / float(nk[j]) #fsumではダメ
+            m_ML = sum(xt) / float(nk[j]) #NO use fsum
             print "n:%d m_ML.T:%s" % (nk[j],str(m_ML.T))
           
-          ##ハイパーparamters更新
+          ##hyper-paramters update
           kappaN = kappa0 + nk[j]
           mN = ( (kappa0*m0) + (nk[j]*m_ML) ) / kappaN
           nuN = nu0 + nk[j]
@@ -430,7 +429,7 @@ def Gibbs_Sampling(iteration,filename):
 
         #print temp
         #加算したdataとparamtersからPosterior distributionを計算しSamping
-        sumn = sum(np.random.dirichlet(temp,1000)) #fsumではダメ
+        sumn = sum(np.random.dirichlet(temp,1000)) #NO use fsum
         pi = sumn / np.sum(sumn)
         print pi
         
@@ -451,7 +450,7 @@ def Gibbs_Sampling(iteration,filename):
                     temp[k] = temp[k] + 1  #集めたdataを元にindex of position distributionごとに加算
           
           #加算したdataとparamtersからPosterior distributionを計算しSamping
-          sumn = sum(np.random.dirichlet(temp,1000)) #fsumではダメ
+          sumn = sum(np.random.dirichlet(temp,1000)) #NO use fsum
           phi_l[c] = sumn / np.sum(sumn)
           
           if c in Ct:
@@ -475,7 +474,7 @@ def Gibbs_Sampling(iteration,filename):
             temp[k] = g2 * phi_c[k]
             #print g2,phi_c[k]  ###Xtとμが遠いとg2の値がアンダーフローする可能性がある
             
-          temp = temp / np.sum(temp)  #正規化
+          temp = temp / np.sum(temp)  #Normalization
           
           #print Mult_samp
           It_B = np.random.multinomial(1,temp) #Mult_samp [t]
@@ -498,7 +497,7 @@ def Gibbs_Sampling(iteration,filename):
             #print pi[c], phi_temp.pmf(It_B[t]), W_temp.pmf(Otb_B[t])
             temp[c] = pi[c] * phi_l[c][It[t]] * W_temp.pmf(Otb_B[t])    # phi_temp.pmf(It_B[t])各要素について計算
           
-          temp = temp / np.sum(temp)  #正規化
+          temp = temp / np.sum(temp)  #Normalization
           #print temp
 
           Ct_B = np.random.multinomial(1,temp) #Mult_samp

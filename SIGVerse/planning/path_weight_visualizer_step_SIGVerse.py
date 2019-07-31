@@ -14,7 +14,7 @@ from submodules import *
 #Example: python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7
 
 
-#Read the map data⇒確率値に変換⇒2-dimension配列に格納
+#Read the map data⇒2-dimension array に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
     gridmap = np.loadtxt(outputfile + "map.csv", delimiter=",")
@@ -29,13 +29,13 @@ def ReadProbMap(outputfile):
     print "Read PathWeightMap: " + output
     return PathWeightMap
 
-#ROSの地図座標系をPython内の2-dimension配列のインデックス番号に対応付ける
+#ROSのmap 座標系をPython内の2-dimension array のインデックス番号に対応付ける
 def Map_coordinates_To_Array_index(X):
     X = np.array(X)
     Index = np.round( (X - origin) / resolution ).astype(int) #四捨五入してint型にする
     return Index
 
-#Python内の2-dimension配列のインデックス番号からROSの地図座標系への変換
+#Python内の2-dimension array のインデックス番号からROSのmap 座標系への変換
 def Array_index_To_Map_coordinates(Index):
     Index = np.array(Index)
     X = np.array( (Index * resolution) + origin )
@@ -93,7 +93,7 @@ if __name__ == '__main__':
       map_length = len(gridmap)  #len(costmap)
       map_width  = len(gridmap[0])  #len(costmap[0])
 
-      #パスの２-dimension配列を作成
+      #パスの２-dimension array を作成
       PathMap = np.array([[np.inf for j in xrange(map_width)] for i in xrange(map_length)])
       
       for i in xrange(map_length):
@@ -121,13 +121,13 @@ if __name__ == '__main__':
       map_width  = len(gridmap[0])  #len(costmap[0])
       print "MAP[length][width]:",map_length,map_width
 
-      #地図の上に重み(ヒートマップ形式)を加える
+      #Add the weights on the map (heatmap)
       plt.imshow(gridmap + (40+1)*(gridmap == -1), origin='lower', cmap='binary', vmin = 0, vmax = 100, interpolation='none') #, vmin = 0.0, vmax = 1.0)
       plt.imshow(PathWeightMap,norm=LogNorm(), origin='lower', cmap='viridis', interpolation='none') #, vmin=wmin, vmax=wmax) #gnuplot, inferno,magma,plasma  #
     
 
-      pp=plt.colorbar (orientation="vertical",shrink=0.8) # カラーバーの表示 
-      pp.set_label("Probability (log scale)", fontname="Arial", fontsize=10) #カラーバーのラベル
+      pp=plt.colorbar (orientation="vertical",shrink=0.8) # Color barの表示 
+      pp.set_label("Probability (log scale)", fontname="Arial", fontsize=10) #Color barのラベル
       pp.ax.tick_params(labelsize=8)
       plt.tick_params(axis='x', which='major', labelsize=8)
       plt.tick_params(axis='y', which='major', labelsize=8)
