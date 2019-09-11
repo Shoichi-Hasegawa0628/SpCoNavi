@@ -13,5 +13,5 @@
 
 【Add Files】(in preparation)  
  - `Astar_SpCo_costmap.py` and `Astar_Database_costmap.py`: A star algorithm with a costmap
- - `Astar_SpCo_weight.py` and Astar_Database_weight.py`: A star algorithm with a costmap and the emission probability weights
+ - `Astar_SpCo_weight.py` and `Astar_Database_weight.py`: A star algorithm with a costmap and the emission probability weights
  - `SpCoNavi_Astar_approx.py`: SpCoNavi of an approximation version by A star algorithm

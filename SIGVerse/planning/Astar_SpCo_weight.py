@@ -1,14 +1,14 @@
 #coding:utf-8
 
 ###########################################################
-# Path-Planning Program by A star algorithm (ver. SpCo)
-# Akira Taniguchi 2019/06/24-2019/07/02
+# Path-Planning Program by A star algorithm (ver. SpCo) with costmap and emission probability
+# Akira Taniguchi 2019/06/24-2019/07/02-2019/09/11
 # Spacial Thanks: Ryo Ozaki
 ###########################################################
 
 ##Command: 
-#python ./Astar_SpCo.py trialname mapname iteration sample init_position_num speech_num
-#python ./Astar_SpCo.py 3LDK_01 s1DK_01 1 0 0 0
+#python ./Astar_SpCo_weight.py trialname mapname iteration sample init_position_num speech_num
+#python ./Astar_SpCo_weight.py 3LDK_01 s1DK_01 1 0 0 0
 
 import sys
 import random
@@ -351,10 +351,10 @@ filename = outputfolder_SIG + trialname #+ "/"
 print(filename, iteration, sample)
 outputfile = filename + navigation_folder #outputfolder + trialname + navigation_folder
 #outputname = outputfile + "Astar_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-outputname = outputfile + "Astar_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
+outputname = outputfile + "Astar_weight_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
 
 #"T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-maze_file = outputfile + mapname + ".pgm"
+#maze_file = outputfile + mapname + ".pgm"
 #maze_file = "../CoRL/data/1DK_01/navi/s1DK_01.pgm" #"./sankou/sample_maze.txt"
 
 #maze = np.loadtxt(maze_file, dtype=int)
@@ -388,8 +388,8 @@ infile.close
 maze = ReadMap(outputfile)
 height, width = maze.shape
 
-action_functions = [right, left, up, down, stay] #, migiue, hidariue, migisita, hidarisita]
-cost_of_actions  = [    1,    1,  1,    1,    1] #, ,    1,        1,        1,          1]
+action_functions = [right, left, up, down] #, stay] #, migiue, hidariue, migisita, hidarisita]
+cost_of_actions  = [    1,    1,  1,    1] #,    1] #, ,    1,        1,        1,          1]
 
 #Read the files of learned parameters  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
 THETA = ReadParameters(iteration, sample, filename, trialname)
@@ -407,6 +407,8 @@ goal = Location_from_speech(Otb_B, THETA) #(0,0)
 if (maze[goal[0]][goal[1]] != 0):
     print("[ERROR] goal",maze[goal[0]][goal[1]],"is not 0.")
 
+#Read the emission probability file 
+PathWeightMap = ReadProbMap(outputfile)
 
 #####描画
 #plt.imshow(maze, cmap="binary")
@@ -458,9 +460,9 @@ while open_list:
         q = act_func(p)
         if (int(maze[q]) != 0):
             continue
-        q_cost = p_cost + act_cost
-        q_pev = Manhattan_distance(q, goal)
-        q_key = q_cost + q_pev
+        q_cost = p_cost + act_cost - np.log(PathWeightMap[q[0]][q[1]])  #current sum cost and action cost
+        q_pev = Manhattan_distance(q, goal) #予測評価値
+        q_key = q_cost + q_pev #+ 100*(1.0 - PathWeightMap[q[1]][q[0]]) #- np.log(PathWeightMap[q[1]][q[0]])
 
         if q in open_list:
             idx = open_list.index(q)
@@ -494,11 +496,15 @@ while open_list:
 #最適経路の決定: ゴールから親ノード（どこから来たか）を順次たどっていく
 #i = len(OYA)
 #for oyako in reversed(OYA):
+ko = (goal[1], goal[0])
 print(ko,goal)
-for i in range(p_cost-1):
+#for i in range(p_cost):
+while(ko != (start[1],start[0])):
   #print(OYA[ko])
   Path = Path + [OYA[ko]]
   ko = OYA[ko]
+  #i = len(Path)
+  #print(i, ko)
   #i -= 1
 
 if (SAVE_time == 1):
@@ -515,10 +521,12 @@ for i in range(len(Path)):
 print("Total cost using A* algorithm is "+ str(p_cost))
 
 #The moving distance of the path
-Distance = p_cost #PathDistance(Path_one)
+Distance = PathDistance(Path)
 
 #Save the moving distance of the path
 SavePathDistance(Distance)
+
+print("Path distance using A* algorithm is "+ str(Distance))
 
 #計算上パスのx,yが逆になっているので直す
 Path_inv = [[Path[t][1], Path[t][0]] for t in range(len(Path))]
@@ -529,7 +537,7 @@ SavePath(start, [goal[1], goal[0]], Path_inv, Path_ROS, outputname)
 
 
 #Read the emission probability file 
-PathWeightMap = ReadProbMap(outputfile)
+#PathWeightMap = ReadProbMap(outputfile)
 
 #Save the log-likelihood of the path
 #PathWeightMapとPathからlog likelihoodの値を再計算する
@@ -542,11 +550,11 @@ for i in range(T_horizon):
     else:
         t = len(Path) -1
     #print PathWeightMap.shape, Path[t][0], Path[t][1]
-    LogLikelihood_step[t] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
+    LogLikelihood_step[i] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
     if (t == 0):
-        LogLikelihood_sum[t] = LogLikelihood_step[t]
+        LogLikelihood_sum[i] = LogLikelihood_step[i]
     elif (t >= 1):
-        LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
+        LogLikelihood_sum[i] = LogLikelihood_sum[i-1] + LogLikelihood_step[i]
 
 
 #すべてのステップにおけるlog likelihoodの値を保存

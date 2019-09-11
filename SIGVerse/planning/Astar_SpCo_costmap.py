@@ -388,8 +388,8 @@ infile.close
 maze = ReadMap(outputfile)
 height, width = maze.shape
 
-action_functions = [right, left, up, down, stay] #, migiue, hidariue, migisita, hidarisita]
-cost_of_actions  = [    1,    1,  1,    1,    1] #, ,    1,        1,        1,          1]
+action_functions = [right, left, up, down] #, stay] #, migiue, hidariue, migisita, hidarisita]
+cost_of_actions  = [    1,    1,  1,    1] #,    1] #, ,    1,        1,        1,          1]
 
 #Read the files of learned parameters  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
 THETA = ReadParameters(iteration, sample, filename, trialname)
@@ -465,9 +465,9 @@ while open_list:
         q = act_func(p)
         if (int(maze[q]) != 0):
             continue
-        q_cost = p_cost + act_cost #current sum cost and action cost
+        q_cost = p_cost + act_cost - np.log(CostMapProb[q[0]][q[1]]) #+ (costmap[q[1]][q[0]]/100.0) #current sum cost and action cost
         q_pev = Manhattan_distance(q, goal) #予測評価値
-        q_key = q_cost + q_pev + costmap[q[1]][q[0]] #- CostMapProb[q[1]][q[0]]
+        q_key = q_cost + q_pev #+ (costmap[q[1]][q[0]]/100.0) #- (CostMapProb[q[1]][q[0]]) #
 
         if q in open_list:
             idx = open_list.index(q)
@@ -501,11 +501,15 @@ while open_list:
 #最適経路の決定: ゴールから親ノード（どこから来たか）を順次たどっていく
 #i = len(OYA)
 #for oyako in reversed(OYA):
+ko = (goal[1], goal[0])
 print(ko,goal)
-for i in range(p_cost-1):
+#for i in range(p_cost):
+while(ko != (start[1],start[0])):
   #print(OYA[ko])
   Path = Path + [OYA[ko]]
   ko = OYA[ko]
+  #i = len(Path)
+  #print(i, ko)
   #i -= 1
 
 if (SAVE_time == 1):
@@ -522,10 +526,12 @@ for i in range(len(Path)):
 print("Total cost using A* algorithm is "+ str(p_cost))
 
 #The moving distance of the path
-Distance = p_cost #PathDistance(Path_one)
+Distance = PathDistance(Path)
 
 #Save the moving distance of the path
 SavePathDistance(Distance)
+
+print("Path distance using A* algorithm is "+ str(Distance))
 
 #計算上パスのx,yが逆になっているので直す
 Path_inv = [[Path[t][1], Path[t][0]] for t in range(len(Path))]
@@ -549,11 +555,11 @@ for i in range(T_horizon):
     else:
         t = len(Path) -1
     #print PathWeightMap.shape, Path[t][0], Path[t][1]
-    LogLikelihood_step[t] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
+    LogLikelihood_step[i] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
     if (t == 0):
-        LogLikelihood_sum[t] = LogLikelihood_step[t]
+        LogLikelihood_sum[i] = LogLikelihood_step[i]
     elif (t >= 1):
-        LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
+        LogLikelihood_sum[i] = LogLikelihood_sum[i-1] + LogLikelihood_step[i]
 
 
 #すべてのステップにおけるlog likelihoodの値を保存
