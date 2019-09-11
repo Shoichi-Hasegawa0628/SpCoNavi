@@ -219,7 +219,6 @@ def Array_index_To_Map_coordinates(Index):
     return X
 
 #gridmap and costmap から確率の形のCostMapProbを得ておく
-#@jit(parallel=True)
 def CostMapProb_jit(gridmap, costmap):
     CostMapProb = (100.0 - costmap) / 100.0     #Change the costmap to the probabilistic costmap
     #gridの数値が0（非占有）のところだけ数値を持つようにマスクする
@@ -228,7 +227,6 @@ def CostMapProb_jit(gridmap, costmap):
     return CostMapProb * GridMapProb
 
 
-#@jit(parallel=True)
 def PostProb_ij(Index_temp,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K):
     if (CostMapProb[Index_temp[1]][Index_temp[0]] != 0.0): 
       X_temp = Array_index_To_Map_coordinates(Index_temp)  #map と縦横の座標系の軸が合っているか要確認

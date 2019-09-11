@@ -508,7 +508,7 @@ def update(cost, trans, emiss):
     #print max_arr + emiss, arr.index(max_arr)
     return max_arr + emiss, arr.index(max_arr)
 
-#なぜか重くてTが進まない(不採用)
+#なぜか重くてTが進まない(Disuse)
 def update_sparse(cost, trans, emiss):
     COST = 0 #COST, INDEX = range(2)  #0,1
     trans_log = [(trans[0,i]==0)*approx_log_zero for i in xrange(trans.get_shape()[1])]     #trans.toarray() 
@@ -990,18 +990,18 @@ if __name__ == '__main__':
       fp.write(str(time_pp)+"\n")
       fp.close()
 
-    #パスの移動距離
+    #The moving distance of the path
     #Distance = PathDistance(Path)
 
-    #パスを送る
+    #Send the path
     #SendPath(Path)
-    #パスを保存
+    #Save the path
     SavePath(X_candidates[int(init_position_num)], Path, Path_ROS, outputname)
 
-    #確率値マップを送る
+    #Send the PathWeightMap
     #SendProbMap(PathWeightMap)
 
-    #確率値マップを保存(PathPlanner内部で実行)
+    #Save the PathWeightMap(PathPlanner内部で実行)
     #####SaveProbMap(PathWeightMap, outputname)
     print "[END] SpCoNavi."
 
