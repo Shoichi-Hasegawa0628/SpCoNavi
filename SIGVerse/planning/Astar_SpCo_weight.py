@@ -496,12 +496,19 @@ while open_list:
 #最適経路の決定: ゴールから親ノード（どこから来たか）を順次たどっていく
 #i = len(OYA)
 #for oyako in reversed(OYA):
+ko_origin = ko
 ko = (goal[1], goal[0])
 print(ko,goal)
 #for i in range(p_cost):
 while(ko != (start[1],start[0])):
   #print(OYA[ko])
-  Path = Path + [OYA[ko]]
+  try:
+      Path = Path + [OYA[ko]]
+  except KeyError:
+      ko = ko_origin
+      Path = Path + [OYA[ko]]
+      print("NOT END GOAL.")
+  
   ko = OYA[ko]
   #i = len(Path)
   #print(i, ko)

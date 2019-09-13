@@ -1,14 +1,14 @@
 #coding:utf-8
 
 ###########################################################
-# Path-Planning Program by A star algorithm (ver. SpCo) with costmap
+# Path-Planning Program by A star algorithm (ver. database) with costmap
 # Akira Taniguchi 2019/06/24-2019/07/02-2019/09/11
 # Spacial Thanks: Ryo Ozaki
 ###########################################################
 
 ##Command: 
-#python ./Astar_SpCo_costmap.py trialname mapname iteration sample init_position_num speech_num
-#python ./Astar_SpCo_costmap.py 3LDK_01 s1DK_01 1 0 0 0
+#python ./Astar_Database_costmap.py trialname mapname iteration sample init_position_num speech_num
+#python ./Astar_Database_costmap.py 3LDK_01 s1DK_01 1 0 0 0
 
 import sys
 import random
@@ -84,6 +84,7 @@ def SavePath(X_init, X_goal, Path, Path_ROS, outputname):
       # Save robot initial position and goal as file (ROS)
       np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
       np.savetxt(outputname + "_X_goal_ROS.csv", Array_index_To_Map_coordinates(X_goal), delimiter=",")
+
 
     # Save the result to the file (index)
     np.savetxt(outputname + "_Path.csv", Path, delimiter=",")
@@ -237,6 +238,28 @@ def ReadParameters(iteration, sample, filename, trialname):
     THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     return THETA
 
+def position_data_read_pass(directory,DATA_NUM):
+    all_position=[] 
+    hosei = 1 #1.5 # 04だけ*2, 06は-1, 10は*1.5
+
+    for i in range(DATA_NUM):
+            #if  (i in test_num)==False:
+            f=directory+"/position/"+repr(i)+".txt"
+            position=[] #(x,y,sin,cos)
+            itigyoume = 1
+            for line in open(f, 'r').readlines():
+                if (itigyoume == 1):
+                  data=line[:-1].split('	')
+                  #print data
+                  position +=[float(data[0])*(-1) + float(origin[0]*resolution)*hosei]
+                  position +=[float(data[1])]
+                  itigyoume = 0
+            all_position.append(position)
+    
+    #座標系の返還
+    #Xt = (np.array(all_position) + origin[0] ) / resolution #* 10
+    return np.array(all_position)
+
 
 ###↓###発話→場所の認識############################################
 def Location_from_speech(Otb_B, THETA):
@@ -350,8 +373,8 @@ print("Start:", start)
 filename = outputfolder_SIG + trialname #+ "/" 
 print(filename, iteration, sample)
 outputfile = filename + navigation_folder #outputfolder + trialname + navigation_folder
-#outputname = outputfile + "Astar_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-outputname = outputfile + "Astar_costmap_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
+#outputname = outputfile + "Astar_Database_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
+outputname = outputfile + "Astar_costmap_Database_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
 
 #"T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
 #maze_file = outputfile + mapname + ".pgm"
@@ -402,7 +425,120 @@ print("BoW:", Otb_B)
 #Path-Planning
 #Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
-goal = Location_from_speech(Otb_B, THETA) #(0,0)
+sample_num = 1  #取得するサンプル数
+inputfile = inputfolder_SIG  + trialname
+filename  = outputfolder_SIG + trialname
+
+##S## ##### Ishibushi's code #####
+env_para = np.genfromtxt(inputfile+"/Environment_parameter.txt",dtype= None,delimiter =" ")
+
+MAP_X = float(env_para[0][1])  #Max x value of the map
+MAP_Y = float(env_para[1][1])  #Max y value of the map
+map_x = float(env_para[2][1])  #Min x value of the map
+map_y = float(env_para[3][1])  #Max y value of the map
+
+map_center_x = ((MAP_X - map_x)/2)+map_x
+map_center_y = ((MAP_Y - map_x)/2)+map_y
+mu_0 = np.array([map_center_x,map_center_y,0,0])
+#mu_0_set.append(mu_0)
+DATA_initial_index = int(env_para[5][1]) #Initial data num
+DATA_last_index = int(env_para[6][1]) #Last data num
+DATA_NUM = DATA_last_index - DATA_initial_index +1
+##E## ##### Ishibushi's code ######
+
+#DATA read
+pose = position_data_read_pass(inputfile,DATA_NUM)
+
+#NN = 0
+N = 0
+Otb_train = []
+#Read text file
+#for line in open(filename + '/out_gmm_' + str(iteration) + '/' + str(sample) + '_samp.100', 'r'):   ##*_samp.100を順番に読み込む
+for word_data_num in range(DATA_NUM):
+    f = open(inputfile + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
+    line = f.read()
+    #print line
+    itemList = line[:-1].split(' ')
+    
+    """
+    #<s>,<sp>,</s>を除く処理: 単語に区切られていた場合
+    for b in range(5):
+        if ("<s><s>" in itemList):
+        itemList.pop(itemList.index("<s><s>"))
+        if ("<s><sp>" in itemList):
+        itemList.pop(itemList.index("<s><sp>"))
+        if ("<s>" in itemList):
+        itemList.pop(itemList.index("<s>"))
+        if ("<sp>" in itemList):
+        itemList.pop(itemList.index("<sp>"))
+        if ("<sp><sp>" in itemList):
+        itemList.pop(itemList.index("<sp><sp>"))
+        if ("</s>" in itemList):
+        itemList.pop(itemList.index("</s>"))
+        if ("<sp></s>" in itemList):
+        itemList.pop(itemList.index("<sp></s>"))
+        if ("" in itemList):
+        itemList.pop(itemList.index(""))
+    #<s>,<sp>,</s>を除く処理: 単語中に存在している場合
+    for j in range(len(itemList)):
+        itemList[j] = itemList[j].replace("<s><s>", "")
+        itemList[j] = itemList[j].replace("<s>", "")
+        itemList[j] = itemList[j].replace("<sp>", "")
+        itemList[j] = itemList[j].replace("</s>", "")
+    for b in range(5):
+        if ("" in itemList):
+        itemList.pop(itemList.index(""))
+    """
+
+    #Otb[sample] = Otb[sample] + [itemList]
+    Otb_train = Otb_train + [itemList]
+    #if sample == 0:  #最初だけdata数Nを数える
+    N = N + 1  #count
+    #else:
+    #  Otb[] = Otb[NN] + itemList
+    #  NN = NN + 1
+
+##the name of placeのmultinomial distributionのインデックス用
+W_index = []
+for n in range(N):
+    for j in range(len(Otb_train[n])):
+        if ( (Otb_train[n][j] in W_index) == False ):
+            W_index.append(Otb_train[n][j])
+            #print str(W_index),len(W_index)
+
+#print "[",
+#for i in range(len(W_index)):
+#print "\""+ str(i) + ":" + str(W_index[i]) + "\",",
+#print "]"
+
+##時刻tdataごとにBOW化(?)する, ベクトルとする
+Otb_B_train = [ [0 for i in range(len(W_index))] for n in range(N) ]
+
+
+for n in range(N):
+    for j in range(len(Otb_train[n])):
+        for i in range(len(W_index)):
+            if (W_index[i] == Otb_train[n][j] ):
+                Otb_B_train[n][i] = Otb_B_train[n][i] + word_increment
+    #print Otb_B
+
+candidate_num = []
+#命令発話に含まれる単語を含むdataを取得
+for n in range(N):
+    for w in range(len(Otb_B)):
+        if (Otb_B[w] >= 1):
+            if (Otb_B_train[n][w] > 0):
+                if (n not in candidate_num):
+                    candidate_num += [n]
+
+
+#goal をランダムに設定
+choice_num = random.choice(candidate_num)
+Xt_max = Map_coordinates_To_Array_index(pose[choice_num])
+goal =(Xt_max[1], Xt_max[0])
+print("Goal:", goal)
+
+#goal = Location_from_speech(Otb_B, THETA) #(0,0)
 
 if (maze[goal[0]][goal[1]] != 0):
     print("[ERROR] goal",maze[goal[0]][goal[1]],"is not 0.")
@@ -412,8 +548,6 @@ costmap = ReadCostMap(outputfile)
 
 ###Read the probabilistic cost map file
 CostMapProb = ReadCostMapProb(outputfile)
-
-
 
 #####描画
 #plt.imshow(maze, cmap="binary")
