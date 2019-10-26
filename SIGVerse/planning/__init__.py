@@ -62,11 +62,14 @@ SAVE_Trellis = 0      #Save trellis for Viterbi Path estimation (Save:1, Not sav
 
 UPDATE_PostProbMap = 0 #1 #If the file exists already, calculate PostProbMap: (1) 
 
-#Select approximated methods (Proposed method (ver. SIGVerse):0)
+#Select approximated methods (Proposed method (ver. SIGVerse):0) -> run SpCoNavi_Astar_approx.py
 Approx = 0  
 if (NANAME != 1):
   Approx = 1
 #Separated N-best approximation version is another program (SpCoNavi0.1s.py)
+
+# SpCoNavi_Astar_approx.py: The number of goal position candidates
+Sampling_J = 10
 
 #Dynamics of state transition (motion model): (Deterministic:0, Probabilistic:1, Approximation:2(Unimplemented))
 #Dynamics = 0
