@@ -4,17 +4,23 @@
 import numpy as np
 
 ##Command
-#python ./SpCoNavi0.1_SIGVerse.py trialname iteration sample init_position_num speech_num
+#python ./SpCoNavi0.1_SIGVerse.py trialname iteration(1) sample(0) init_position_num speech_num
 #python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0
 
 ##### NEW #####
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
-outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/example/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
-Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
-Goal_Word      = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室"] # In Japanese
+# Note: Don't be tupple! Only list! [*,*]
+Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
+Goal_Word      = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室","テレビ前","子犬休み場","北","南","AND","OR"] #,"テレビ前","子犬休み場","北","南"] # In Japanese
+#Goal_Word_example = ["テレビ前","子犬休み場","北","南"] # In Japanese
+#Example1 = ["リビング","テレビ前","子犬休み場"]
+Example_AND = ["北","寝室"] #12
+Example_OR = ["ダイニング","キッチン"] #13
+
 #Goal_Word = ["Entrance","Living room","Dining room","Kitchen","Bath room","Washroom","Toilet","Bedroom"]
-#0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,7:寝室,
+#0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,7:寝室,8:テレビ前,9:子犬休み場,10:北,11:南
 
 #Same values as /learning/__init.py__
 L = 10 #100                  #The number of spatial concepts

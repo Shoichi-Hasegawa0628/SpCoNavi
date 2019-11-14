@@ -7,6 +7,8 @@
 ##Akira Taniguchi -2019/07/25
 ##############################################
 
+# python ./learn4_3SpCoA_GT.py 3LDK_00
+
 import glob
 import codecs
 import re
@@ -123,6 +125,18 @@ def Mutual_Info(W,pi):  #Mutual information: W, π
 def position_data_read_pass(directory,DATA_NUM):
     all_position=[] 
     hosei = 1  # 04 is *2, 06 is -1, 10 is *1.5.
+    
+    ##### 座標の補正 #####
+    if ("04" in directory):
+      hosei *= 2
+      print "hosei",hosei
+    elif ("06" in directory):
+      hosei *= -1
+      print "hosei",hosei
+    elif ("10" in directory):
+      hosei *= 1.5
+      print "hosei",hosei
+    ######################
 
     for i in range(DATA_NUM):
             #if  (i in test_num)==False:
@@ -214,10 +228,11 @@ def Gibbs_Sampling(iteration,filename):
       Otb = []
       #Read text file
       for word_data_num in range(DATA_NUM):
-        f = open(inputfile + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
+        f = open(inputfile + word_folder + str(word_data_num) + ".txt", "r")
         line = f.read()
-        itemList = line[:-1].split(' ')
+        itemList = line[:].split(' ')
         
+        """
         #remove <s>,<sp>,</s>: if its were segmented to words.
         for b in xrange(5):
           if ("<s><s>" in itemList):
@@ -242,6 +257,11 @@ def Gibbs_Sampling(iteration,filename):
           itemList[j] = itemList[j].replace("<s>", "")
           itemList[j] = itemList[j].replace("<sp>", "")
           itemList[j] = itemList[j].replace("</s>", "")
+        """
+        
+        for j in xrange(len(itemList)):
+          itemList[j] = itemList[j].replace("\r", "")  
+
         for b in xrange(5):
           if ("" in itemList):
             itemList.pop(itemList.index(""))
@@ -295,8 +315,8 @@ def Gibbs_Sampling(iteration,filename):
       
       ##Initialization of all parameters
       print u"Initialize Parameters..."
-      Ct = [ int(random.uniform(0,L)) for n in xrange(N)] #[ int(n/15) for n in xrange(N)]    #index of spatial concepts [N]
-      It = [ int(random.uniform(0,K)) for n in xrange(N)] #[ int(n/15) for n in xrange(N)]    #index of position distributions [N]
+      Ct = [ int(n/15) for n in xrange(N)]    #[ int(random.uniform(0,L)) for n in xrange(N)] #index of spatial concepts [N]
+      It = [ int(n/15) for n in xrange(N)]    #[ int(random.uniform(0,K)) for n in xrange(N)] #index of position distributions [N]
       ##Uniform random numbers within the range
       Myu   = [ np.array([[ int( random.uniform(WallXmin,WallXmax) ) ],[ int( random.uniform(WallYmin,WallYmax) ) ]]) for i in xrange(K) ]      #the position distribution (Gaussian)の平均(x,y)[K]
       S     = [ np.array([ [sig_init, 0.0],[0.0, sig_init] ]) for i in xrange(K) ]      #the position distribution (Gaussian)の共分散(2×2-dimension)[K]

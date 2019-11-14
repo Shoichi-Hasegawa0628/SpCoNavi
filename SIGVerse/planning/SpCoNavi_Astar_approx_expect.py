@@ -1,14 +1,16 @@
 #coding:utf-8
 
 ###########################################################
-# Path-Planning Program by A star algorithm (ver. database)
-# Akira Taniguchi 2019/06/24-2019/07/04
+# SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse
+# Path-Planning Program by A star algorithm (ver. approximate inference)
+# Path Selection: expected log-likelihood per pixel in a path trajectory
+# Akira Taniguchi 2019/06/24-2019/07/02-2019/09/20-2019/10/26-
 # Spacial Thanks: Ryo Ozaki
 ###########################################################
 
 ##Command: 
-#python ./Astar_Database.py trialname mapname iteration sample init_position_num speech_num
-#python ./Astar_Database.py 3LDK_01 s1DK_01 1 0 0 0
+#python ./SpCoNavi_Astar_approx.py trialname mapname iteration sample init_position_num speech_num
+#python ./SpCoNavi_Astar_approx.py 3LDK_01 s1DK_01 1 0 0 0
 
 import sys
 import random
@@ -84,7 +86,6 @@ def SavePath(X_init, X_goal, Path, Path_ROS, outputname):
       # Save robot initial position and goal as file (ROS)
       np.savetxt(outputname + "_X_init_ROS.csv", Array_index_To_Map_coordinates(X_init), delimiter=",")
       np.savetxt(outputname + "_X_goal_ROS.csv", Array_index_To_Map_coordinates(X_goal), delimiter=",")
-
 
     # Save the result to the file (index)
     np.savetxt(outputname + "_Path.csv", Path, delimiter=",")
@@ -238,107 +239,40 @@ def ReadParameters(iteration, sample, filename, trialname):
     THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
     return THETA
 
-def position_data_read_pass(directory,DATA_NUM):
-    all_position=[] 
-    hosei = 1 #1.5 # 04だけ*2, 06は-1, 10は*1.5
 
-    for i in range(DATA_NUM):
-            #if  (i in test_num)==False:
-            f=directory+"/position/"+repr(i)+".txt"
-            position=[] #(x,y,sin,cos)
-            itigyoume = 1
-            for line in open(f, 'r').readlines():
-                if (itigyoume == 1):
-                  data=line[:-1].split('	')
-                  #print data
-                  position +=[float(data[0])*(-1) + float(origin[0]*resolution)*hosei]
-                  position +=[float(data[1])]
-                  itigyoume = 0
-            all_position.append(position)
-    
-    #座標系の返還
-    #Xt = (np.array(all_position) + origin[0] ) / resolution #* 10
-    return np.array(all_position)
-
-
-###↓###発話→場所の認識############################################
-def Location_from_speech(Otb_B, THETA):
+###↓###ゴール候補のサンプリング############################################
+def Sampling_goal(Otb_B, THETA):
   #THETAを展開
   W, W_index, Myu, S, pi, phi_l, K, L = THETA
-
-  ##全てのthe position distribution (Gaussian)の平均ベクトルを候補とする
-  Xp = []
   
-  for j in range(K):
-    #x1,y1 = np.random.multivariate_normal([Myu[j][0][0],Myu[j][1][0]],S[j],1).T
-    #the position distribution (Gaussian)の平均値とthe position distribution (Gaussian)からサンプリングした99点の１the position distribution (Gaussian)に対して合計100点をxtの候補とした
-    #for i in range(9):    
-    #  x1,y1 = np.mean(np.array([ np.random.multivariate_normal([Myu[j][0][0],Myu[j][1][0]],S[j],1).T ]),0)
-    #  Xp = Xp + [[x1,y1]]
-    #  print x1,y1
-    Xp = Xp + [[Myu[j][0],Myu[j][1]]]
-    print(Myu[j][0],Myu[j][1])
-    
-  pox = [0.0 for i in range(len(Xp))]
+  #Prob math func of p(it | Otb_B, THETA) = Σc p(it | phi_c)p(st=Otb_B | Wc)p(c | pi)
+  pmf_it = np.ones(K)
+  for i in range(K):
+      sum_Ct = np.sum([phi_l[c][i] * multinomial.pmf(Otb_B, sum(Otb_B), W[c]) * pi[c] for c in range(L)])
+      pmf_it[i] = sum_Ct
 
-  ##位置dataごとに
-  for xdata in range(len(Xp)):      
-        ###提案手法による尤度計算####################
-        #Ot_index = 0
-        
-        #for otb in range(len(W_index)):
-        #Otb_B = [0 for j in range(len(W_index))]
-        #Otb_B[Ot_index] = 1
-        temp = [0.0 for c in range(L)]
-        #print Otb_B
-        for c in range(L) :
-            ##the name of place, multinomial distributionの計算
-            #W_temp = multinomial(W[c])
-            #temp[c] = W_temp.pmf(Otb_B)
-            temp[c] = multinomial.pmf(Otb_B, sum(Otb_B), W[c]) * pi[c]
-            #temp[c] = W[c][otb]
-            ##場所概念のmultinomial distribution, piの計算
-            #temp[c] = temp[c]
-            
-            ##itでサメーション
-            it_sum = 0.0
-            for it in range(K):
-                """
-                if (S[it][0][0] < pow(10,-100)) or (S[it][1][1] < pow(10,-100)) :    ##共分散の値が0だとゼロワリになるので回避
-                    if int(Xp[xdata][0]) == int(Myu[it][0]) and int(Xp[xdata][1]) == int(Myu[it][1]) :  ##他の方法の方が良いかも
-                        g2 = 1.0
-                        print "gauss 1"
-                    else : 
-                        g2 = 0.0
-                        print "gauss 0"
-                else : 
-                    g2 = gaussian2d(Xp[xdata][0],Xp[xdata][1],Myu[it][0],Myu[it][1],S[it])  #2-dimensionGaussian distributionを計算
-                """
-                g2 = multivariate_normal.pdf(Xp[xdata], mean=Myu[it], cov=S[it])
-                it_sum = it_sum + g2 * phi_l[c][it]
-                
-            temp[c] = temp[c] * it_sum
-        
-        pox[xdata] = sum(temp)
-        
-        #print Ot_index,pox[Ot_index]
-        #Ot_index = Ot_index + 1
-        #POX = POX + [pox.index(max(pox))]
-        
-        #print pox.index(max(pox))
-        #print W_index_p[pox.index(max(pox))]
-        
-    
-  Xt_max = Map_coordinates_To_Array_index( [ Xp[pox.index(max(pox))][0], Xp[pox.index(max(pox))][1] ] ) #[0.0,0.0] ##確率最大の座標候補
-  Xt_max_tuple =(Xt_max[1], Xt_max[0])
-  print("Goal:", Xt_max_tuple)
-  return Xt_max_tuple
-###↑###発話→場所の認識############################################
+  #Normalization
+  pmf_it_n = np.array([pmf_it[i] / float(np.sum(pmf_it)) for i in range(K)])
+
+  #Sampling it from multinomial distribution
+  sample_it = multinomial.rvs(Sampling_J, pmf_it_n, size=1, random_state=None)
+  print(sample_it)
+  goal_candidate = []
+  for it in range(K):
+      count_it = 0
+      while (count_it < sample_it[0][it]):
+        goal_candidate += [Map_coordinates_To_Array_index(multivariate_normal.rvs(mean=Myu[it], cov=S[it], size=1, random_state=None))]
+        count_it += 1
+  #Xt_max = Map_coordinates_To_Array_index( [ Xp[pox.index(max(pox))][0], Xp[pox.index(max(pox))][1] ] ) #[0.0,0.0] ##確率最大の座標候補
+  goal_candidate_tuple = [(goal_candidate[j][1], goal_candidate[j][0]) for j in range(Sampling_J)]
+  print("Goal candidates:", goal_candidate_tuple)
+  return goal_candidate_tuple
+###↑###ゴール候補のサンプリング############################################
 
 
 
 #################################################
-print("[START] A star algorithm.")
+print("[START] SpCoNavi by A star algorithm.")
 
 #map dataの入った部屋環境folder name（学習済みparameter folder name） is requested
 trialname = sys.argv[1]
@@ -373,11 +307,11 @@ print("Start:", start)
 filename = outputfolder_SIG + trialname #+ "/" 
 print(filename, iteration, sample)
 outputfile = filename + navigation_folder #outputfolder + trialname + navigation_folder
-#outputname = outputfile + "Astar_Database_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-outputname = outputfile + "Astar_Database_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
+#outputname = outputfile + "Astar_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
+outputname = outputfile + "Astar_Approx_expect_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
 
 #"T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-maze_file = outputfile + mapname + ".pgm"
+#maze_file = outputfile + mapname + ".pgm"
 #maze_file = "../CoRL/data/1DK_01/navi/s1DK_01.pgm" #"./sankou/sample_maze.txt"
 
 #maze = np.loadtxt(maze_file, dtype=int)
@@ -412,7 +346,7 @@ maze = ReadMap(outputfile)
 height, width = maze.shape
 
 action_functions = [right, left, up, down, stay] #, migiue, hidariue, migisita, hidarisita]
-cost_of_actions  = [    1,    1,  1,    1,    1] #, ,    1,        1,        1,          1]
+cost_of_actions  = np.log( np.ones(len(action_functions)) / float(len(action_functions)) ) #[    1/5,    1/5,  1/5,    1/5,    1/5]) #, ,    1,        1,        1,          1]
 
 #Read the files of learned parameters  #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
 THETA = ReadParameters(iteration, sample, filename, trialname)
@@ -425,123 +359,8 @@ print("BoW:", Otb_B)
 #Path-Planning
 #Path, Path_ROS, PathWeightMap, Path_one = PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb) #gridmap, costmap)
 
-sample_num = 1  #取得するサンプル数
-inputfile = inputfolder_SIG  + trialname
-filename  = outputfolder_SIG + trialname
-
-##S## ##### Ishibushi's code #####
-env_para = np.genfromtxt(inputfile+"/Environment_parameter.txt",dtype= None,delimiter =" ")
-
-MAP_X = float(env_para[0][1])  #Max x value of the map
-MAP_Y = float(env_para[1][1])  #Max y value of the map
-map_x = float(env_para[2][1])  #Min x value of the map
-map_y = float(env_para[3][1])  #Max y value of the map
-
-map_center_x = ((MAP_X - map_x)/2)+map_x
-map_center_y = ((MAP_Y - map_x)/2)+map_y
-mu_0 = np.array([map_center_x,map_center_y,0,0])
-#mu_0_set.append(mu_0)
-DATA_initial_index = int(env_para[5][1]) #Initial data num
-DATA_last_index = int(env_para[6][1]) #Last data num
-DATA_NUM = DATA_last_index - DATA_initial_index +1
-##E## ##### Ishibushi's code ######
-
-#DATA read
-pose = position_data_read_pass(inputfile,DATA_NUM)
-
-#NN = 0
-N = 0
-Otb_train = []
-#Read text file
-#for line in open(filename + '/out_gmm_' + str(iteration) + '/' + str(sample) + '_samp.100', 'r'):   ##*_samp.100を順番に読み込む
-for word_data_num in range(DATA_NUM):
-    f = open(inputfile + "/name/per_100/word" + str(word_data_num) + ".txt", "r")
-    line = f.read()
-    #print line
-    itemList = line[:-1].split(' ')
-    
-    """
-    #<s>,<sp>,</s>を除く処理: 単語に区切られていた場合
-    for b in range(5):
-        if ("<s><s>" in itemList):
-        itemList.pop(itemList.index("<s><s>"))
-        if ("<s><sp>" in itemList):
-        itemList.pop(itemList.index("<s><sp>"))
-        if ("<s>" in itemList):
-        itemList.pop(itemList.index("<s>"))
-        if ("<sp>" in itemList):
-        itemList.pop(itemList.index("<sp>"))
-        if ("<sp><sp>" in itemList):
-        itemList.pop(itemList.index("<sp><sp>"))
-        if ("</s>" in itemList):
-        itemList.pop(itemList.index("</s>"))
-        if ("<sp></s>" in itemList):
-        itemList.pop(itemList.index("<sp></s>"))
-        if ("" in itemList):
-        itemList.pop(itemList.index(""))
-    #<s>,<sp>,</s>を除く処理: 単語中に存在している場合
-    for j in range(len(itemList)):
-        itemList[j] = itemList[j].replace("<s><s>", "")
-        itemList[j] = itemList[j].replace("<s>", "")
-        itemList[j] = itemList[j].replace("<sp>", "")
-        itemList[j] = itemList[j].replace("</s>", "")
-    for b in range(5):
-        if ("" in itemList):
-        itemList.pop(itemList.index(""))
-    """
-
-    #Otb[sample] = Otb[sample] + [itemList]
-    Otb_train = Otb_train + [itemList]
-    #if sample == 0:  #最初だけdata数Nを数える
-    N = N + 1  #count
-    #else:
-    #  Otb[] = Otb[NN] + itemList
-    #  NN = NN + 1
-
-##the name of placeのmultinomial distributionのインデックス用
-W_index = []
-for n in range(N):
-    for j in range(len(Otb_train[n])):
-        if ( (Otb_train[n][j] in W_index) == False ):
-            W_index.append(Otb_train[n][j])
-            #print str(W_index),len(W_index)
-
-#print "[",
-#for i in range(len(W_index)):
-#print "\""+ str(i) + ":" + str(W_index[i]) + "\",",
-#print "]"
-
-##時刻tdataごとにBOW化(?)する, ベクトルとする
-Otb_B_train = [ [0 for i in range(len(W_index))] for n in range(N) ]
-
-
-for n in range(N):
-    for j in range(len(Otb_train[n])):
-        for i in range(len(W_index)):
-            if (W_index[i] == Otb_train[n][j] ):
-                Otb_B_train[n][i] = Otb_B_train[n][i] + word_increment
-    #print Otb_B
-
-candidate_num = []
-#命令発話に含まれる単語を含むdataを取得
-for n in range(N):
-    for w in range(len(Otb_B)):
-        if (Otb_B[w] >= 1):
-            if (Otb_B_train[n][w] > 0):
-                if (n not in candidate_num):
-                    candidate_num += [n]
-
-
-#goal をランダムに設定
-choice_num = random.choice(candidate_num)
-Xt_max = Map_coordinates_To_Array_index(pose[choice_num])
-goal =(Xt_max[1], Xt_max[0])
-print("Goal:", goal)
-
-#goal = Location_from_speech(Otb_B, THETA) #(0,0)
-
-if (maze[goal[0]][goal[1]] != 0):
-    print("[ERROR] goal",maze[goal[0]][goal[1]],"is not 0.")
+#Read the emission probability file 
+PathWeightMap = ReadProbMap(outputfile)
 
 #####描画
 #plt.imshow(maze, cmap="binary")
@@ -565,51 +384,74 @@ plt.gca().set_aspect('equal')
 
 #plt.show()
 
-open_list = []
-open_list_cost = []
-open_list_key = []
-closed_list = []
-closed_list_cost = []
-closed_list_key = []
-open_list.append(start)
-open_list_cost.append(0)
-open_list_key.append(0 + Manhattan_distance(start, goal))
-OYA = {}
-ko = (0), (0)
-Path = []
+###goalの候補を複数個用意する
+goal_candidate = Sampling_goal(Otb_B, THETA) #(0,0)
+J = len(goal_candidate)
+if(J != THETA[6]):
+    print("[WARNING] J is not K",J,K)
+p_cost_candidate = [0.0 for j in range(J)]
+Path_candidate = [[0.0] for j in range(J)]
 
-while open_list:
-    sorted_idx = np.argsort(open_list_key, kind="stable")
-    pop_idx = sorted_idx[0]
-    p = open_list.pop(pop_idx)
-    p_cost = open_list_cost.pop(pop_idx)
-    p_key = open_list_key.pop(pop_idx)
-    closed_list.append(p)
-    closed_list_cost.append(p_cost)
-    closed_list_key.append(p_key)
-    if p == goal:
-        break
-    for act_func, act_cost in zip(action_functions, cost_of_actions):
-        q = act_func(p)
-        if int(maze[q]) != 0:
-            continue
-        q_cost = p_cost + act_cost
-        q_pev = Manhattan_distance(q, goal)
-        q_key = q_cost + q_pev
+###goal候補ごとにA*を実行
+for gc_index in range(J):
+    goal = goal_candidate[gc_index]
+    if (maze[goal[0]][goal[1]] != 0):
+        print("[ERROR] goal",maze[goal[0]][goal[1]],"is not 0.")
 
-        if q in open_list:
-            idx = open_list.index(q)
-            key = open_list_key[idx]
-            if key > q_key:
-                open_list_key[idx] = q_key
-                open_list_cost[idx] = q_cost
-        elif q in closed_list:
-            idx = closed_list.index(q)
-            key = closed_list_key[idx]
-            if key > q_key:
-                closed_list.pop(idx)
-                closed_list_cost.pop(idx)
-                closed_list_key.pop(idx)
+    ###START A*
+    open_list = []
+    open_list_cost = []
+    open_list_key = []
+    closed_list = []
+    closed_list_cost = []
+    closed_list_key = []
+    open_list.append(start)
+    open_list_cost.append(0)
+    open_list_key.append(0 + Manhattan_distance(start, goal))
+    OYA = {}
+    ko = (0), (0)
+    Path = []
+
+    while open_list:
+        sorted_idx = np.argsort(open_list_key, kind="stable")
+        pop_idx = sorted_idx[0]
+        p = open_list.pop(pop_idx)
+        p_cost = open_list_cost.pop(pop_idx)
+        p_key = open_list_key.pop(pop_idx)
+        closed_list.append(p)
+        closed_list_cost.append(p_cost)
+        closed_list_key.append(p_key)
+        if p == goal:
+            break
+        for act_func, act_cost in zip(action_functions, cost_of_actions):
+            q = act_func(p)
+            if (int(maze[q]) != 0):
+                continue
+            q_cost = p_cost - act_cost - np.log(PathWeightMap[q[0]][q[1]])  #current sum cost and action cost 
+            q_pev = Manhattan_distance(q, goal) * np.log(float(len(action_functions))) #heuristic function
+            q_key = q_cost - q_pev
+
+            if q in open_list:
+                idx = open_list.index(q)
+                key = open_list_key[idx]
+                if key > q_key:
+                    open_list_key[idx] = q_key
+                    open_list_cost[idx] = q_cost
+            elif q in closed_list:
+                idx = closed_list.index(q)
+                key = closed_list_key[idx]
+                if key > q_key:
+                    closed_list.pop(idx)
+                    closed_list_cost.pop(idx)
+                    closed_list_key.pop(idx)
+                    open_list.append(q)
+                    open_list_cost.append(q_cost)
+                    open_list_key.append(q_key)
+                    #plt.quiver(p[1], p[0], (q[1]-p[1]), (q[0]-p[0]), angles='xy', scale_units='xy', scale=1, color="tab:red")
+                    OYA[(q[1], q[0])] = (p[1], p[0])
+                    ko = (q[1]), (q[0])
+                    #print(ko)
+            else:
                 open_list.append(q)
                 open_list_cost.append(q_cost)
                 open_list_key.append(q_key)
@@ -617,24 +459,60 @@ while open_list:
                 OYA[(q[1], q[0])] = (p[1], p[0])
                 ko = (q[1]), (q[0])
                 #print(ko)
-        else:
-            open_list.append(q)
-            open_list_cost.append(q_cost)
-            open_list_key.append(q_key)
-            #plt.quiver(p[1], p[0], (q[1]-p[1]), (q[0]-p[0]), angles='xy', scale_units='xy', scale=1, color="tab:red")
-            OYA[(q[1], q[0])] = (p[1], p[0])
-            ko = (q[1]), (q[0])
-            #print(ko)
 
-#最適経路の決定: ゴールから親ノード（どこから来たか）を順次たどっていく
-#i = len(OYA)
-#for oyako in reversed(OYA):
-print(ko,goal)
-for i in range(p_cost-1):
-  #print(OYA[ko])
-  Path = Path + [OYA[ko]]
-  ko = OYA[ko]
-  #i -= 1
+    #最適経路の決定: ゴールから親ノード（どこから来たか）を順次たどっていく
+    #i = len(OYA)
+    #for oyako in reversed(OYA):
+    ko_origin = ko
+    ko = (goal[1], goal[0])
+    print(ko,goal)
+    #for i in range(p_cost):
+    while(ko != (start[1],start[0])):
+        #print(OYA[ko])
+        try:
+            Path = Path + [OYA[ko]]
+        except KeyError:
+            ko = ko_origin
+            Path = Path + [OYA[ko]]
+            print("NOT END GOAL.")
+        
+        ko = OYA[ko]
+        #i = len(Path)
+        #print(i, ko)
+        #i -= 1
+
+    print(goal,": Total cost using A* algorithm is "+ str(p_cost))
+    p_cost_candidate[gc_index] = p_cost / float(len(Path))
+    Path_candidate[gc_index] = Path    
+
+    """
+    #PathWeightMapとPathからlog likelihoodの値を再計算する
+    LogLikelihood_step = np.zeros(T_horizon)
+    LogLikelihood_sum = np.zeros(T_horizon)
+
+    for i in range(T_horizon):
+        if (i < len(Path)):
+            t = i
+        else:
+            t = len(Path) -1
+        #print PathWeightMap.shape, Path[t][0], Path[t][1]
+        LogLikelihood_step[i] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
+        if (t == 0):
+            LogLikelihood_sum[i] = LogLikelihood_step[i]
+        elif (t >= 1):
+            LogLikelihood_sum[i] = LogLikelihood_sum[i-1] + LogLikelihood_step[i]
+    
+    LogLikelihood_step_candidate[gc_index] = LogLikelihood_step
+    LogLikelihood_sum_candidate[gc_index] = LogLikelihood_sum
+    """
+
+### select the goal of expected cost
+expect_gc_index = np.argmin(p_cost_candidate)
+Path = Path_candidate[expect_gc_index]
+goal = goal_candidate[expect_gc_index]
+print("Goal:", goal)
+#LogLikelihood_step
+#LogLikelihood_sum
 
 if (SAVE_time == 1):
     #PP終了時刻を保持
@@ -647,13 +525,14 @@ if (SAVE_time == 1):
 for i in range(len(Path)):
   plt.plot(Path[i][0], Path[i][1], "s", color="tab:red", markersize=1)
 
-print("Total cost using A* algorithm is "+ str(p_cost))
 
 #The moving distance of the path
-Distance = p_cost #PathDistance(Path_one)
+Distance = PathDistance(Path)
 
 #Save the moving distance of the path
 SavePathDistance(Distance)
+
+print("Path distance using A* algorithm is "+ str(Distance))
 
 #計算上パスのx,yが逆になっているので直す
 Path_inv = [[Path[t][1], Path[t][0]] for t in range(len(Path))]
@@ -664,7 +543,7 @@ SavePath(start, [goal[1], goal[0]], Path_inv, Path_ROS, outputname)
 
 
 #Read the emission probability file 
-PathWeightMap = ReadProbMap(outputfile)
+#PathWeightMap = ReadProbMap(outputfile)
 
 #Save the log-likelihood of the path
 #PathWeightMapとPathからlog likelihoodの値を再計算する
@@ -677,11 +556,11 @@ for i in range(T_horizon):
     else:
         t = len(Path) -1
     #print PathWeightMap.shape, Path[t][0], Path[t][1]
-    LogLikelihood_step[t] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
+    LogLikelihood_step[i] = np.log(PathWeightMap[ Path_inv[t][0] ][ Path_inv[t][1] ])
     if (t == 0):
-        LogLikelihood_sum[t] = LogLikelihood_step[t]
+        LogLikelihood_sum[i] = LogLikelihood_step[i]
     elif (t >= 1):
-        LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
+        LogLikelihood_sum[i] = LogLikelihood_sum[i-1] + LogLikelihood_step[i]
 
 
 #すべてのステップにおけるlog likelihoodの値を保存

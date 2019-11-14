@@ -3,6 +3,7 @@
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse
 # Path-Planning Program by A star algorithm (ver. approximate inference)
+# Path Selection: minimum log-likelihood of a path trajectory
 # Akira Taniguchi 2019/06/24-2019/07/02-2019/09/20
 # Spacial Thanks: Ryo Ozaki
 ###########################################################

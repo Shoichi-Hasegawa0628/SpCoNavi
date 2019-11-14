@@ -5,10 +5,13 @@ import numpy as np
 
 ##### NEW #####
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
-outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/example/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 
 #Navigation folder (Other output files are also in same folder.)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
+
+#Word data folder path
+word_folder = "/name/example/word" # "/name/per_100/word"
 
 #Same value to map yaml file
 resolution = 0.1   #0.050000
@@ -41,7 +44,7 @@ WallYmax = -10
 
 
 ##Initial (hyper)-parameters
-num_iter = 10           #The number of iterations of Gibbs sampling for spatial concept learning
+num_iter = 1           #The number of iterations of Gibbs sampling for spatial concept learning
 L = 10                  #The number of spatial concepts #50 #100
 K = 10                  #The number of position distributions #50 #100
 alpha = 1.0                  #Hyperparameter of multinomial distributions for index of position distirubitons phi #1.5 #0.1

@@ -304,15 +304,14 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
 
     #計算量削減のため状態数を減らす(状態空間をone-dimension array にする⇒0の要素を除く)
     #PathWeight = np.ravel(PathWeightMap)
-    PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=0.0]
+    PathWeight_one_NOzero = PathWeightMap[PathWeightMap!=float(0.0)]
     state_num = len(PathWeight_one_NOzero)
     print "PathWeight_one_NOzero state_num:", state_num
 
     #map の2-dimension array インデックスとone-dimension array の対応を保持する
     IndexMap = np.array([[(i,j) for j in xrange(map_width)] for i in xrange(map_length)])
-    IndexMap_one_NOzero = IndexMap[PathWeightMap!=0.0].tolist() #先にリスト型にしてしまう #実装上, np.arrayではなく2-dimension array リストにしている
-    print "IndexMap_one_NOzero"
-
+    IndexMap_one_NOzero = IndexMap[PathWeightMap!=float(0.0)].tolist() #先にリスト型にしてしまう #実装上, np.arrayではなく2-dimension array リストにしている
+    print "IndexMap_one_NOzero",len(IndexMap_one_NOzero)
 
     #one-dimension array 上の初期位置
     if (X_init_index in IndexMap_one_NOzero):
@@ -321,6 +320,7 @@ def PathPlanner(S_Nbest, X_init, THETA, CostMapProb): #gridmap, costmap):
       print "[ERROR] The initial position is not a movable position on the map."
       #print X_init, X_init_index
       X_init_index_one = 0
+      exit()
     print "Initial index", X_init_index_one
 
     #移動先候補 index 座標のリスト(相対座標)
@@ -393,19 +393,23 @@ def update_lite(cost, n, emiss, state_num,IndexMap_one_NOzero,MoveIndex_list,Tra
     #Index_2D = IndexMap_one_NOzero[n] #.tolist()
     MoveIndex_list_n = MoveIndex_list + IndexMap_one_NOzero[n] #Index_2D #絶対座標系にする
     MoveIndex_list_n_list = MoveIndex_list_n.tolist()
+    #print MoveIndex_list_n_list
 
     count_t = 0
-    for c in xrange(len(MoveIndex_list_n_list)): #xrangeの方がxrangeより速い
+    for c in xrange(len(MoveIndex_list_n_list)): 
         if (MoveIndex_list_n_list[c] in IndexMap_one_NOzero):
           m = IndexMap_one_NOzero.index(MoveIndex_list_n_list[c])  #cは移動可能な状態(セル)とは限らない
           Transition[m] = 0.0 #1 #Transition probability from state to state (index of this array is not x, y of map)
           count_t += 1
+          #print c, MoveIndex_list_n_list[c]
     
     #計算上おかしい場合はエラー表示を出す．
     if (count_t == 0): #遷移確率がすべて0．移動できないということを意味する．
       print "[ERROR] All transition is approx_log_zero."
     elif (count_t == 1): #遷移確率がひとつだけある．移動可能な座標が一択．（このWARNINGが出ても問題ない場合がある？）
       print "[WARNING] One transition can move only."
+    #elif (count_t != 5):
+    #  print count_t, MoveIndex_list_n_list
     
     #trans = Transition #np.array(Transition)
     arr = cost + Transition #trans
@@ -435,7 +439,8 @@ def ViterbiPath(X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list
     e = PathWeight #emission(nstates[i])
     m = [i for i in xrange(len(PathWeight))] #Transition #transition(nstates[i-1], nstates[i]) #一つ前から現在への遷移
     
-    Transition = np.array([approx_log_zero for j in xrange(state_num)]) #参照渡しになってしまう
+    #Transition = np.array([approx_log_zero for j in xrange(state_num)]) #参照渡しになってしまう
+    Transition = np.array([float('-inf') for j in xrange(state_num)]) #参照渡しになってしまう
 
     temp = 1
     #Forward
@@ -740,6 +745,7 @@ if __name__ == '__main__':
 
 
     if (os.path.isfile(outputfile + "CostMapProb.csv") == False):  #すでにファイルがあれば計算しない
+      print "If you do not have map.csv, please run commands for cost map acquisition procedure in advance."
       ##Read the map file
       gridmap = ReadMap(outputfile)
       ##Read the cost map file
@@ -755,8 +761,13 @@ if __name__ == '__main__':
 
     ##Read the speech file
     #speech_file = ReadSpeech(int(speech_num))
+    BoW = [Goal_Word[int(speech_num)]]
+    if ( "AND" in BoW ):
+      BoW = Example_AND
+    elif ( "OR" in BoW ):
+      BoW = Example_OR
 
-    Otb_B = [int(W_index[i] == Goal_Word[int(speech_num)]) * N_best for i in xrange(len(W_index))]
+    Otb_B = [int(W_index[i] in BoW) * N_best for i in xrange(len(W_index))]
     print "BoW:",  Otb_B
 
     while (sum(Otb_B) == 0):
