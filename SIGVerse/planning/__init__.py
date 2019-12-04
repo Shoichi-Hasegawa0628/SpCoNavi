@@ -7,12 +7,20 @@ import numpy as np
 #python ./SpCoNavi0.1_SIGVerse.py trialname iteration(1) sample(0) init_position_num speech_num
 #python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0
 
+##### example #####
+example = 1 #1
+example_folder = ""
+if (example == 1):
+  example_folder = "example1/"
+elif (example == 2):
+  example_folder = "example2/"
+
 ##### NEW #####
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
-outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/example/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/" + example_folder  #"/home/akira/Dropbox/SpCoNavi/data/"
 
 # Note: Don't be tupple! Only list! [*,*]
-Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
+Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80],[130,95]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
 Goal_Word      = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室","テレビ前","子犬休み場","北","南","AND","OR"] #,"テレビ前","子犬休み場","北","南"] # In Japanese
 #Goal_Word_example = ["テレビ前","子犬休み場","北","南"] # In Japanese
 #Example1 = ["リビング","テレビ前","子犬休み場"]
@@ -28,7 +36,7 @@ K = 10 #100                  #The number of position distributions
 
 memory_reduction = 1 #0 #Memory reduction process (ON:1, OFF:0)
 NANAME = 0              #Action pattern: up, down, left and right (0), and add diagonal (oblique) movements (１)
-word_increment = 10     #Increment number of word observation data (BoWs)
+word_increment = 6 #10     #Increment number of word observation data (BoWs)
 
 #################### Folder PATH ####################
 #Setting of PATH for a folder of learned spatial concept parameters
@@ -66,7 +74,7 @@ SAVE_X_init  = 1      #Save initial value (Save:1, Not save:0)
 SAVE_T_temp  = 10     #Step interval to save the path temporarily (each SAVE_T_temp value on the way)
 SAVE_Trellis = 0      #Save trellis for Viterbi Path estimation (Save:1, Not save:0) 
 
-UPDATE_PostProbMap = 0 #1 #If the file exists already, calculate PostProbMap: (1) 
+UPDATE_PostProbMap = 1 #0 #If the file exists already, calculate PostProbMap: (1) 
 
 #Select approximated methods (Proposed method (ver. SIGVerse):0) -> run SpCoNavi_Astar_approx.py
 Approx = 0  

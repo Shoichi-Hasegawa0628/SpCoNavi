@@ -3,15 +3,27 @@
 #Akira Taniguchi -2019/07/25
 import numpy as np
 
+##### example #####
+example = 2 #1
+example_folder = ""
+#Word data folder path
+word_folder = "/name/per_100/word"
+if (example == 1):
+  example_folder = "example1/"
+  word_folder = "/name/" + example_folder + "word" # "/name/per_100/word"
+elif (example == 2):
+  example_folder = "example2/"
+  word_folder = "/name/" + example_folder + "word" # "/name/per_100/word"
+
 ##### NEW #####
 inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
-outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/example/"  #"/home/akira/Dropbox/SpCoNavi/data/"
+outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/" + example_folder  #"/home/akira/Dropbox/SpCoNavi/data/"
 
 #Navigation folder (Other output files are also in same folder.)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv
 
 #Word data folder path
-word_folder = "/name/example/word" # "/name/per_100/word"
+#word_folder = "/name/" + example_folder + "word" # "/name/per_100/word"
 
 #Same value to map yaml file
 resolution = 0.1   #0.050000
