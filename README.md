@@ -7,7 +7,7 @@ The aim of this study is to enable a mobile robot to perform navigation tasks by
 Specifically, path planning is performed to the target state of a spatial concept estimated through human speech instructions such as ``Go to the kitchen''.
 In the experiment, places instructed by the speech command of the user showed high probability values, and the trajectory toward the target place was correctly estimated.   
 
-| Fig.1: The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping [1] | Fig.2: The graphical model of SpCoNavi: Spatial Concept-based Path-Planning [2] | 
+| Fig.1: The graphical model of SpCoSLAM: Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping [1] | Fig.2: The graphical model of SpCoNavi: Spatial Concept-based Path-Planning [2,3] | 
 | :---: | :---: | 
 | <img src="https://github.com/a-taniguchi/SpCoSLAM/blob/master/img/graphicalmodel02.jpg" width="320px"> | <img src="https://github.com/a-taniguchi/SpCoNavi/blob/master/img/gmodel_spconavi_simple2.png" width="320px"> | 
 
@@ -92,7 +92,7 @@ Example:
 ## Reference
 [1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
 [2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019.)    
-
+[3]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Spatial Concept-Based Navigation with Human Speech Instructions via Probabilistic Inference on Bayesian Generative Model", [arXiv:2002.07381](https://arxiv.org/abs/2002.07381).
 
 ## Other repositories  
  - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
