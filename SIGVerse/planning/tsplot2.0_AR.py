@@ -52,6 +52,7 @@ sns.color_palette(current_palette)
 #Start_Position = [0:[100,100],1:[100,110],2:[120,60],3:[60,90],4:[90,120],5:[75,75]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
 HOME_ID = [i+1 for i in range(10)] + [i+1 for i in range(10)]
 ZAHYO_ID = [0,0,0,0,0,0,0,0,0,1,2,5,2,4,4,2,2,4,2,4]
+Start_Position2 = [(100,100),(100,110),(120,60),(60,90),(90,120),(75,75),(90,50),(90,60),(110,80),(130,95)] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
 
 #step = 200   ###事前に設定・要確認
 DATA = ['(A) SpCoNavi','(B) SpCoNavi (Approx.)','(C) Baseline (Spatial concept)','(D) Baseline (Database)','(E) Baseline (Random)']
@@ -79,7 +80,7 @@ for d in range(len(DATA)):
     if (d == 0):
       READ_FILE = READ_FODLER + trialname + str(ZAHYO_ID[s]) + "G7_Log_likelihood_" + hyouka + ".csv" #(A)
     else:
-      READ_FILE = READ_FODLER + trialname + str(Start_Position[ZAHYO_ID[s]]) + "G7_Log_likelihood_" + hyouka + ".csv" 
+      READ_FILE = READ_FODLER + trialname + str(Start_Position2[ZAHYO_ID[s]]) + "G7_Log_likelihood_" + hyouka + ".csv" 
     print(READ_FILE)
     i = 0
     for line in open(READ_FILE, 'r'):
@@ -135,6 +136,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 plt.savefig(outputfolder_SIG + hyouka + '.pdf', dpi=300)#, transparent=True
 plt.savefig(outputfolder_SIG + hyouka + '.png', dpi=300)#, transparent=True
+#plt.savefig(outputfolder_SIG + hyouka + '.eps', dpi=300)#, transparent=True 半透明にできない
 
 #print(df2)
 #df2.to_csv("./text"+ hyouka+".csv")

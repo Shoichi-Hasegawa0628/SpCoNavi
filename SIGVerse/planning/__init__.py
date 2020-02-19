@@ -8,7 +8,7 @@ import numpy as np
 #python ./SpCoNavi0.1_SIGVerse.py 3LDK_01 1 0 0 0
 
 ##### example #####
-example = 1 #1
+example = 0 #1
 example_folder = ""
 if (example == 1):
   example_folder = "example1/"
