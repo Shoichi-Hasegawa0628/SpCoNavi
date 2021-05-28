@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node pkg="em_spconavi" name="spco_visualize" type="new_place_draw.py" />
+    <param name="trialname" value="3LDK_01"/>
+    <param name="iteration" value="1"/>
+    <param name="sample" value="0"/>
+
+<!-- ==== rviz === -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find sigverse_hsr_teleop_key)/launch/saveSpCoMAP_SIGVerse.rviz" />
+</launch>
