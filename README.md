@@ -55,10 +55,10 @@ Example:
 ### Command for visualization of a path trajectory and the emission probability on the map
 ~~~
 cd spconavi_ros/src/planning
-python path_weight_visualizer_step_SIGVerse.py trialname init_position_num speech_num  
+python spconavi_path_visualizer_rviz.py trialname init_position_num speech_num  
 ~~~
 Example: 
-`python path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7`  
+`python spconavi_path_visualizer_rviz.py 3LDK_01 0 7`  
 
 
 

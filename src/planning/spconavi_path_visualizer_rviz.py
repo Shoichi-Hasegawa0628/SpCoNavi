@@ -5,13 +5,15 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Header
 from nav_msgs.msg import Path
-filename = "/root/HSR/catkin_ws/src/em_spconavi/src/data/3LDK_01/navi/T200N6A1S0G7_Path_ROS200.csv"
+filename = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/path_data.csv"
+#filename = "/root/RULO/catkin_ws/src/path_data.csv"
 
 class Simple_path_simulator():
 
     def __init__(self):
         rospy.init_node('Simple_Path_Publisher')
-        pub = rospy.Publisher("/path", Path, queue_size=50)
+        pub = rospy.Publisher("/omni_path_follower/path", Path, queue_size=50)
+        #pub = rospy.Publisher("/move_base/DWAPlannerROS/global_plan", Path, queue_size=50)
         self.r = rospy.Rate(50)  # 50hz
         #Initialize odometry header
         self.path_header = Header()
@@ -28,8 +30,8 @@ class Simple_path_simulator():
         pose_list = self.get_poses_from_csvdata()
         self.path.poses =pose_list
         #initialize publisher
-        self.path_pub = rospy.Publisher("/path", Path, queue_size=50)
-
+        self.path_pub = rospy.Publisher("/omni_path_follower/path", Path, queue_size=50)
+        #self.path_pub = rospy.Publisher("/move_base/DWAPlannerROS/global_plan", Path, queue_size=50)
 
     def get_poses_from_csvdata(self):
         #Get poses from csv data
@@ -39,7 +41,12 @@ class Simple_path_simulator():
             #print(indx)
             temp_pose = PoseStamped()
             temp_pose.pose.position.x = self.csv_path_data[indx][1]
-            temp_pose.pose.position.y = self.csv_path_data[indx][0]
+            temp_pose.pose.position.y = self.csv_path_data[indx][2]
+            temp_pose.pose.position.z = self.csv_path_data[indx][3]
+            temp_pose.pose.orientation.x = self.csv_path_data[indx][4]
+            temp_pose.pose.orientation.y = self.csv_path_data[indx][5]
+            temp_pose.pose.orientation.z = self.csv_path_data[indx][6]
+            temp_pose.pose.orientation.w = self.csv_path_data[indx][7]
             temp_pose.header = self.path_header
             temp_pose.header.seq = indx
             poses_list.append(temp_pose)
