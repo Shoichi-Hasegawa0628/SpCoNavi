@@ -19,7 +19,6 @@ Original SpCoNavi code is here： [https://github.com/a-taniguchi/SpCoNavi](http
 - Ubuntu：18.04LTS
 - Python：2.7.17 (numpy：1.16.6, scipy：1.2.2, matplotlib：2.1.1)
 - ROS：Melodic
-- Speech recognition system：Julius dictation-kit-v4.4 GMM-HMM/DNN-HMM (N-best output)  
 
 
 ## Execution procedure
