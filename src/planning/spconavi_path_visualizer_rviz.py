@@ -6,7 +6,7 @@ from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Header
 from nav_msgs.msg import Path
 filename = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/path_data.csv"
-#filename = "/root/RULO/catkin_ws/src/path_data.csv"
+#filename = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/T200N6A1S0G7_Path_ROS200_2.csv"
 
 class Simple_path_simulator():
 
@@ -39,7 +39,12 @@ class Simple_path_simulator():
         print(self.csv_path_data)
         for indx in range(len(self.csv_path_data)):
             #print(indx)
+
             temp_pose = PoseStamped()
+            temp_pose.pose.position.x = self.csv_path_data[indx][1]
+            temp_pose.pose.position.y = self.csv_path_data[indx][2]
+
+            """
             temp_pose.pose.position.x = self.csv_path_data[indx][1]
             temp_pose.pose.position.y = self.csv_path_data[indx][2]
             temp_pose.pose.position.z = self.csv_path_data[indx][3]
@@ -49,6 +54,7 @@ class Simple_path_simulator():
             temp_pose.pose.orientation.w = self.csv_path_data[indx][7]
             temp_pose.header = self.path_header
             temp_pose.header.seq = indx
+            """
             poses_list.append(temp_pose)
         return poses_list
 
