@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #coding:utf-8
 import os
+import collections
 import spconavi_read_data
 import spconavi_save_data
 from scipy.stats import multinomial
@@ -14,7 +15,7 @@ save_data = spconavi_save_data.SavingData()
 class PathPlanner:
 
     #Global path estimation by dynamic programming (calculation of SpCoNavi)
-    def PathPlanner(self, S_Nbest, X_init, THETA, CostMapProb, outputfile, speech_num): #gridmap, costmap):
+    def PathPlanner(self, S_Nbest, X_init, THETA, CostMapProb, outputfile, speech_num, outputname): #gridmap, costmap):
         print "[RUN] PathPlanner"
         #THETAを展開
         W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA
@@ -38,10 +39,10 @@ class PathPlanner:
         output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
         if (os.path.isfile(output) == False) or (UPDATE_PostProbMap == 1):  #すでにファイルがあれば作成しない
             #PathWeightMap = PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも #CostMapProb * PostProbMap #後の処理のために, この時点ではlogにしない
-            athWeightMap = read_data.PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #,IndexMap) 
+            PathWeightMap = read_data.PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #,IndexMap) 
         
             #[TEST]計算結果を先に保存
-            save_data.SaveProbMap(PathWeightMap, outputfile)
+            save_data.SaveProbMap(PathWeightMap, outputfile, speech_num)
         else:
             PathWeightMap = read_data.ReadProbMap(outputfile)
             #print "already exists:", output
@@ -93,12 +94,12 @@ class PathPlanner:
         print "Initial index", X_init_index_one
 
         #移動先候補 index 座標のリスト(相対座標)
-        MoveIndex_list = MovePosition_2D([0,0]) #.tolist()
+        MoveIndex_list = self.MovePosition_2D([0,0]) #.tolist()
         #MoveIndex_list = np.round(MovePosition(X_init_index)).astype(int)
         print "MoveIndex_list"
 
         #Viterbi Algorithmを実行
-        Path_one = ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior) #, Transition_one_NOzero)
+        Path_one = self.ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior) #, Transition_one_NOzero)
 
         #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
         Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
@@ -113,7 +114,7 @@ class PathPlanner:
         print "Path:\n", Path_2D_index_original
         return Path_2D_index_original, Path_ROS, PathWeightMap_origin, Path_one #, LogLikelihood_step, LogLikelihood_sum
 
-
+    
     #移動位置の候補: 現在の位置(2-dimension array index )の近傍8セル+現在位置1セル
     def MovePosition_2D(self, Xt): 
         if (NANAME == 1):
@@ -122,7 +123,7 @@ class PathPlanner:
             PostPosition_list = np.array([ [-1,0], [0,-1],[0,0], [0,1], [1,0] ])*cmd_vel + np.array(Xt)
         
             return PostPosition_list
-
+    
 
     #Viterbi Path計算用関数(参考: https://qiita.com/kkdd/items/6cbd949d03bc56e33e8e)
     def update(self, cost, trans, emiss):
@@ -208,7 +209,7 @@ class PathPlanner:
                 #Transition = np.array([approx_log_zero for j in xrange(state_num)]) #参照渡しになってしまう
 
                 #cost = [update_lite(cost_np, t, e[t], state_num,IndexMap_one_NOzero,MoveIndex_list) for t in xrange(len(e))]
-                cost = [update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in izip(m, e)] #izipの方がメモリ効率は良いが, zipとしても処理速度は変わらない
+                cost = [self.update_lite(cost_np, t, f, state_num,IndexMap_one_NOzero,MoveIndex_list,Transition) for t, f in izip(m, e)] #izipの方がメモリ効率は良いが, zipとしても処理速度は変わらない
                 trellis.append(cost)
                 if (float('inf') in cost) or (float('-inf') in cost) or (float('nan') in cost):
                     print("[ERROR] cost:", str(cost))
@@ -224,7 +225,7 @@ class PathPlanner:
                         #print "x", len(x), x
                     path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
                 
-                    SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero, Bug_removal_savior)
+                    save_data.SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero, Bug_removal_savior)
                 
                     ##log likelihood 
                     #PathWeight (log)とpath_oneからlog likelihoodの値を再計算する
@@ -238,14 +239,14 @@ class PathPlanner:
                         elif (t >= 1):
                             LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
 
-                    save_data.SaveLogLikelihood(LogLikelihood_step,0,i+1)
-                    save_data.SaveLogLikelihood(LogLikelihood_sum,1,i+1)
+                    save_data.SaveLogLikelihood(LogLikelihood_step,0,i+1, outputname)
+                    save_data.SaveLogLikelihood(LogLikelihood_sum,1,i+1, outputname)
 
                     #The moving distance of the path
-                    Distance = PathDistance(path_one)
+                    Distance = self.PathDistance(path_one)
         
                     #Save the moving distance of the path
-                    save_data.SavePathDistance_temp(Distance, i+1)
+                    save_data.SavePathDistance_temp(Distance, i+1, outputname)
 
                     if (SAVE_Trellis == 1):
                         save_data.SaveTrellis(trellis, outputname, i+1)
@@ -255,7 +256,7 @@ class PathPlanner:
         #最後の遷移確率は一様にすればよいはず
         e_last = [0.0]
         m_last = [[0.0 for i in range(len(PathWeight))]]
-        cost = [update(cost, t, f) for t, f in zip(m_last, e_last)]
+        cost = [self.update(cost, t, f) for t, f in zip(m_last, e_last)]
         trellis.append(cost)
 
         #Backward

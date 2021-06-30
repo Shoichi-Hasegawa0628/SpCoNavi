@@ -16,8 +16,8 @@ elif (example == 2):
   example_folder = "example2/"
 
 ##### NEW #####
-inputfolder_SIG = "/root/HSR/catkin_ws/src/em_spconavi/src/data/"
-outputfolder_SIG = "/root/HSR/catkin_ws/src/em_spconavi/src/data/"
+inputfolder_SIG = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/"
+outputfolder_SIG = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/"
 #inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 #outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/" + example_folder  #"/home/akira/Dropbox/SpCoNavi/data/"
 

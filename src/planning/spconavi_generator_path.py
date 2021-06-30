@@ -43,7 +43,8 @@ def Array_index_To_Map_coordinates(Index):
 
 def ReadPath(outputname,temp):
     # Read the result file
-    output = outputname + "_Path" + str(temp) + ".csv"
+    # output = outputname + "_Path" + str(temp) + ".csv" # ビタビアルゴリズム用
+    output = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/Astar_Approx_expect_N6A1SG7" + "_Path" + str(temp) + ".csv" # A*用
     Path = np.loadtxt(output, delimiter=",")
     print "Read Path: " + output
     return Path

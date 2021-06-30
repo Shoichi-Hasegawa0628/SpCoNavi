@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
 #########
     #Path-Planning
-    Path, Path_ROS, PathWeightMap, Path_one = path_calculate.PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb, outputfile, speech_num) #gridmap, costmap)
+    Path, Path_ROS, PathWeightMap, Path_one = path_calculate.PathPlanner(Otb_B, Start_Position[int(init_position_num)], THETA, CostMapProb, outputfile, speech_num, outputname) #gridmap, costmap)
 
     if (SAVE_time == 1):
       #PP終了時刻を保持
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     Distance = path_calculate.PathDistance(Path_one)
     
     #Save the moving distance of the path
-    save_data.SavePathDistance(Distance)
+    save_data.SavePathDistance(Distance, outputname)
 
     #Send the path
     #SendPath(Path)

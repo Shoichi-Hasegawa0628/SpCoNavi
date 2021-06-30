@@ -69,7 +69,7 @@ class SavingData:
     #def SendProbMap(self, PathWeightMap):
 
     #Save the probability value map used for path calculation
-    def SaveProbMap(self, PathWeightMap, outputfile):
+    def SaveProbMap(self, PathWeightMap, outputfile, speech_num):
         # Save the result to the file 
         output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
         np.savetxt( output, PathWeightMap, delimiter=",")
@@ -95,7 +95,7 @@ class SavingData:
         print "Save Transition: " + output_transition
 
     #Save the log likelihood for each time-step
-    def SaveLogLikelihood(self, LogLikelihood,flag,flag2):
+    def SaveLogLikelihood(self, LogLikelihood,flag,flag2, outputname):
         # Save the result to the file 
         if (flag2 == 0):
             if   (flag == 0):
@@ -112,14 +112,14 @@ class SavingData:
         print "Save LogLikekihood: " + output_likelihood
 
     #Save the moving distance of the path
-    def SavePathDistance(self, Distance):
+    def SavePathDistance(self, Distance, outputname):
         # Save the result to the file 
         output = outputname + "_Distance.csv"
         np.savetxt( output, np.array([Distance]), delimiter=",")
         print "Save Distance: " + output
 
     #Save the moving distance of the path
-    def SavePathDistance_temp(self, Distance,temp):
+    def SavePathDistance_temp(self, Distance,temp, outputname):
         # Save the result to the file 
         output = outputname + "_Distance"+str(temp)+".csv"
         np.savetxt( output, np.array([Distance]), delimiter=",")
