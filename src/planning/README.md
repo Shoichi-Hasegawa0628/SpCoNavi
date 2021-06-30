@@ -3,7 +3,9 @@
 【Files】  
  - `README.md`: Read me file (This file)
 
- - `spconavi_execute.py`:  Execute code for SpCoNavi
+ - `spconavi_astar_path_calculate.py`: Execute code for SpCoNavi (A* Algorithm)
+
+ - `spconavi_execute.py`:  Execute code for SpCoNavi (Viterbi Algorithm)
 
  - `spconavi_read_data.py`: Module of reading pre-trained spatial concept model parameter, etc.
 

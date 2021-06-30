@@ -42,7 +42,7 @@ rviz -d ./saveSpCoMAP_online_SIGVere.rviz
 ~~~
 
 
-### Command for test execution of SpCoNavi  
+### Command for test execution of SpCoNavi (Viterbi algorithm)
 Setting parameters and PATH in `__init__.py`  
 ~~~
 cd spconavi_ros/src/planning
@@ -50,6 +50,16 @@ python spconavi_execute.py trialname iteration sample init_position_num speech_n
 ~~~
 Example: 
 `python spconavi_execute.py 3LDK_01 1 0 0 7`  
+
+### Command for test execution of SpCoNavi (A* algorithm)
+Setting parameters and PATH in `__init__.py`  
+~~~
+cd spconavi_ros/src/planning
+python spconavi_astar_path_calculate.py trialname mapname iteration sample init_position_num speech_num initial_position_x initial_position_y
+~~~
+Example: 
+`python spconavi_astar_path_calculate.py 3LDK_01 s1DK_01 1 0 0 7 100 100 `  
+
 
 ### Command for visualization of a path trajectory and the emission probability on the map
 ~~~
@@ -69,13 +79,14 @@ Example:
  
 ---
 ## Reference
-[1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
-[2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. 場所概念に基づく確率推論による音声命令からのパスプランニング. 人工知能学会全国大会 (JSAI). 2019.)   
-[3]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Spatial concept-based navigation with human speech instructions via probabilistic inference on Bayesian generative model", Advanced Robotics, pp1213-pp1228, 2020.
+[1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "[Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping](https://ieeexplore.ieee.org/document/8202243)", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
+[2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "[Improved and scalable online learning of spatial concepts and language models with mapping](https://link.springer.com/article/10.1007/s10514-020-09905-0)", Autonomous Robots, Vol.44, pp927-pp946, 2020.
+[3]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. [場所概念に基づく確率推論による音声命令からのパスプランニング](https://www.jstage.jst.go.jp/article/pjsai/JSAI2019/0/JSAI2019_1L3J1103/_article/-char/ja/). 人工知能学会全国大会 (JSAI). 2019.)   
+[4]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "[Spatial concept-based navigation with human speech instructions via probabilistic inference on Bayesian generative model](https://www.tandfonline.com/doi/full/10.1080/01691864.2020.1817777)", Advanced Robotics, pp1213-pp1228, 2020.
 
 
 ## Other repositories  
- - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots (Recommended)  
+ - [SpCoSLAM_Lets](https://github.com/EmergentSystemLabStudent/SpCoSLAM_Lets): Wrapper of SpCoSLAM for mobile robots  
  - [SpCoSLAM](https://github.com/a-taniguchi/SpCoSLAM): Implementation of SpCoSLAM (Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping)   
  - [SpCoSLAM 2.0](https://github.com/a-taniguchi/SpCoSLAM2): An Improved and Scalable Online Learning of Spatial Concepts and Language Models with Mapping (New version of online learning algorithm)   
  - [SpCoSLAM_evaluation](https://github.com/a-taniguchi/SpCoSLAM_evaluation): The codes for the evaluation or the visualization in our paper  

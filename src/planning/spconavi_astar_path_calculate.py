@@ -9,8 +9,8 @@
 ###########################################################
 
 ##Command: 
-#python ./SpCoNavi_Astar_approx.py trialname mapname iteration sample init_position_num speech_num
-#python ./SpCoNavi_Astar_approx.py 3LDK_01 s1DK_01 1 0 0 0
+#python spconavi_astar_path_calculate.py trialname mapname iteration sample init_position_num speech_num initial_position_x initial_position_y
+#python spconavi_astar_path_calculate.py 3LDK_01 s1DK_01 1 0 0 7 100 100 
 
 import sys
 import random
