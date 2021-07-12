@@ -14,7 +14,6 @@ class Simple_path_simulator():
         rospy.init_node('Simple_Path_Publisher')
         #pub = rospy.Publisher("/omni_path_follower/path", Path, queue_size=50)
         pub = rospy.Publisher("/spconavi_plan", Path, queue_size=50)
-        #pub = rospy.Publisher("/move_base/DWAPlannerROS/global_plan", Path, queue_size=50)
         self.r = rospy.Rate(50)  # 50hz
         #Initialize odometry header
         self.path_header = Header()
@@ -30,11 +29,9 @@ class Simple_path_simulator():
         self.csv_path_data = np.loadtxt(filename, delimiter=",")
         pose_list = self.get_poses_from_csvdata()
         self.path.poses =pose_list
-        print(self.path.poses)
         #initialize publisher
         #self.path_pub = rospy.Publisher("/omni_path_follower/path", Path, queue_size=50)
         self.path_pub = rospy.Publisher("/spconavi_plan", Path, queue_size=50)
-        #self.path_pub = rospy.Publisher("/move_base/DWAPlannerROS/global_plan", Path, queue_size=50)
 
     def get_poses_from_csvdata(self):
         #Get poses from csv data
@@ -44,7 +41,6 @@ class Simple_path_simulator():
             #print(indx)
 
             temp_pose = PoseStamped()
-            temp_pose.header.frame_id = 'map'
             temp_pose.pose.position.x = self.csv_path_data[indx][1]
             temp_pose.pose.position.y = self.csv_path_data[indx][2]
 
@@ -78,5 +74,4 @@ if __name__ == '__main__':
             print('Success!!!!')
     except KeyboardInterrupt:
         print("finished!")
-
 
