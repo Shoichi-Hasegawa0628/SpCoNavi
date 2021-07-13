@@ -8,7 +8,8 @@ Original SpCoNavi code is here： [https://github.com/a-taniguchi/SpCoNavi](http
 ## Content
 
 *   [Execution Environment](#execution-environment)
-*   [Execution Procedure](#execution-procedure)
+*   [Learning Procedure](#learning-procedure)
+*   [Planning Procedure](#planning-procedure)
 *   [Folder](#folder)
 *   [Reference](#reference)
 *   [Other Repositories](#other-repositories)
@@ -19,12 +20,26 @@ Original SpCoNavi code is here： [https://github.com/a-taniguchi/SpCoNavi](http
 - Ubuntu：18.04LTS
 - Python：2.7.17 (numpy：1.16.6, scipy：1.2.2, matplotlib：2.1.1)
 - ROS：Melodic
+- Robot：Turtlebot3 Waffle Pi
 
 
-## Execution procedure
-
+## Learning Procedure
 `trialname` is the data folder name of the learning result in SpCoSLAM.  
-For example, trialname is `3LDK_01` in `data` folder.  
+For example, trialname is `3LDK_01` in `data` folder. 
+
+### Command for acquiring costmap
+
+~~~
+roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
+roslaunch turtlebot3_slam turtlebot3_slam.launch slam_methods:=gmapping
+roslaunch fourth_robot_2dnav global_costmap_SIGVerse.launch
+(roslaunch fourth_robot_2dnav global_costmap_SIGVerse.launch map_file:=my_map.yaml)
+python costmap_SIGVerse.py trialname
+rosrun map_server map_saver -f ../SIGVerse/data/trialname/navi/trialname
+~~~
+
+
+ 
 
 ### Command for learning of spatial concepts  
 In the home environment, you need to have a training data set (robot positions, words, and images).  
@@ -41,7 +56,7 @@ python ./new_place_drawy 3LDK_01 1 0
 rviz -d ./saveSpCoMAP_online_SIGVere.rviz 
 ~~~
 
-
+## Planning Procedure
 ### Command for test execution of SpCoNavi (Viterbi algorithm)
 Setting parameters and PATH in `__init__.py`  
 ~~~

@@ -16,10 +16,9 @@ elif (example == 2):
   example_folder = "example2/"
 
 ##### NEW #####
-inputfolder_SIG = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/"
-outputfolder_SIG = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/"
-#inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
-#outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/" + example_folder  #"/home/akira/Dropbox/SpCoNavi/data/"
+inputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/"
+outputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/"
+
 
 # Note: Don't be tupple! Only list! [*,*]
 Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80],[130,95]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
