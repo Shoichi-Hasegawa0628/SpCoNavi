@@ -129,10 +129,10 @@ if __name__ == '__main__':
     
     
     #すべてのステップにおけるlog likelihoodの値を保存
-    save_data.SaveLogLikelihood(LogLikelihood_step,0,0)
+    save_data.SaveLogLikelihood(LogLikelihood_step,0,0,outputname)
     
     #すべてのステップにおける累積報酬（sum log likelihood）の値を保存
-    save_data.SaveLogLikelihood(LogLikelihood_sum,1,0)
+    save_data.SaveLogLikelihood(LogLikelihood_sum,1,0,outputname)
     
     
     print "[END] SpCoNavi."

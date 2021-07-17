@@ -16,8 +16,8 @@ elif (example == 2):
   word_folder = "/name/" + example_folder + "word" # "/name/per_100/word"
 
 ##### NEW #####
-inputfolder_SIG  = "/root/HSR/catkin_ws/src/em_spconavi/src/data/"
-outputfolder_SIG = "/root/HSR/catkin_ws/src/em_spconavi/src/data/"
+inputfolder_SIG  = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/"
+outputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/"
 
 #inputfolder_SIG  = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/dataset/similar/3LDK/"  #"/home/akira/Dropbox/SpCoNavi/data/"
 #outputfolder_SIG = "/mnt/hgfs/Dropbox/SpCoNavi/CoRL/data/" + example_folder  #"/home/akira/Dropbox/SpCoNavi/data/"

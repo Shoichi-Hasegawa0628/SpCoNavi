@@ -87,6 +87,7 @@ class PathPlanner:
         if (X_init_index in IndexMap_one_NOzero):
             X_init_index_one = IndexMap_one_NOzero.index(X_init_index)
         else:
+            print("Map: ",len(IndexMap_one_NOzero) )
             print "[ERROR] The initial position is not a movable position on the map."
             #print X_init, X_init_index
             X_init_index_one = 0

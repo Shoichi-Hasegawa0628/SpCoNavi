@@ -21,8 +21,11 @@ outputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/"
 
 
 # Note: Don't be tupple! Only list! [*,*]
-Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80],[130,95]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
-Goal_Word      = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室","テレビ前","子犬休み場","北","南","AND","OR"] #,"テレビ前","子犬休み場","北","南"] # In Japanese
+#Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80],[130,95]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
+#Goal_Word      = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室","テレビ前","子犬休み場","北","南","AND","OR"] #,"テレビ前","子犬休み場","北","南"] # In Japanese
+Start_Position = [[192, 192]]
+Goal_Word = ["living", "kitchen", "bedroom", "toilet"]
+
 #Goal_Word_example = ["テレビ前","子犬休み場","北","南"] # In Japanese
 #Example1 = ["リビング","テレビ前","子犬休み場"]
 Example_AND = ["北","寝室"] #12
@@ -32,8 +35,8 @@ Example_OR = ["ダイニング","キッチン"] #13
 #0:玄関,1:リビング,2:ダイニング,3:キッチン,4:風呂,5:洗面所,6:トイレ,7:寝室,8:テレビ前,9:子犬休み場,10:北,11:南
 
 #Same values as /learning/__init.py__
-L = 10 #100                  #The number of spatial concepts
-K = 10 #100                  #The number of position distributions
+L = 4 #10 #100                  #The number of spatial concepts
+K = 4 #10 #100                  #The number of position distributions
 
 memory_reduction = 1 #0 #Memory reduction process (ON:1, OFF:0)
 NANAME = 0              #Action pattern: up, down, left and right (0), and add diagonal (oblique) movements (１)
@@ -84,7 +87,7 @@ if (NANAME != 1):
 #Separated N-best approximation version is another program (SpCoNavi0.1s.py)
 
 # SpCoNavi_Astar_approx.py: The number of goal position candidates
-Sampling_J = 10
+Sampling_J = 4 #10
 
 #Dynamics of state transition (motion model): (Deterministic:0, Probabilistic:1, Approximation:2(Unimplemented))
 #Dynamics = 0
@@ -105,7 +108,7 @@ COSTMAP_TOPIC = "/move_base/global_costmap/costmap"
 #PATH_TOPIC = "/spconavi/path" #Unimplemented
 
 #Same value to map yaml file
-resolution = 0.1   #0.050000
+resolution = 0.050000 #0.1   #0.050000
 origin     = np.array([-10.000000, -10.000000]) #np.array([x,y]) #np.array([-30.000000, -20.000000])
 
 #map size (length and width)
