@@ -87,7 +87,7 @@ if (NANAME != 1):
 #Separated N-best approximation version is another program (SpCoNavi0.1s.py)
 
 # SpCoNavi_Astar_approx.py: The number of goal position candidates
-Sampling_J = 4 #10
+Sampling_J = 10 #10
 
 #Dynamics of state transition (motion model): (Deterministic:0, Probabilistic:1, Approximation:2(Unimplemented))
 #Dynamics = 0

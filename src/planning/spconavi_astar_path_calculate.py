@@ -537,7 +537,8 @@ print("Path distance using A* algorithm is "+ str(Distance))
 #計算上パスのx,yが逆になっているので直す
 Path_inv = [[Path[t][1], Path[t][0]] for t in range(len(Path))]
 Path_inv.reverse()
-Path_ROS = Path_inv #使わないので暫定的な措置
+#Path_ROS = Path_inv #使わないので暫定的な措置
+Path_ROS = Array_index_To_Map_coordinates(Path_inv)
 #パスを保存
 SavePath(start, [goal[1], goal[0]], Path_inv, Path_ROS, outputname)
 

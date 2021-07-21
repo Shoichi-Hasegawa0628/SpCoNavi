@@ -100,7 +100,7 @@ class PathPlanner:
         print "MoveIndex_list"
 
         #Viterbi Algorithmを実行
-        Path_one = self.ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior) #, Transition_one_NOzero)
+        Path_one = self.ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior, outputfile) #, Transition_one_NOzero)
 
         #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
         Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
@@ -175,7 +175,7 @@ class PathPlanner:
     #    return [random.random() for j in xrange(n)]
 
     #ViterbiPathを計算してPath(軌道)を返す
-    def ViterbiPath(self, X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original, Bug_removal_savior): #, Transition):
+    def ViterbiPath(self, X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original, Bug_removal_savior, outputfile): #, Transition):
         #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
         print "Start Viterbi Algorithm"
 
@@ -201,7 +201,7 @@ class PathPlanner:
             print "T:",i+1
             if (i+1 == T_restart):
                 outputname_restart = outputfile + "T"+str(T_restart)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-                trellis = ReadTrellis(outputname_restart, i+1)
+                trellis = read_data.ReadTrellis(outputname_restart, i+1)
                 cost = trellis[-1]
             if (i+1 >= T_restart):
                 #cost = [update(cost, t, f) for t, f in zip(m, e)]

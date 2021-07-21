@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 #coding:utf-8
+# ゴール座標をServiceで行うコード
 import numpy as np
 import actionlib
 import tf
+import time
 import math
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import rospy
@@ -12,7 +14,7 @@ from nav_msgs.msg import Odometry
 import tf
 from geometry_msgs.msg import Quaternion, Vector3
 #filename = "/root/HSR/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/path_data.csv"
-filename = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/path_data.csv"
+filename = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/T200N6A1S0G3_Path_ROS200.csv"
 
 class Simple_path_simulator():
 
@@ -23,26 +25,21 @@ class Simple_path_simulator():
         client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         client.wait_for_server()
         listener.waitForTransform("map", "base_link", rospy.Time(), rospy.Duration(4.0))
-        #self.odom_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=50)
+
         rospy.Subscriber("/odom", Odometry, self.callback)
         self.msg = [[0 for j in range(2)] for i in range(1)] #1行2列の配列の初期化
         #self.msg = PoseStamped()
 
         self.csv_path_data = np.loadtxt(filename, delimiter=",")
-        print(len(self.csv_path_data))
-
         for idx in range (len(self.csv_path_data)):
             self.idx = idx
             pose_list = self.get_poses_from_csvdata(self.idx)
+            time.sleep(1.0)
             self.goal = pose_list
-            #self.publish_path_topic(self.goal)
-            #print(self.goal)
-            #rospy.sleep(1.0)
             client.send_goal(self.goal)
-            
-            
             succeeded = client.wait_for_result(rospy.Duration(5.0))
-            #    print(succeeded)
+            print(succeeded)
+
             #    if succeeded == True:
             #        break
 
@@ -62,6 +59,7 @@ class Simple_path_simulator():
              #       print("self.msg_x = ", self.msg.pose.position.x, "csv_data_x = ", self.csv_path_data[self.idx][1])
              #       print("self.msg_y = ", self.msg.pose.position.y, "csv_data_y = ", self.csv_path_data[self.idx][2])
              #       break
+
 
     def callback(self, message):
         self.msg[0][0] = message.pose.pose.position.x
@@ -114,20 +112,23 @@ class Simple_path_simulator():
         pose_list = MoveBaseGoal()
         pose_list.target_pose.header.frame_id = 'map'
         pose_list.target_pose.pose.position.x = self.csv_path_data[idx][1]
-        pose_list.target_pose.pose.position.y = self.csv_path_data[idx][2]
+        pose_list.target_pose.pose.position.y = self.csv_path_data[idx][0]
         pose_list.target_pose.pose.position.z = 0.0
+        if idx == 0:
+            print("pose_list:", pose_list)
 
         if idx == 0:
             self.euler.x = 0
             self.euler.y = 0
-            angular = math.atan((self.csv_path_data[idx][2]-self.msg[0][1])/(self.csv_path_data[idx][1]-self.msg[0][0]))
+            #angular = math.atan((self.csv_path_data[idx][0]-self.msg[0][1])/(self.csv_path_data[idx][1]-self.msg[0][0]))
+            angular = math.atan((self.msg[0][1]-self.csv_path_data[idx][0])/(self.msg[0][0]-self.csv_path_data[idx][1]))
             self.euler.z = math.radians(angular)
             quaternion = self.euler_to_quaternion (self.euler)
 
         if idx > 0:
             self.euler.x = 0
             self.euler.y = 0
-            angular = math.atan((self.csv_path_data[idx][2]-self.csv_path_data[idx-1][2])/(self.csv_path_data[idx][1]-self.csv_path_data[idx-1][1]))
+            angular = math.atan((self.csv_path_data[idx][0]-self.csv_path_data[idx-1][0])/(self.csv_path_data[idx][1]-self.csv_path_data[idx-1][1]))
             self.euler.z = math.radians(angular)
             quaternion = self.euler_to_quaternion (self.euler)
 
@@ -172,11 +173,11 @@ if __name__ == '__main__':
     print('Path Publisher is Started...')
     test = Simple_path_simulator()
     
-    #try:
-    #    while not rospy.is_shutdown():
-    #        test.publish_path_topic()
-    #        print('Success!!!!')
-    #except KeyboardInterrupt:
-    print("finished!")
+    try:
+        while not rospy.is_shutdown():
+            test.publish_path_topic(test.goal)
+            print('Success!!!!')
+    except KeyboardInterrupt:
+        print("finished!")
     #rospy.spin()
 
