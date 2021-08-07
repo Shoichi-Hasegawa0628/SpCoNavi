@@ -36,6 +36,7 @@ class Simple_path_simulator():
             pose_list = self.get_poses_from_csvdata(self.idx)
             time.sleep(1.0)
             self.goal = pose_list
+            time.sleep(1.0)
             client.send_goal(self.goal)
             succeeded = client.wait_for_result(rospy.Duration(5.0))
             print(succeeded)

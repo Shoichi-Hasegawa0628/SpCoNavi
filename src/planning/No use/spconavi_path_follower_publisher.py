@@ -4,6 +4,7 @@
 import numpy as np
 import actionlib
 import tf
+import time
 import math
 #from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import rospy
@@ -32,6 +33,7 @@ class Simple_path_simulator():
             self.idx = idx
             pose_list = self.get_poses_from_csvdata(self.idx)
             self.goal = pose_list
+            time.sleep(1.0)
             self.publish_path_topic(self.goal)
             print(self.goal)
             #rospy.sleep(1.0)

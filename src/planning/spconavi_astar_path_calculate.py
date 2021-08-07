@@ -1,4 +1,4 @@
-#coding:utf-8
+  　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　#coding:utf-8
 
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse
