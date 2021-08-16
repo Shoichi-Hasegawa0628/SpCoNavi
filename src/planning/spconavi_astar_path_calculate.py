@@ -145,7 +145,7 @@ def SavePathDistance_temp(Distance,temp):
 
 #Read the parameters of learned spatial concepts
 def ReadParameters(iteration, sample, filename, trialname):
-    #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
+    #THETA = [W,W_index,Mu,Sig,Pi,Phi_l, xi,K,L]
     #r = iteration
     """
     i = 0
@@ -176,6 +176,7 @@ def ReadParameters(iteration, sample, filename, trialname):
     Sig   = [ np.array([ [0.0, 0.0],[0.0, 0.0] ]) for i in range(K) ]      #the position distribution (Gaussian)の共分散(2×2-dimension)[K]
     W     = [ [0.0 for j in range(len(W_index))] for c in range(L) ]  #the name of place(multinomial distribution: W_index-dimension)[L]
     #theta = [ [0.0 for j in range(DimImg)] for c in range(L) ] 
+    #xi = [ [0.0 for j in range(D)] for c in range(L) ] 
     Pi    = [ 0.0 for c in range(L)]     #index of spatial conceptのmultinomial distribution(L-dimension)
     Phi_l = [ [0.0 for i in range(K)] for c in range(L) ]  #index of position distributionのmultinomial distribution(K-dimension)[L]
       
@@ -233,6 +234,19 @@ def ReadParameters(iteration, sample, filename, trialname):
             if itemList[i] != '':
               #print c,i,itemList[i]
               theta[c][i] = float(itemList[i])
+        c = c + 1
+    """
+
+    """
+    ##xi is read from the file
+    c = 0
+    #Read text file
+    for line in open(filename + 'xi' + str(sample) + '.csv', 'r'):
+        itemList = line[:-1].split(',')
+        for i in range(len(itemList)):
+            if itemList[i] != '':
+              #print c,i,itemList[i]
+              xi[c][i] = float(itemList[i])
         c = c + 1
     """
 

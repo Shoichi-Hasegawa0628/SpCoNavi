@@ -38,6 +38,8 @@ Example_OR = ["ダイニング","キッチン"] #13
 L = 4 #10 #100                  #The number of spatial concepts
 K = 4 #10 #100                  #The number of position distributions
 
+D = 3 # the number of object categories
+
 memory_reduction = 1 #0 #Memory reduction process (ON:1, OFF:0)
 NANAME = 0              #Action pattern: up, down, left and right (0), and add diagonal (oblique) movements (１)
 word_increment = 6 #10     #Increment number of word observation data (BoWs)
