@@ -290,21 +290,27 @@ print("[START] SpCoNavi by A star algorithm.")
 
 #map dataの入った部屋環境folder name（学習済みparameter folder name） is requested
 trialname = sys.argv[1]
+# trialname = "3LDK_01"
 
 #map file name is requested
 mapname = sys.argv[2]
+# mapname = "s1DK_01"
 
 #iteration is requested
 iteration = sys.argv[3] #1
+# iteration = 1
 
 #sample is requested
 sample = sys.argv[4] #0
+# sample = 0
 
 #robot initial positionの候補番号 is requested
 init_position_num = sys.argv[5] #0
+# init_position_num = 0
 
 #the file number for speech instruction is requested   
 speech_num = sys.argv[6] #0
+# speech_num = 7 ####この部分をクロスモーダル推論コードの戻り値に変更する
 
 if (SAVE_time == 1):
     #開始時刻を保持
@@ -313,6 +319,9 @@ if (SAVE_time == 1):
 start_list = [0, 0] #Start_Position[int(init_position_num)]#(83,39) #(92,126) #(126,92) #(1, 1)
 start_list[0] = int(sys.argv[7]) #0
 start_list[1] = int(sys.argv[8]) #0
+#start_list[0] = 0
+#start_list[1] = 0
+
 start = (start_list[0], start_list[1])
 print("Start:", start)
 #goal  = (95,41) #(97,55) #(55,97) #(height-2, width-2)
