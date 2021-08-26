@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+    <node name="spconavi_ros_astar" pkg="spconavi_ros" type="spconavi_astar_path_calculate.py" output="screen" cwd="node" />
+    <node name="spconavi_ros_follower" pkg="spconavi_ros" type="spconavi_path_follower_temporary.py" output="screen" cwd="node" />
+    <node name="spconavi_ros_path_visualizer" pkg="spconavi_ros" type="spconavi_path_visualizer_rviz.py" output="screen" cwd="node" />
+
+</launch>
