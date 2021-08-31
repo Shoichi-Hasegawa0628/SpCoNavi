@@ -18,22 +18,26 @@ path_calculate = spconavi_path_calculate.PathPlanner()
 if __name__ == '__main__': 
     print "[START] SpCoNavi."
     #Request a folder name for learned parameters.
-    trialname = sys.argv[1]
+    #trialname = sys.argv[1]
+    trialname = "3LDK_01"
     #print trialname
     #trialname = raw_input("trialname?(folder) >")
 
     #Request iteration value
-    iteration = sys.argv[2] #1
+    #iteration = sys.argv[2] #1
+    iteration = 1
 
     #Request sample value
-    sample = sys.argv[3] #0
+    #sample = sys.argv[3] #0
+    sample = 0
 
     #Request the index number of the robot initial position
-    init_position_num = sys.argv[4] #0
+    #init_position_num = sys.argv[4] #0
+    init_position_num = 0
 
     #Request the file number of the speech instruction   
-    speech_num = sys.argv[5] #0
-
+    #speech_num = sys.argv[5] #0
+    speech_num = 1
 
     if (SAVE_time == 1):
       #Substitution of start time

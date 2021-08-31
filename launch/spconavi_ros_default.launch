@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <launch>
+    <!-- 学習した場所概念の表示 -->
+    <node pkg="spconavi_ros" name="spco_visualize" type="new_place_draw.py" />
+        <param name="trialname" value="3LDK_01"/>
+        <param name="iteration" value="1"/>
+        <param name="sample" value="0"/>
 
+    <!-- A*アルゴリズムでSpCoNaviを実行-->
     <node name="spconavi_ros_astar" pkg="spconavi_ros" type="spconavi_astar_path_calculate.py" output="screen" cwd="node" />
-    <node name="spconavi_ros_follower" pkg="spconavi_ros" type="spconavi_path_follower_temporary.py" output="screen" cwd="node" />
-    <node name="spconavi_ros_path_visualizer" pkg="spconavi_ros" type="spconavi_path_visualizer_rviz.py" output="screen" cwd="node" />
+
+    <!-- RvizにPathを表示・RULOに目的地を命令-->
+    <node name="spconavi_ros_follower" pkg="spconavi_ros" type="spconavi_path_visualizer_follower.py" output="screen" cwd="node" />
 
 </launch>

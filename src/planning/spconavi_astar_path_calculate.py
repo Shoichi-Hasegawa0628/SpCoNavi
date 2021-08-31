@@ -1,5 +1,5 @@
-  　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　#coding:utf-8
-
+#!/usr/bin/env python
+#coding:utf-8　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　#coding:utf-8
 ###########################################################
 # SpCoNavi: Spatial Concept-based Path-Planning Program for SIGVerse
 # Path-Planning Program by A star algorithm (ver. approximate inference)
@@ -11,6 +11,7 @@
 ##Command: 
 #python spconavi_astar_path_calculate.py trialname mapname iteration sample init_position_num speech_num initial_position_x initial_position_y
 #python spconavi_astar_path_calculate.py 3LDK_01 s1DK_01 1 0 0 7 100 100 
+#python spconavi_astar_path_calculate.py
 
 import sys
 import random
@@ -25,6 +26,8 @@ from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2
 import matplotlib.pyplot as plt
 import collections
 from __init__ import *
+from std_msgs.msg import String
+import rospy
 #from submodules import *
 
 def right(pos):
@@ -92,6 +95,8 @@ def SavePath(X_init, X_goal, Path, Path_ROS, outputname):
     # Save the result to the file (ROS)
     np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
     print("Save Path: " + outputname + "_Path.csv and _Path_ROS.csv")
+
+    return outputname + "_Path_ROS.csv"
 
 
 #Save the log likelihood for each time-step
@@ -286,41 +291,44 @@ def Sampling_goal(Otb_B, THETA):
 
 
 #################################################
+print("Initialize publisher")
+pub_next_state = rospy.Publisher("/next_state", String, queue_size=10) 
+rospy.init_node('spconavi_astar')
 print("[START] SpCoNavi by A star algorithm.")
 
 #map dataの入った部屋環境folder name（学習済みparameter folder name） is requested
-trialname = sys.argv[1]
-# trialname = "3LDK_01"
+#trialname = sys.argv[1]
+trialname = "3LDK_01"
 
 #map file name is requested
-mapname = sys.argv[2]
-# mapname = "s1DK_01"
+#mapname = sys.argv[2]
+mapname = "s1DK_01"
 
 #iteration is requested
-iteration = sys.argv[3] #1
-# iteration = 1
+#iteration = sys.argv[3] #1
+iteration = 1
 
 #sample is requested
-sample = sys.argv[4] #0
-# sample = 0
+#sample = sys.argv[4] #0
+sample = 0
 
 #robot initial positionの候補番号 is requested
-init_position_num = sys.argv[5] #0
-# init_position_num = 0
+#init_position_num = sys.argv[5] #0
+init_position_num = 0
 
 #the file number for speech instruction is requested   
-speech_num = sys.argv[6] #0
-# speech_num = 7 ####この部分をクロスモーダル推論コードの戻り値に変更する
+#speech_num = sys.argv[6] #0
+speech_num = 1 #1はkitchen ####この部分をクロスモーダル推論コードの戻り値に変更する
 
 if (SAVE_time == 1):
     #開始時刻を保持
     start_time = time.time()
 
 start_list = [0, 0] #Start_Position[int(init_position_num)]#(83,39) #(92,126) #(126,92) #(1, 1)
-start_list[0] = int(sys.argv[7]) #0
-start_list[1] = int(sys.argv[8]) #0
-#start_list[0] = 0
-#start_list[1] = 0
+#start_list[0] = int(sys.argv[7]) #0
+#start_list[1] = int(sys.argv[8]) #0
+start_list[0] = Start_Position[0][0]
+start_list[1] = Start_Position[0][1]
 
 start = (start_list[0], start_list[1])
 print("Start:", start)
@@ -331,7 +339,9 @@ filename = outputfolder_SIG + trialname #+ "/"
 print(filename, iteration, sample)
 outputfile = filename + navigation_folder #outputfolder + trialname + navigation_folder
 #outputname = outputfile + "Astar_SpCo_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-outputname = outputfile + "Astar_Approx_expect_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
+#outputname = outputfile + "Astar_Approx_expect_"+"N"+str(N_best)+"A"+str(Approx)+"S"+str(start)+"G"+str(speech_num)
+outputname = outputfile + "Astar_Approx_expect_"+"N"+str(N_best)+"A"+str(Approx)+"S"+"X"+str(start[1])+"Y"+str(start[0])+"G"+str(speech_num)
+print("OutPutPath: {}".format(outputname))
 
 #"T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
 #maze_file = outputfile + mapname + ".pgm"
@@ -563,7 +573,7 @@ Path_inv.reverse()
 #Path_ROS = Path_inv #使わないので暫定的な措置
 Path_ROS = Array_index_To_Map_coordinates(Path_inv)
 #パスを保存
-SavePath(start, [goal[1], goal[0]], Path_inv, Path_ROS, outputname)
+next_state = SavePath(start, [goal[1], goal[0]], Path_inv, Path_ROS, outputname)
 
 
 #Read the emission probability file 
@@ -604,3 +614,8 @@ plt.savefig(outputname + '_Path.png', dpi=300)#, transparent=True
 plt.savefig(outputname + '_Path.pdf', dpi=300)#, transparent=True
 plt.clf()
 
+#rvizとfollower実行につなげる
+r = rospy.Rate(10) 
+while not rospy.is_shutdown():
+    pub_next_state.publish(next_state)
+    r.sleep()

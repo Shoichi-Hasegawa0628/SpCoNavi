@@ -5,7 +5,4 @@
     <param name="trialname" value="3LDK_01"/>
     <param name="iteration" value="1"/>
     <param name="sample" value="0"/>
-
-<!-- ==== rviz === 
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rulo_launch)/launch/saveSpCoMAP_SIGVerse.rviz" /> -->
 </launch>
