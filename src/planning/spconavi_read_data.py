@@ -160,7 +160,7 @@ class ReadingData:
 
 
     #Load the probability value map used for path calculation
-    def ReadProbMap(self, outputfile):
+    def ReadProbMap(self, outputfile, speech_num):
         # Read the result from the file
         output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
         PathWeightMap = np.loadtxt(output, delimiter=",")

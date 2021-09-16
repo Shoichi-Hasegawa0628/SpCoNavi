@@ -23,7 +23,7 @@ outputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/"
 # Note: Don't be tupple! Only list! [*,*]
 #Start_Position = [[100,100],[100,110],[120,60],[60,90],[90,120],[75,75],[90,50],[90,60],[110,80],[130,95]] #(y,x). not (x,y). (Same as coordinates in Astar_*.py) 
 #Goal_Word      = ["玄関","リビング","ダイニング","キッチン","風呂","洗面所","トイレ","寝室","テレビ前","子犬休み場","北","南","AND","OR"] #,"テレビ前","子犬休み場","北","南"] # In Japanese
-Start_Position = [[192, 192]]
+Start_Position = [[264, 250]] # 原点は[[200, 200]], 玄関は[[264, 250]]. 計算方法は「SpCoNavi上の(y, x)座標(pixel) * 0.05(m/pixel) +(-10, -10) (m) = Gazebo上の座標(m)」, 192, 192
 Goal_Word = ["living", "kitchen", "bedroom", "toilet"]
 
 #Goal_Word_example = ["テレビ前","子犬休み場","北","南"] # In Japanese

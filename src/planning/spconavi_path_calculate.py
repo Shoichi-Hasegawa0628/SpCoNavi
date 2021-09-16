@@ -6,7 +6,7 @@ import spconavi_read_data
 import spconavi_save_data
 from scipy.stats import multinomial
 from __init__ import *
-from submodules import *
+from spconavi_math import *
 from itertools import izip
 
 read_data = spconavi_read_data.ReadingData()
@@ -44,7 +44,7 @@ class PathPlanner:
             #[TEST]計算結果を先に保存
             save_data.SaveProbMap(PathWeightMap, outputfile, speech_num)
         else:
-            PathWeightMap = read_data.ReadProbMap(outputfile)
+            PathWeightMap = read_data.ReadProbMap(outputfile, speech_num)
             #print "already exists:", output
         print "[Done] PathWeightMap."
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding:utf-8
 from __init__ import *
-from submodules import *
+from spconavi_math import *
 from scipy.io import mmwrite
 import collections
 import spconavi_read_data

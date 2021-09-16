@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #coding:utf-8
-# 計算したデータを読み込み, ロボットにある(x, y, θ)地点への命令と計算したPathを可視化させるプログラム
+# 計算したデータを読み込み, 「ロボットにある(x, y, θ)地点への命令」と「計算したPathを可視化」させるプログラム
 import numpy as np
 import tf
 import math
@@ -8,7 +8,7 @@ import time
 import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion, Vector3
-from std_msgs.msg import String, Header
+from std_msgs.msg import String, Header, Empty
 from nav_msgs.msg import Path
 
 class Simple_path_simulator():
@@ -20,6 +20,7 @@ class Simple_path_simulator():
         self.r = rospy.Rate(10) 
         self.odom_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=50) #目的地の配信
         self.path_pub = rospy.Publisher("/spconavi_plan", Path, queue_size=50) # rvizで可視化用のPath配信
+        self.next_pub = rospy.Publisher("/next_judge", Empty, queue_size=50) # 判別プログラム以降用のメッセージ配信
 
         self.path_header = Header()
         self.path_header.seq = 0
@@ -28,6 +29,8 @@ class Simple_path_simulator():
 
         self.path = Path()
         self.path.header = self.path_header
+
+        self.next_judge = Empty()
         self.main()
 
 
@@ -50,7 +53,7 @@ class Simple_path_simulator():
         #print(path)
 
         #while not rospy.is_shutdown():
-        for t in range(0, 10, 1):
+        for t in range(0, 30, 1):
             self.odom_pub.publish(goal)
             self.path_pub.publish(self.path)
             time.sleep(1)
@@ -96,6 +99,8 @@ class Simple_path_simulator():
 if __name__ == '__main__':
     print('Path Publisher is Started...')
     test = Simple_path_simulator()
-    
+    for i in range (0, 10, 1):
+        test.next_pub.publish(test.next_judge)
+        time.sleep(1)
     
 

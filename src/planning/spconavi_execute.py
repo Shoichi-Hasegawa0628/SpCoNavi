@@ -5,7 +5,7 @@ import sys
 import time
 from math import log
 from __init__ import *
-from submodules import *
+from spconavi_math import *
 import spconavi_read_data
 import spconavi_path_calculate
 import spconavi_save_data
@@ -36,8 +36,8 @@ if __name__ == '__main__':
     init_position_num = 0
 
     #Request the file number of the speech instruction   
-    #speech_num = sys.argv[5] #0
-    speech_num = 1
+    #speech_num = sys.argv[5] #1は完了, 残り0, 2, 3
+    speech_num = 0
 
     if (SAVE_time == 1):
       #Substitution of start time

@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from __init__ import *
-from submodules import *
+from spconavi_math import *
 ##Command: 
 #python ./path_weight_visualizer_step_SIGVerse.py trialname init_position_num speech_num  
 #Example: python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7
