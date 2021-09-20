@@ -53,7 +53,7 @@ roslaunch spconavi_ros spconavi_spatial_concepts_visualizer.launch
 ### Command for test execution of SpCoNavi
 Setting parameters and PATH in `__init__.py`  
 ~~~
-roslaunch spconavi_ros spconavi_default.launch
+roslaunch spconavi_ros spconavi_ros_default.launch
 ~~~
 Enter the number according to the algorithm used.
 
