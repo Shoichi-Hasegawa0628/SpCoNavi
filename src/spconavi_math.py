@@ -1,10 +1,15 @@
+#!/usr/bin/env python
 #coding:utf-8
-#This file for general modules (一般性の高い関数はこちらへ集約)
-#Akira Taniguchi 2018/11/26-2018/12/17-
+
+# 標準ライブラリ
 import os
-import numpy as np
 from math import pi as PI
 from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2,gamma,lgamma
+
+# サードパーティー
+import numpy as np
+
+# 自作ライブラリ
 from __init__ import *
 
 def Makedir(dir):

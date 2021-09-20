@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 #coding:utf-8
+
+# サードパーティー
+from scipy.io import mmwrite
+
+# 自作ライブラリ
 from __init__ import *
 from spconavi_math import *
-from scipy.io import mmwrite
-import collections
 import spconavi_read_data
 
 read_data = spconavi_read_data.ReadingData()
 
-
 class SavingData:
 
     #Save the path trajectory
-    def SavePath(self, X_init, Path, Path_ROS, outputname):
+    def ViterbiSavePath(self, X_init, Path, Path_ROS, outputname):
         print "PathSave"
         if (SAVE_X_init == 1):
             # Save the robot initial position to the file (index)
@@ -25,6 +27,27 @@ class SavingData:
         # Save the result to the file (ROS)
         np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
         print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
+        return outputname + "_Path_ROS.csv"
+
+
+        #Save the path trajectory
+    def AstarSavePath(self, X_init, X_goal, Path, Path_ROS, outputname):
+        print "PathSave"
+        if (SAVE_X_init == 1):
+            # Save the robot initial position to the file (index)
+            np.savetxt(outputname + "_X_init.csv", X_init, delimiter=",")
+            # Save the robot initial position to the file (ROS)
+            np.savetxt(outputname + "_X_init_ROS.csv", read_data.Array_index_To_Map_coordinates(X_init), delimiter=",")
+            # Save robot initial position and goal as file (ROS)
+            np.savetxt(outputname + "_X_goal_ROS.csv", read_data.Array_index_To_Map_coordinates(X_goal), delimiter=",")
+
+        # Save the result to the file (index)
+        np.savetxt(outputname + "_Path.csv", Path, delimiter=",")
+        # Save the result to the file (ROS)
+        np.savetxt(outputname + "_Path_ROS.csv", Path_ROS, delimiter=",")
+        print "Save Path: " + outputname + "_Path.csv and _Path_ROS.csv"
+        return outputname + "_Path_ROS.csv"
+
 
     #Save the path trajectory
     def SavePathTemp(self, X_init, Path_one, temp, outputname, IndexMap_one_NOzero, Bug_removal_savior):
@@ -45,11 +68,13 @@ class SavingData:
         np.savetxt(outputname + "_Path_ROS" + str(temp) + ".csv", Path_ROS, delimiter=",")
         print "Save Path: " + outputname + "_Path" + str(temp) + ".csv and _Path_ROS" + str(temp) + ".csv"
 
+
     def SaveTrellis(self, trellis, outputname, temp):
         print "SaveTrellis"
         # Save the result to the file 
         np.save(outputname + "_trellis" + str(temp) + ".npy", trellis) #, delimiter=",")
         print "Save trellis: " + outputname + "_trellis" + str(temp) + ".npy"
+
 
     #パス計算のために使用したLookupTable_ProbCtをファイル保存する
     def SaveLookupTable(self, LookupTable_ProbCt, outputfile):
@@ -57,6 +82,7 @@ class SavingData:
         output = outputfile + "LookupTable_ProbCt.csv"
         np.savetxt( output, LookupTable_ProbCt, delimiter=",")
         print "Save LookupTable_ProbCt: " + output
+
 
     #パス計算のために使用した確率値コストマップをファイル保存する
     def SaveCostMapProb(self, CostMapProb, outputfile):

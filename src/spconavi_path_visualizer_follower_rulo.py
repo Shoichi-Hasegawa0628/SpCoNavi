@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 #coding:utf-8
-# 計算したデータを読み込み, 「ロボットにある(x, y, θ)地点への命令」と「計算したPathを可視化」させるプログラム
-import numpy as np
-import tf
+# 計算したデータを読み込み, 「ロボット(RULO)にある(x, y, θ)地点への命令」と「計算したPathを可視化」させるプログラム
+
+# 標準ライブラリ
 import math
 import time
+
+# サードパーティー
+import numpy as np
+import tf
 import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion, Vector3
@@ -21,15 +25,12 @@ class Simple_path_simulator():
         self.odom_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=50) #目的地の配信
         self.path_pub = rospy.Publisher("/spconavi_plan", Path, queue_size=50) # rvizで可視化用のPath配信
         self.next_pub = rospy.Publisher("/next_judge", Empty, queue_size=50) # 判別プログラム以降用のメッセージ配信
-
         self.path_header = Header()
         self.path_header.seq = 0
         self.path_header.stamp = rospy.Time.now()
         self.path_header.frame_id = "map"
-
         self.path = Path()
         self.path.header = self.path_header
-
         self.next_judge = Empty()
         self.main()
 
@@ -38,7 +39,7 @@ class Simple_path_simulator():
         # データの読み込み
         filepath = rospy.wait_for_message("/next_state", String, timeout=None)
         csv_path_data = np.loadtxt(filepath.data, delimiter=",")
-        #filepath = "/root/RULO/catkin_ws/src/spconavi_ros/src/data/3LDK_01/navi/Astar_Approx_expect_N6A1SX192Y192G1_Path_ROS.csv"
+        #filepath = "/root/RULO/catkin_ws/src/spconavi_ros/data/3LDK_01/navi/Astar_Approx_expect_N6A1SX192Y192G1_Path_ROS.csv"
         #csv_path_data = np.loadtxt(filepath, delimiter=",")
 
         # 目的地の地点の設定

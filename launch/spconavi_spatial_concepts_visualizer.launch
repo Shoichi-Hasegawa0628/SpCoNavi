@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <launch>
-    <node pkg="spconavi_ros" name="spco_visualize" type="new_place_draw.py" />
+    <node pkg="spconavi_ros" name="spco_visualize" type="spconavi_spatial_concepts_visualizer.py" />
     <param name="trialname" value="3LDK_01"/>
     <param name="iteration" value="1"/>
     <param name="sample" value="0"/>

@@ -1,21 +1,27 @@
 #!/usr/bin/env python
 #coding:utf-8
+
+# 標準ライブラリ
 import os
 import collections
+from itertools import izip
+
+# サードパーティー
+from scipy.stats import multinomial
+
+# 自作ライブラリ
+from __init__ import *
 import spconavi_read_data
 import spconavi_save_data
-from scipy.stats import multinomial
-from __init__ import *
 from spconavi_math import *
-from itertools import izip
 
 read_data = spconavi_read_data.ReadingData()
 save_data = spconavi_save_data.SavingData()
 
-class PathPlanner:
+class ViterbiPathPlanner:
 
     #Global path estimation by dynamic programming (calculation of SpCoNavi)
-    def PathPlanner(self, S_Nbest, X_init, THETA, CostMapProb, outputfile, speech_num, outputname): #gridmap, costmap):
+    def viterbi_path_planner(self, S_Nbest, X_init, THETA, CostMapProb, outputfile, speech_num, outputname): #gridmap, costmap):
         print "[RUN] PathPlanner"
         #THETAを展開
         W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA

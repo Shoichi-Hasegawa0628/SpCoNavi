@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #coding:utf-8
-from scipy.io import mmread
-from __init__ import *
-from scipy.stats import multivariate_normal
 
+# サードパーティー
+from scipy.io import mmread
+from scipy.stats import multivariate_normal
+from geometry_msgs.msg import PoseStamped
+
+# 自作ライブラリ
+from __init__ import *
 
 class ReadingData:
 

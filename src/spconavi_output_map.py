@@ -1,12 +1,16 @@
+#!/usr/bin/env python
 #coding:utf-8
-#Akira Taniguchi 2019/01/22-2019/02/05-2019/07/04
 #For Visualization of Path and Posterior emission probability (PathWeightMap) on the grid map
+
+# 標準ライブラリ
 import sys
-#from math import pi as PI
-#from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2
+
+# サードパーティー
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+
+# 自作ライブラリ
 from __init__ import *
 from spconavi_math import *
 ##Command: 
@@ -14,6 +18,8 @@ from spconavi_math import *
 #Example: python ./path_weight_visualizer_step_SIGVerse.py 3LDK_01 0 7
 
 
+# READ
+################################################################################
 #Read the map data⇒2-dimension array に格納
 def ReadMap(outputfile):
     #outputfolder + trialname + navigation_folder + map.csv
@@ -47,6 +53,7 @@ def ReadPath(outputname,temp):
     Path = np.loadtxt(output, delimiter=",")
     print "Read Path: " + output
     return Path
+################################################################################
 
 
 ########################################

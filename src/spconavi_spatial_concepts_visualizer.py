@@ -1,39 +1,22 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 #学習した場所領域のサンプルをrviz上に可視化するプログラム
-#作成者 石伏智
-#作成日 2015年12月
-#サンプリング点プロット→ガウスの概形描画に変更（磯部、2016卒論）
-#編集、更新：谷口彰 更新日：2017/02/10
-#mu 2次元、sig 2×2次元版
 
-"""
-実行前に指定されているフォルダが正しいかをチェックする
-file_read.pyも同様に ！
-
-実行方法
-python place_draw.py (parameterフォルダの絶対パス) (表示する場所領域を指定したい場合は数字を入力)
-
-実行例
-python place_draw.py /home/emlab/py-faster-rcnn/work/gibbs_sampling_program
-
-"""
-
-import glob
-import re
-import os
-import rospy
+# 標準ライブラリ
 import math
 import sys
+
+# サードパーティー
+import rospy
 import geometry_msgs.msg as gm
 from geometry_msgs.msg import Point
 import sensor_msgs.msg as sm
 from  visualization_msgs.msg import Marker
 from  visualization_msgs.msg import MarkerArray
 import numpy as np
-import struct
-#import PyKDLs
 sys.path.append("lib/")
+
+# 自作ライブラリ
 from __init__ import *
 
 """

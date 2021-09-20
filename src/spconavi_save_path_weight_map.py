@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 #coding:utf-8
+
+# 標準ライブラリ
 import time
-base_time = time.time()
-import os
-import collections
-import spconavi_read_data
-import spconavi_save_data
-from scipy.stats import multinomial
-from __init__ import *
-from spconavi_math import *
 from itertools import izip
 
+# サードパーティー
+from scipy.stats import multinomial
+
+# 自作ライブラリ
+from __init__ import *
+import spconavi_read_data
+import spconavi_save_data
+from spconavi_math import *
 
 read_data = spconavi_read_data.ReadingData()
 save_data = spconavi_save_data.SavingData()
-############################################################################
+
 
 trialname = "3LDK_01"
 iteration = 1
@@ -81,5 +83,4 @@ PathWeightMap = read_data.PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,Looku
 
 #[TEST]計算結果を先に保存
 save_data.SaveProbMap(PathWeightMap, outputfile, speech_num)
-print("Processing Time :{}".format(time.time() - base_time))
 print "[Done] PathWeightMap."
