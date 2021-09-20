@@ -3,6 +3,7 @@
 
 # 標準ライブラリ
 import os
+import sys
 import time
 
 # サードパーティー
@@ -53,7 +54,26 @@ if __name__ == '__main__':
     #speech_num = int(word.data) 
     speech_num = 0
 
-    planning_method = 0 # 1はviterbi, 0はaster
+    #planning_method = 0 # 1はviterbi, 0はastar
+    #planning_method = sys.argv[1]
+
+    # 番号を入力してからEnterキーを押すまで待機する
+    astar_num = "0"
+    viterbi_num = "1"
+    print("Please input planning_method number.\n")
+    print("1 is Viterbi, 0 is Astar algorithm.\n")
+    while True:
+        get_key = input('Input the number and then press Enter key: ')
+        if(str(get_key) == astar_num):
+            print(get_key)
+            print("Applied Astar algorithm !!!\n")
+            break
+        elif(str(get_key) == viterbi_num):
+            print(get_key)
+            print("Applied Viterbi algorithm !!!\n")
+            break
+        print("Wrong number, please enter again\n")
+    planning_method = int(get_key)
 
     if (SAVE_time == 1):
         #Substitution of start time

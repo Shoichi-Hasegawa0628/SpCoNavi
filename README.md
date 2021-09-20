@@ -33,15 +33,15 @@ For example, trialname is `3LDK_01` in `data` folder.
 ~~~
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 roslaunch turtlebot3_slam turtlebot3_slam.launch slam_methods:=gmapping
-roslaunch fourth_robot_2dnav global_costmap_SIGVerse.launch
-(roslaunch fourth_robot_2dnav global_costmap_SIGVerse.launch map_file:=my_map.yaml)
-python costmap_SIGVerse.py trialname
-rosrun map_server map_saver -f ../SIGVerse/data/trialname/navi/trialname
+python spconavi_costmap_generate.py trialname
+rosrun map_server map_saver -f ../data/trialname/navi
 ~~~
 
 ### Command for learning of spatial concepts  
 Learn the concept of place with SpCoSLAM or SpCoA.  
 The following is a reference link.  
+ - [SpCoSLAM](https://github.com/a-taniguchi/SpCoSLAM): Implementation of SpCoSLAM (Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping)   
+ - [SpCoSLAM 2.0](https://github.com/a-taniguchi/SpCoSLAM2): An Improved and Scalable Online Learning of Spatial Concepts and Language Models with Mapping (New version of online learning algorithm)   
 After learning, store it in the data folder so that it matches the path.  
 
 ### Visulalization of the learning result  
@@ -50,33 +50,20 @@ roslaunch spconavi_ros spconavi_spatial_concepts_visualizer.launch
 ~~~
 
 ## Planning Procedure
-### Command for test execution of SpCoNavi (Viterbi algorithm)
+### Command for test execution of SpCoNavi
 Setting parameters and PATH in `__init__.py`  
 ~~~
-cd spconavi_ros/src/planning
-python spconavi_execute.py trialname iteration sample init_position_num speech_num
+roslaunch spconavi_ros spconavi_default.launch
 ~~~
-Example: 
-`python spconavi_execute.py 3LDK_01 1 0 0 7`  
-
-### Command for test execution of SpCoNavi (A* algorithm)
-Setting parameters and PATH in `__init__.py`  
-~~~
-cd spconavi_ros/src/planning
-python spconavi_astar_path_calculate.py trialname mapname iteration sample init_position_num speech_num initial_position_x initial_position_y
-~~~
-Example: 
-`python spconavi_astar_path_calculate.py 3LDK_01 s1DK_01 1 0 0 7 100 100 `  
-
+Enter the number according to the algorithm used.
 
 ### Command for visualization of a path trajectory and the emission probability on the map
 ~~~
 cd spconavi_ros/src/planning
-python spconavi_out_map.py trialname init_position_num speech_num  
+python spconavi_output_map.py trialname init_position_num speech_num  
 ~~~
 Example: 
 `python spconavi_output_map.py 3LDK_01 0 7`  
-
 
 
 ## Folder  
@@ -119,12 +106,10 @@ Example:
  - `__init__.py`: Code for initial setting (PATH and parameters)
 
  
----
+
 ## Reference
-[1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "[Online Spatial Concept and Lexical Acquisition with Simultaneous Localization and Mapping](https://ieeexplore.ieee.org/document/8202243)", IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017.  
-[2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "[Improved and scalable online learning of spatial concepts and language models with mapping](https://link.springer.com/article/10.1007/s10514-020-09905-0)", Autonomous Robots, Vol.44, pp927-pp946, 2020.
-[3]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "Path Planning by Spatial Concept-Based Probabilistic Inference from Human Speech Instructions", the 33rd Annual Conference of the Japanese Society for Artificial Intelligence, 2019. (In Japanese; 谷口彰，萩原良信，谷口忠大，稲邑哲也. "[場所概念に基づく確率推論による音声命令からのパスプランニング](https://www.jstage.jst.go.jp/article/pjsai/JSAI2019/0/JSAI2019_1L3J1103/_article/-char/ja/)". 人工知能学会全国大会 (JSAI). 2019.)   
-[4]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "[Spatial concept-based navigation with human speech instructions via probabilistic inference on Bayesian generative model](https://www.tandfonline.com/doi/full/10.1080/01691864.2020.1817777)", Advanced Robotics, pp1213-pp1228, 2020.
+[1]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, and Tetsunari Inamura, "[Improved and scalable online learning of spatial concepts and language models with mapping](https://link.springer.com/article/10.1007/s10514-020-09905-0)", Autonomous Robots, Vol.44, pp927-pp946, 2020.  
+[2]: Akira Taniguchi, Yoshinobu Hagiwara, Tadahiro Taniguchi, Tetsunari Inamura, "[Spatial concept-based navigation with human speech instructions via probabilistic inference on Bayesian generative model](https://www.tandfonline.com/doi/full/10.1080/01691864.2020.1817777)", Advanced Robotics, pp1213-pp1228, 2020.  
 
 
 ## Other repositories  
@@ -133,6 +118,3 @@ Example:
  - [SpCoSLAM 2.0](https://github.com/a-taniguchi/SpCoSLAM2): An Improved and Scalable Online Learning of Spatial Concepts and Language Models with Mapping (New version of online learning algorithm)   
  - [SpCoSLAM_evaluation](https://github.com/a-taniguchi/SpCoSLAM_evaluation): The codes for the evaluation or the visualization in our paper  
  - [SpCoNavi](https://github.com/a-taniguchi/SpCoNavi): Spatial Concept-Based Navigation from Human Speech Instructions by Probabilistic Inference on Bayesian Generative Model
-
-
-
