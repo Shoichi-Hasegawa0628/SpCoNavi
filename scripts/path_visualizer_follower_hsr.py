@@ -2,7 +2,7 @@
 #coding:utf-8
 # 計算したデータを読み込み, 「ロボット(HSR)にある軌道を沿うように命令」と「計算したPathを可視化」させるプログラム
 
-# サードパーティー
+# Third Party
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
@@ -11,10 +11,10 @@ from nav_msgs.msg import Path
 
 filename = "/root/HSR/catkin_ws/src/spconavi_ros/data/3LDK_01/navi/Astar_Approx_expect_N6A1S(192, 192)G3_Path_ROS.csv"
 
-class Simple_path_simulator():
+class PathVisualizerFollowerHSR():
 
     def __init__(self):
-        rospy.init_node('Simple_Path_Publisher')
+        rospy.init_node('path_visual_follow_hsr')
         self.path_pub = rospy.Publisher("/omni_path_follower/path", Path, queue_size=50) 
         #self.path_pub = rospy.Publisher("/spconavi_plan", Path, queue_size=50)
         self.r = rospy.Rate(50)  
@@ -50,10 +50,10 @@ class Simple_path_simulator():
 
 if __name__ == '__main__':
     print('Path Publisher is Started...')
-    test = Simple_path_simulator()
+    path_visual2follow_hsr = PathVisualizerFollowerHSR()
     try:
         while not rospy.is_shutdown():
-            test.publish_path_topic()
+            path_visual2follow_hsr.publish_path_topic()
             print('Success!!!!')
     except KeyboardInterrupt:
         print("finished!")

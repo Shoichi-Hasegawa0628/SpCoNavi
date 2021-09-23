@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 #coding:utf-8
 
-# 標準ライブラリ
+# Standard Library
 import os
 from math import pi as PI
 from math import cos,sin,sqrt,exp,log,fabs,fsum,degrees,radians,atan2,gamma,lgamma
 
-# サードパーティー
+# Third Party
 import numpy as np
 
-# 自作ライブラリ
+# Self-made Modules
 from __init__ import *
 
 def Makedir(dir):

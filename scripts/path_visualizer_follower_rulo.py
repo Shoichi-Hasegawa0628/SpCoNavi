@@ -2,11 +2,11 @@
 #coding:utf-8
 # 計算したデータを読み込み, 「ロボット(RULO)にある(x, y, θ)地点への命令」と「計算したPathを可視化」させるプログラム
 
-# 標準ライブラリ
+# Standard Library
 import math
 import time
 
-# サードパーティー
+# Third Party
 import numpy as np
 import tf
 import rospy
@@ -15,10 +15,10 @@ from geometry_msgs.msg import Quaternion, Vector3
 from std_msgs.msg import String, Header, Empty
 from nav_msgs.msg import Path
 
-class Simple_path_simulator():
+class PathVisualizerFollowerRULO():
 
     def __init__(self):
-        rospy.init_node('Simple_Path_Publisher')
+        rospy.init_node('path_visual_follow_rulo')
         self.euler = Vector3()
         self.pose_list = PoseStamped()
         self.r = rospy.Rate(10) 
@@ -99,9 +99,9 @@ class Simple_path_simulator():
 
 if __name__ == '__main__':
     print('Path Publisher is Started...')
-    test = Simple_path_simulator()
+    path_visual2follow_rulo = PathVisualizerFollowerRULO()
     for i in range (0, 10, 1):
-        test.next_pub.publish(test.next_judge)
+        path_visual2follow_rulo.next_pub.publish(path_visual2follow_rulo.next_judge)
         time.sleep(1)
     
 

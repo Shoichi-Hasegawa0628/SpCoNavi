@@ -1,39 +1,39 @@
 #!/usr/bin/env python
 #coding:utf-8
 
-# 標準ライブラリ
+# Standard Library
 import os
 import collections
 from itertools import izip
 
-# サードパーティー
+# Third Party
 from scipy.stats import multinomial
 
-# 自作ライブラリ
+# Self-made Modules
 from __init__ import *
-import spconavi_read_data
-import spconavi_save_data
 from spconavi_math import *
+import dataset
+import converter
 
-read_data = spconavi_read_data.ReadingData()
-save_data = spconavi_save_data.SavingData()
+dataset_func = dataset.DataSet()
+convert_func = converter.Converter()
 
-class ViterbiPathPlanner:
+class ViterbiPathCalculate():
 
     #Global path estimation by dynamic programming (calculation of SpCoNavi)
-    def viterbi_path_planner(self, S_Nbest, X_init, THETA, CostMapProb, outputfile, speech_num, outputname): #gridmap, costmap):
+    def viterbi_preparation(self, S_Nbest, X_init, THETA, CostMapProb, outputfile, speech_num, outputname, init_position_num): #gridmap, costmap):
         print "[RUN] PathPlanner"
         #THETAを展開
         W, W_index, Mu, Sig, Pi, Phi_l, K, L = THETA
 
         #ROSの座標系の現在位置を2-dimension array index にする
         X_init_index = X_init ###TEST  #Map_coordinates_To_Array_index(X_init)
-        print "Initial Xt:",X_init_index
+        print ("Initial Xt:",X_init_index)
 
         #length and width of the MAP cells
         map_length = len(CostMapProb)     #len(costmap)
         map_width  = len(CostMapProb[0])  #len(costmap[0])
-        print "MAP[length][width]:",map_length,map_width
+        print ("MAP[length][width]:",map_length,map_width)
 
         #Pre-calculation できるものはしておく
         LookupTable_ProbCt = np.array([multinomial.pmf(S_Nbest, sum(S_Nbest), W[c])*Pi[c] for c in xrange(L)])  #Ctごとの確率分布 p(St|W_Ct)×p(Ct|Pi) の確率値
@@ -45,12 +45,12 @@ class ViterbiPathPlanner:
         output = outputfile + "N"+str(N_best)+"G"+str(speech_num) + "_PathWeightMap.csv"
         if (os.path.isfile(output) == False) or (UPDATE_PostProbMap == 1):  #すでにファイルがあれば作成しない
             #PathWeightMap = PostProbMap_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #マルチCPUで高速化できるかも #CostMapProb * PostProbMap #後の処理のために, この時点ではlogにしない
-            PathWeightMap = read_data.PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #,IndexMap) 
+            PathWeightMap = convert_func.PostProbMap_nparray_jit(CostMapProb,Mu,Sig,Phi_l,LookupTable_ProbCt,map_length,map_width,L,K) #,IndexMap) 
         
             #[TEST]計算結果を先に保存
-            save_data.SaveProbMap(PathWeightMap, outputfile, speech_num)
+            dataset_func.SaveProbMap(PathWeightMap, outputfile, speech_num)
         else:
-            PathWeightMap = read_data.ReadProbMap(outputfile, speech_num)
+            PathWeightMap = dataset_func.ReadProbMap(outputfile, speech_num)
             #print "already exists:", output
         print "[Done] PathWeightMap."
 
@@ -106,7 +106,7 @@ class ViterbiPathPlanner:
         print "MoveIndex_list"
 
         #Viterbi Algorithmを実行
-        Path_one = self.ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior, outputfile) #, Transition_one_NOzero)
+        Path_one = self.ViterbiPath(X_init_index_one, np.log(PathWeight_one_NOzero), state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init, Bug_removal_savior, outputfile, speech_num, init_position_num) #, Transition_one_NOzero)
 
         #one-dimension array index を2-dimension array index へ⇒ROSの座標系にする
         Path_2D_index = np.array([ IndexMap_one_NOzero[Path_one[i]] for i in xrange(len(Path_one)) ])
@@ -114,7 +114,7 @@ class ViterbiPathPlanner:
             Path_2D_index_original = Path_2D_index + np.array(X_init) - T_horizon
         else:
             Path_2D_index_original = Path_2D_index
-        Path_ROS = read_data.Array_index_To_Map_coordinates(Path_2D_index_original) #ROSのパスの形式にできればなおよい
+        Path_ROS = convert_func.Array_index_To_Map_coordinates(Path_2D_index_original) #ROSのパスの形式にできればなおよい
 
         #Path = Path_2D_index_original #Path_ROS #必要な方をPathとして返す
         print "Init:", X_init
@@ -181,7 +181,7 @@ class ViterbiPathPlanner:
     #    return [random.random() for j in xrange(n)]
 
     #ViterbiPathを計算してPath(軌道)を返す
-    def ViterbiPath(self, X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original, Bug_removal_savior, outputfile): #, Transition):
+    def ViterbiPath(self, X_init, PathWeight, state_num,IndexMap_one_NOzero,MoveIndex_list, outputname, X_init_original, Bug_removal_savior, outputfile, speech_num, init_position_num): #, Transition):
         #Path = [[0,0] for t in xrange(T_horizon)]  #各tにおけるセル番号[x,y]
         print "Start Viterbi Algorithm"
 
@@ -207,7 +207,7 @@ class ViterbiPathPlanner:
             print "T:",i+1
             if (i+1 == T_restart):
                 outputname_restart = outputfile + "T"+str(T_restart)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
-                trellis = read_data.ReadTrellis(outputname_restart, i+1)
+                trellis = dataset_func.ReadTrellis(outputname_restart, i+1)
                 cost = trellis[-1]
             if (i+1 >= T_restart):
                 #cost = [update(cost, t, f) for t, f in zip(m, e)]
@@ -232,7 +232,7 @@ class ViterbiPathPlanner:
                         #print "x", len(x), x
                     path_one = path_one[1:len(path_one)] #初期位置と処理上追加した最後の遷移を除く
                 
-                    save_data.SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero, Bug_removal_savior)
+                    dataset_func.SavePathTemp(X_init_original, path_one, i+1, outputname, IndexMap_one_NOzero, Bug_removal_savior)
                 
                     ##log likelihood 
                     #PathWeight (log)とpath_oneからlog likelihoodの値を再計算する
@@ -246,17 +246,17 @@ class ViterbiPathPlanner:
                         elif (t >= 1):
                             LogLikelihood_sum[t] = LogLikelihood_sum[t-1] + LogLikelihood_step[t]
 
-                    save_data.SaveLogLikelihood(LogLikelihood_step,0,i+1, outputname)
-                    save_data.SaveLogLikelihood(LogLikelihood_sum,1,i+1, outputname)
+                    dataset_func.SaveLogLikelihood(LogLikelihood_step,0,i+1, outputname)
+                    dataset_func.SaveLogLikelihood(LogLikelihood_sum,1,i+1, outputname)
 
                     #The moving distance of the path
                     Distance = self.PathDistance(path_one)
         
                     #Save the moving distance of the path
-                    save_data.SavePathDistance_temp(Distance, i+1, outputname)
+                    dataset_func.SavePathDistance_temp(Distance, i+1, outputname)
 
                     if (SAVE_Trellis == 1):
-                        save_data.SaveTrellis(trellis, outputname, i+1)
+                        dataset_func.SaveTrellis(trellis, outputname, i+1)
                     temp = 0
                 temp += 1
 
@@ -278,9 +278,6 @@ class ViterbiPathPlanner:
         path = path[1:len(path)-1] #初期位置と処理上追加した最後の遷移を除く
         print 'Maximum prob path:', path
         return path
-
-    #推定されたパスを（トピックかサービスで）送る
-    #def SendPath(self, Path):
 
     #The moving distance of the pathを計算する
     def PathDistance(self, Path):

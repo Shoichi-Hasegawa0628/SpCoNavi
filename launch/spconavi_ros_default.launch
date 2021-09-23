@@ -5,10 +5,11 @@
     <include file="$(find spconavi_ros)/launch/spconavi_spatial_concepts_visualizer.launch"/>
     <!-- <include file="$(find spconavi_ros)/launch/gaussian_distribution_rsj.launch"/> -->
 
-    <!-- A*アルゴリズムでSpCoNaviを実行-->
-    <node name="spconavi_ros_astar" pkg="spconavi_ros" type="spconavi_execute.py" output="screen" cwd="node" />
+    <!-- SpCoNaviを実行-->
+    <node name="spconavi_executer" pkg="spconavi_ros" type="execute_node.py" output="screen" cwd="node" />
 
-    <!-- RvizにPathを表示・RULOに目的地を命令-->
-    <node name="spconavi_ros_follower" pkg="spconavi_ros" type="spconavi_path_visualizer_follower_rulo.py" output="screen" cwd="node" />
+    <!-- RvizにPathを表示・ロボットに目的地を命令-->
+    <node name="spconavi_follower" pkg="spconavi_ros" type="path_visualizer_follower_rulo.py" output="screen" cwd="node" />
+    <!-- <node name="spconavi_follower" pkg="spconavi_ros" type="path_visualizer_follower_hsr.py" output="screen" cwd="node" /> -->
 
 </launch>
