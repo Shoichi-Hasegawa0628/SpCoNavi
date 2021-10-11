@@ -4,6 +4,7 @@
 # Third Party
 from scipy.io import mmread
 from scipy.io import mmwrite
+import roslib.packages
 
 # Self-made Modules
 from __init__ import *
@@ -32,19 +33,20 @@ class DataSet():
 
     #Read the parameters of learned spatial concepts
     def ReadParameters(self, iteration, sample, filename, trialname):
+        spco_params_path = str(roslib.packages.get_pkg_dir("rgiro_spco2_slam")) + "/data/output/test/max_likelihood_param/"
         #THETA = [W,W_index,Mu,Sig,Pi,Phi_l,K,L]
         #r = iteration
 
         W_index = []
         i = 0
         #Read the text file
-        for line in open(filename + "/" + trialname + '_w_index_' + str(iteration) + '_' + str(sample) + '.csv', 'r'): 
+        for line in open(spco_params_path + 'W_list.csv', 'r'):
             itemList = line[:-1].split(',')
-            if(i == 1):
-                for j in xrange(len(itemList)):
-                    if (itemList[j] != ""):
-                        W_index = W_index + [itemList[j]]
-            i = i + 1
+            #if(i == 1):
+            for j in xrange(len(itemList)):
+                if (itemList[j] != ""):
+                    W_index = W_index + [itemList[j]]
+            #i = i + 1
             
         #####パラメータW, μ, Σ, φ, πを入力する#####
         Mu    = [ np.array([ 0.0, 0.0 ]) for i in xrange(K) ]  #[ np.array([[ 0.0 ],[ 0.0 ]]) for i in xrange(K) ]      #位置分布の平均(x,y)[K]
@@ -56,7 +58,7 @@ class DataSet():
         
         i = 0
         ##Mu is read from the file
-        for line in open(filename + "/" + trialname + '_Myu_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        for line in open(spco_params_path + 'mu.csv', 'r'):
             itemList = line[:-1].split(',')
             #Mu[i] = np.array([ float(itemList[0]) - origin[0] , float(itemList[1]) - origin[1] ]) / resolution
             Mu[i] = np.array([ float(itemList[0]) , float(itemList[1]) ])
@@ -64,7 +66,7 @@ class DataSet():
         
         i = 0
         ##Sig is read from the file
-        for line in open(filename + "/" + trialname + '_S_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        for line in open(spco_params_path + 'sig.csv', 'r'):
             itemList = line[:-1].split(',')
             #Sig[i] = np.array([[ float(itemList[0])/ resolution, float(itemList[1]) ], [ float(itemList[2]), float(itemList[3])/ resolution ]]) #/ resolution
             Sig[i] = np.array([[ float(itemList[0]), float(itemList[1]) ], [ float(itemList[2]), float(itemList[3]) ]]) 
@@ -73,7 +75,7 @@ class DataSet():
         ##phi is read from the file
         c = 0
         #Read the text file
-        for line in open(filename + "/" + trialname + '_phi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        for line in open(spco_params_path + 'phi.csv', 'r'):
             itemList = line[:-1].split(',')
             for i in xrange(len(itemList)):
                 if itemList[i] != "":
@@ -81,7 +83,7 @@ class DataSet():
             c = c + 1
             
         ##Pi is read from the file
-        for line in open(filename + "/" + trialname + '_pi_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        for line in open(spco_params_path + 'pi.csv', 'r'):
             itemList = line[:-1].split(',')
             for i in xrange(len(itemList)):
                 if itemList[i] != '':
@@ -90,7 +92,7 @@ class DataSet():
         ##W is read from the file
         c = 0
         #Read the text file
-        for line in open(filename + "/" + trialname + '_W_' + str(iteration) + '_' + str(sample) + '.csv', 'r'):
+        for line in open(spco_params_path + 'W.csv', 'r'):
             itemList = line[:-1].split(',')
             for i in xrange(len(itemList)):
                 if itemList[i] != '':

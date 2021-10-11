@@ -17,8 +17,8 @@ Example_OR = ["ダイニング","キッチン"]
 #################### Folder PATH ####################################################################################
 
 # Data Path
-inputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/data/"
-outputfolder_SIG = "/root/RULO/catkin_ws/src/spconavi_ros/data/"
+inputfolder_SIG = "/root/RULO/catkin_ws/src/spco2_mlda_problog/spconavi_ros/data/"
+outputfolder_SIG = "/root/RULO/catkin_ws/src/spco2_mlda_problog/spconavi_ros/data/"
 
 #Navigation folder (Other output files are also in same folder.)
 navigation_folder = "/navi/"  #outputfolder + trialname + / + navigation_folder + contmap.csv

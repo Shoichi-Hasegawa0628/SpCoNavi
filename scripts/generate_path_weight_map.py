@@ -12,6 +12,8 @@ from scipy.stats import multinomial
 from __init__ import *
 from modules.spconavi_math import *
 from modules import dataset, converter
+import rospy
+import roslib.packages
 
 convert_func = converter.Converter()
 dataset_func = dataset.DataSet()
@@ -28,7 +30,9 @@ class GeneratePathWeightMap():
 
     def calculate_path_weight_map(self):
         ##FullPath of folder
-        filename = outputfolder_SIG + trialname #+ "/"
+        #filename = outputfolder_SIG + trialname #+ "/"
+        filename = "/root/RULO/catkin_ws/src/spco2_mlda_problog/spconavi_ros/data/3LDK_01"
+        #print(str(roslib.packages.get_pkg_dir("spconavi_ros")))
         print (filename, iteration, sample)
         outputfile = filename + navigation_folder #outputfolder + trialname + navigation_folder
         outputname = outputfile + "T"+str(T_horizon)+"N"+str(N_best)+"A"+str(Approx)+"S"+str(init_position_num)+"G"+str(speech_num)
@@ -89,7 +93,7 @@ class GeneratePathWeightMap():
 
 if __name__ == '__main__':
     print ("Ctrl-C is the end of process.")
-    rospy.init_node('CostMap', anonymous=True)
+    rospy.init_node('generate_path_weight_map', anonymous=True)
     calculate_path_weight = GeneratePathWeightMap()
     calculate_path_weight.calculate_path_weight_map()
-    rospy.spin()
+    #rospy.spin()
